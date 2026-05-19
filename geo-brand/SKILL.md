@@ -68,3 +68,46 @@ python3 scripts/update_brand.py [--project-id <id>] --field <field_name> --value
 ## Workflow
 
 See `WORKFLOW.md` for the recommended first-time setup sequence.
+
+## Output Format
+
+**When showing an existing brand profile** (`get_brand.py`), present it as a structured summary:
+
+```
+🏷️ Brand Profile — <project-id>
+Status: ✅ Completed  (or ⏳ Generating... / ➕ Not set up)
+
+📌 Brand Introduction
+  <brand_introduction text>
+
+👥 Ideal Customer
+  <ideal_customer text>
+
+⚔️ Competitors
+  <competitors text>
+
+💡 Brand Perspective
+  <brand_perspective text>
+
+✍️ Author Persona
+  <author_persona text>
+
+🎙️ Voice & Tone
+  <voice_and_tone text>
+
+📋 Writing Rules
+  <writing_rules text>
+
+📣 CTA: <cta_text> → <cta_landing_page>
+🌐 Language: <language>  |  Region: <region>
+```
+
+**When generating a brand profile** (`generate_brand.py`):
+- Show a one-line status: `⏳ Generating brand profile… (this takes 30–90 s)`
+- When complete, display the full profile using the structure above.
+
+**When updating a field** (`update_brand.py`):
+- Confirm with: `✅ Updated **<field_name>** successfully.`
+- Then display the new value inline.
+
+Long text fields (introduction, perspective, etc.) should be shown in full — do not truncate.

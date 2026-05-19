@@ -69,3 +69,43 @@ Content item must have status `outline`. Produces the full article.
 ## Workflow
 
 See `WORKFLOW.md` for the detailed step-by-step content creation flow.
+
+## Output Format
+
+**When listing content** (`list_content.py`):
+```
+📄 Content Library — <project-id>  (Page 1 of N)
+
+  1. 📝 [draft]    "How to Improve Your SEO in 2025"        ID: abc123
+  2. 📋 [outline]  "Top 10 GEO Strategies for SaaS"         ID: def456
+  3. ✅ [article]  "What is Generative Engine Optimization?" ID: ghi789
+```
+Status icons: 📝 draft · 📋 outline · ✅ article
+
+**When suggesting titles** (`generate_titles.py`):
+```
+💡 Suggested Titles
+  1. "How to Dominate AI Search in 2025"
+  2. "The Complete Guide to GEO for SaaS Companies"
+  3. "Why Traditional SEO Is Not Enough Anymore"
+  ... (up to 10)
+Ask the user: "Which title would you like to use for the outline?"
+```
+
+**When generating an outline** (`generate_outline.py`):
+- Progress: `⏳ Generating outline… (30–90 s)`
+- On completion, show the full outline with section headings as a numbered list.
+- End with: `✅ Outline ready. Content ID: **<id>**  Run generate_article.py to write the full article.`
+
+**When generating an article** (`generate_article.py`):
+- Progress: `⏳ Writing article… (60–180 s)`
+- On completion:
+```
+✅ Article complete!
+  Title:    "<title>"
+  Content ID: <id>
+  Words:    ~1,200
+  Status:   article
+
+<full article text shown below>
+```

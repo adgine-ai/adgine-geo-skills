@@ -86,3 +86,46 @@ python3 scripts/manage_project.py delete --project-id <id>
 
 Default: human-readable summary table.
 Pass `--json` for raw JSON (useful for piping to other scripts).
+
+## Output Format
+
+**When listing projects** (`list_projects.py`), present as a numbered summary:
+```
+📁 Your GEO Projects  (N total)
+
+  1. example.com
+     ID: abc-123-def  |  Created: 2025-01-15
+     GSC ✅ · GA4 ✅ · Cloudflare ❌
+
+  2. myblog.io
+     ID: xyz-456-ghi  |  Created: 2025-03-22
+     GSC ❌ · GA4 ❌ · Cloudflare ❌
+```
+After listing, ask: *"Which project would you like to work with?"* (if context requires a selection).
+
+**When showing project details** (`manage_project.py get`):
+```
+📁 Project Details
+  Name:        Example Site
+  ID:          abc-123-def
+  URL:         https://example.com
+  Created:     2025-01-15
+  Integrations: GSC ✅ · GA4 ✅ · Cloudflare ❌
+```
+
+**When creating a project:**
+> ✅ Project created!  
+> **Name:** Example Site  
+> **ID:** `abc-123-def`  
+> **URL:** https://example.com  
+> Next: connect integrations at https://platform.adgine.ai
+
+**When updating:**
+> ✅ Project **abc-123-def** updated.
+
+**When deleting:**
+> 🗑️ Project **abc-123-def** deleted.
+
+**After auth check** (`check_auth.py`):
+> ✅ Authenticated — key is valid for user `<email or user-id>`  
+> or: ❌ Authentication failed — check your `GEO_API_KEY`

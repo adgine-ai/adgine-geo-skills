@@ -66,3 +66,48 @@ Shows all URLs that were cited across tests for a set of prompts.
 2. Run tests: `python3 scripts/create_tests.py --prompt-ids <id1,id2,...>`
 3. Wait ~5–15 minutes for AI platforms to respond
 4. Review results: `python3 scripts/get_results.py --prompt-id <id>`
+
+## Output Format
+
+**When submitting tests** (`create_tests.py`):
+> ✅ Citation tests submitted for **N** prompt(s). Results will be ready in ~5–15 minutes.
+
+**When showing results for a prompt** (`get_results.py`):
+
+```
+🔍 Citation Results — "<prompt text>"
+Prompt ID: <id>  |  Project: <project-id>
+
+Platform        Status      Cited?   
+─────────────────────────────────────
+ChatGPT         ✅ Done     ✅ Yes   
+Perplexity      ✅ Done     ❌ No    
+Google AIO      ⏳ Pending  —        
+```
+
+For each platform where citation = Yes, show:
+```
+  🔗 ChatGPT — Your brand was cited
+     Cited URLs:
+       • https://example.com/article-1
+       • https://example.com/about
+     AI Response (excerpt):
+       "<first 200 chars of AI response>…"
+```
+
+For platforms where citation = No, show:
+```
+  ❌ Perplexity — Not cited in this response
+```
+
+**Summary line** at the end:
+> 📊 Citation rate: **2 / 3 platforms** (67%) for this prompt.
+
+**When showing aggregated URLs** (`--aggregate`):
+List all cited URLs as a ranked bullet list, showing how many times each was cited:
+```
+🔗 Most Cited URLs (across N prompts)
+  1. https://example.com/guide      — cited 8 times
+  2. https://example.com/about      — cited 5 times
+  3. https://example.com/pricing    — cited 2 times
+```
