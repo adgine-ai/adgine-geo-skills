@@ -72,51 +72,93 @@ See `WORKFLOW.md` for the detailed step-by-step content creation flow.
 
 ## Output Format
 
-**When listing content** (`list_content.py`):
-> 📄 **Content Library** — `<project-id>` (Page 1 of N)
-
-| # | Status | Title | Content ID |
-|---|--------|-------|------------|
-| 1 | 📝 Draft | "How to Improve Your SEO in 2025" | `abc123` |
-| 2 | 📋 Outline | "Top 10 GEO Strategies for SaaS" | `def456` |
-| 3 | ✅ Article | "What is Generative Engine Optimization?" | `ghi789` |
-
-Status icons: 📝 Draft · 📋 Outline · ✅ Article
+> ⚠️ **CRITICAL — Telegram rendering rules:**
+> - **Do NOT use Markdown pipe tables** — Telegram strips them.
+> - Render tables as **fenced code blocks** with **box-drawing characters**.
+> - Use **bold**, *italic*, `code`, emoji, and `[label](url)` links freely.
 
 ---
 
-**When suggesting titles** (`generate_titles.py`):
-> 💡 **Suggested Titles** — pick one to generate an outline:
+### When listing content (`list_content.py`)
 
-| # | Title |
-|---|-------|
-| 1 | "How to Dominate AI Search in 2025" |
-| 2 | "The Complete Guide to GEO for SaaS Companies" |
-| 3 | "Why Traditional SEO Is Not Enough Anymore" |
-| … | … (up to 10) |
+> 📄  **Content Library** — Project `<project-id>` (Page 1 / N)
 
-Ask the user: *"Which title would you like to use for the outline?"*
+```
+📚  Items
+┌────┬───────────┬──────────────────────────────────────┬──────────┐
+│  # │ Status    │ Title                                │ ID       │
+├────┼───────────┼──────────────────────────────────────┼──────────┤
+│  1 │ 📝 Draft  │ How to Improve Your SEO in 2025      │ abc123   │
+│  2 │ 📋 Outline│ Top 10 GEO Strategies for SaaS       │ def456   │
+│  3 │ ✅ Article│ What is Generative Engine Optimi…    │ ghi789   │
+└────┴───────────┴──────────────────────────────────────┴──────────┘
+```
 
----
-
-**When generating an outline** (`generate_outline.py`):
-- Progress: `⏳ Generating outline… (~30–90 s)`
-- On completion, show the outline headings as a numbered list, then:
-
-> ✅ **Outline ready.** Content ID: `<id>`  
-> Run `generate_article.py --content-id <id>` to write the full article.
+Status icons: 📝 Draft · 📋 Outline · ✅ Article  
+Truncate long titles to ~36 chars with `…`.
 
 ---
 
-**When generating an article** (`generate_article.py`):
-- Progress: `⏳ Writing article… (~60–180 s)`
-- On completion, open with a summary table then the full article text:
+### When suggesting titles (`generate_titles.py`)
 
-| Field | Value |
-|-------|-------|
-| Title | "<title>" |
-| Content ID | `<id>` |
-| Word Count | ~1,200 |
-| Status | ✅ Article |
+> 💡  **Suggested Titles** — pick one to generate an outline
 
-Then show the full article text below.
+```
+┌────┬──────────────────────────────────────────────────────┐
+│  # │ Title                                                │
+├────┼──────────────────────────────────────────────────────┤
+│  1 │ How to Dominate AI Search in 2025                    │
+│  2 │ The Complete Guide to GEO for SaaS Companies         │
+│  3 │ Why Traditional SEO Is Not Enough Anymore            │
+│  … │ …                                                    │
+└────┴──────────────────────────────────────────────────────┘
+```
+
+Ask: *"Which title would you like to use for the outline?"*
+
+---
+
+### When generating an outline (`generate_outline.py`)
+
+- Progress: `⏳  **Generating outline…** (~30–90 s, polling)`
+- On completion, show the outline as a **nested numbered list**:
+
+```
+### 📋 Outline — "<title>"
+1. Section heading one
+   - Sub-bullet
+   - Sub-bullet
+2. Section heading two
+   - Sub-bullet
+3. Section heading three
+```
+
+Then a confirmation block:
+
+```
+✅ Outline Ready
+┌────────────┬──────────────────────────────┐
+│ Content ID │ <id>                         │
+│ Sections   │ 6                            │
+│ Next       │ generate_article.py -c <id>  │
+└────────────┴──────────────────────────────┘
+```
+
+---
+
+### When generating an article (`generate_article.py`)
+
+- Progress: `⏳  **Writing article…** (~60–180 s, polling)`
+- On completion, show a summary block, then the full article body using `##` and `###` headings:
+
+```
+✅ Article Complete
+┌────────────┬──────────────────────────────┐
+│ Title      │ <title>                      │
+│ Content ID │ <id>                         │
+│ Word Count │ ~1,200                       │
+│ Status     │ ✅ Article                   │
+└────────────┴──────────────────────────────┘
+```
+
+Then the **full article text** rendered with proper Markdown headings (`##`, `###`), paragraphs, and bullet lists — never wrap the article body in a code fence.

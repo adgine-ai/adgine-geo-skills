@@ -89,49 +89,80 @@ Pass `--json` for raw JSON (useful for piping to other scripts).
 
 ## Output Format
 
-**When listing projects** (`list_projects.py`):
-> 📁 **Your GEO Projects** (N total)
-
-| # | Name | URL | Project ID | GSC | GA4 | CF | Created |
-|---|------|-----|------------|-----|-----|----|---------|
-| 1 | Example Site | example.com | `abc-123` | ✅ | ✅ | ❌ | 2025-01-15 |
-| 2 | My Blog | myblog.io | `xyz-456` | ❌ | ❌ | ❌ | 2025-03-22 |
-
-After listing, ask: *"Which project would you like to work with?"* (if context requires a selection).
+> ⚠️ **CRITICAL — Telegram rendering rules:**
+> - **Do NOT use Markdown pipe tables** — Telegram strips them.
+> - Render tables as **fenced code blocks** with **box-drawing characters**.
+> - Use `[label](url)` for clickable URLs.
 
 ---
 
-**When showing project details** (`manage_project.py get`):
+### When listing projects (`list_projects.py`)
 
-| Field | Value |
-|-------|-------|
-| Name | Example Site |
-| Project ID | `abc-123-def` |
-| URL | https://example.com |
-| Created | 2025-01-15 |
-| GSC | ✅ Connected |
-| GA4 | ✅ Connected |
-| Cloudflare | ❌ Not connected |
+> 📁  **Your GEO Projects** (N total)
+
+```
+┌────┬──────────────────┬─────────────┬─────┬─────┬─────┬────────────┐
+│  # │ Name             │ Project ID  │ GSC │ GA4 │ CF  │ Created    │
+├────┼──────────────────┼─────────────┼─────┼─────┼─────┼────────────┤
+│  1 │ Example Site     │ abc-123-def │ ✅  │ ✅  │ ❌  │ 2025-01-15 │
+│  2 │ My Blog          │ xyz-456-ghi │ ❌  │ ❌  │ ❌  │ 2025-03-22 │
+└────┴──────────────────┴─────────────┴─────┴─────┴─────┴────────────┘
+```
+
+Below the block, list URLs as clickable Markdown links (Telegram makes them tappable):
+- `abc-123-def` → [example.com](https://example.com)
+- `xyz-456-ghi` → [myblog.io](https://myblog.io)
+
+After listing, if a selection is needed ask: *"Which project would you like to work with?"*
 
 ---
 
-**When creating a project:**
-> ✅ **Project created!**
+### When showing project details (`manage_project.py get`)
 
-| Field | Value |
-|-------|-------|
-| Name | Example Site |
-| Project ID | `abc-123-def` |
-| URL | https://example.com |
+```
+📁  Project Details
+┌────────────┬──────────────────────────────────┐
+│ Name       │ Example Site                     │
+│ Project ID │ abc-123-def                      │
+│ URL        │ https://example.com              │
+│ Created    │ 2025-01-15                       │
+│ GSC        │ ✅ Connected                     │
+│ GA4        │ ✅ Connected                     │
+│ Cloudflare │ ❌ Not connected                 │
+└────────────┴──────────────────────────────────┘
+```
 
-> Next: connect integrations at https://platform.adgine.ai
+If any integration is `❌`, append: > 🔌  Connect missing integrations at [platform.adgine.ai](https://platform.adgine.ai).
 
-**When updating:**
-> ✅ Project `abc-123-def` updated.
+---
 
-**When deleting:**
-> 🗑️ Project `abc-123-def` deleted.
+### When creating a project
 
-**After auth check** (`check_auth.py`):
-> ✅ Authenticated — key is valid for user `<email or user-id>`  
-> or: ❌ Authentication failed — check your `GEO_API_KEY`
+> ✅  **Project created!**
+
+```
+┌────────────┬──────────────────────────────────┐
+│ Name       │ Example Site                     │
+│ Project ID │ abc-123-def                      │
+│ URL        │ https://example.com              │
+└────────────┴──────────────────────────────────┘
+```
+
+> **Next:** connect integrations at [platform.adgine.ai](https://platform.adgine.ai).
+
+### When updating
+
+> ✅  Project `abc-123-def` updated.  
+> Changed: **<field>** → `<new value>`
+
+### When deleting
+
+> 🗑️  Project `abc-123-def` deleted.
+
+### After auth check (`check_auth.py`)
+
+> ✅  **Authenticated** — key is valid for user `<email or user-id>`
+
+Or on failure:
+
+> ❌  **Authentication failed.** Check your `GEO_API_KEY` — get a new key at [platform.adgine.ai](https://platform.adgine.ai).

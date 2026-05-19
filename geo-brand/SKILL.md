@@ -71,19 +71,34 @@ See `WORKFLOW.md` for the recommended first-time setup sequence.
 
 ## Output Format
 
-**When showing an existing brand profile** (`get_brand.py`), open with a status summary table, then show each field:
+> ⚠️ **CRITICAL — Telegram rendering rules:**
+> - **Do NOT use Markdown pipe tables** (`| col |…|---|`). Telegram strips them.
+> - Render tables as **fenced code blocks** with **box-drawing characters** (`─ │ ┌ ┐ └ ┘ ├ ┤`).
+> - Use **bold**, *italic*, `inline code`, emoji, and `[label](url)` links freely.
 
-**Status overview table:**
+---
 
-| Field | Value |
-|-------|-------|
-| Project | `<project-id>` |
-| Status | ✅ Completed / ⏳ Generating / ➕ Not set up |
-| Language | English |
-| Region | US |
-| CTA | `<cta_text>` → `<cta_landing_page>` |
+### When showing an existing brand profile (`get_brand.py`)
 
-Then present each content field as a titled section (use `###` heading + full text — do not truncate):
+Open with the status block, then each content field as its own labeled section.
+
+**1. Status block (fenced code, monospace):**
+
+```
+🏷️  Brand Profile
+┌────────────┬──────────────────────────────────┐
+│ Project    │ <project-id>                     │
+│ Status     │ ✅ Completed                     │
+│ Language   │ English                          │
+│ Region     │ US                               │
+│ CTA Text   │ <cta_text>                       │
+│ CTA URL    │ <cta_landing_page>               │
+└────────────┴──────────────────────────────────┘
+```
+
+Status icons: ✅ Completed · ⏳ Generating… · ➕ Not set up · ❌ Failed
+
+**2. Content sections** — use Markdown `###` headings, show full text (never truncate):
 
 ```
 ### 📌 Brand Introduction
@@ -108,14 +123,27 @@ Then present each content field as a titled section (use `###` heading + full te
 <writing_rules text>
 ```
 
-**When generating a brand profile** (`generate_brand.py`):
-- Show: `⏳ Generating brand profile… (~30–90 s)`
-- When complete, display the status table then all content sections above.
+Skip any section whose value is empty; replace it with: `_<field> not set yet._`
 
-**When updating a field** (`update_brand.py`), confirm with a mini table:
+---
 
-| Field Updated | New Value |
-|---------------|-----------|
-| `<field_name>` | `<new value preview>` |
+### When generating a brand profile (`generate_brand.py`)
 
-Long text fields should always be shown in full — never truncate.
+- Initial line: `⏳  **Generating brand profile…** (~30–90 s, polling)`
+- On completion, render the status block + all content sections as above.
+
+---
+
+### When updating a field (`update_brand.py`)
+
+Confirm with a fenced code block:
+
+```
+✅ Field Updated
+┌────────────────┬─────────────────────────────────┐
+│ Field          │ <field_name>                    │
+│ New Value      │ <truncated preview, 60 chars>   │
+└────────────────┴─────────────────────────────────┘
+```
+
+Then show the full new value below the box if it was truncated.

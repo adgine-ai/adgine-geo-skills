@@ -111,52 +111,79 @@ Generates AI search prompts relevant to the topic automatically. Polls until don
 
 ## Output Format
 
-**When listing topics** (`manage_topics.py list`):
-> 🗂️ **Topics** — `<project-id>` (N total)
-
-| # | Topic Name | Topic ID | Prompts |
-|---|------------|----------|---------|
-| 1 | Product Reviews | `t-abc` | 12 |
-| 2 | SEO Guides | `t-def` | 8 |
-| 3 | Case Studies | `t-ghi` | 0 |
+> ⚠️ **CRITICAL — Telegram rendering rules:**
+> - **Do NOT use Markdown pipe tables** — Telegram strips them.
+> - Render tables as **fenced code blocks** with **box-drawing characters**.
+> - Use **bold**, *italic*, `code`, and emoji freely.
 
 ---
 
-**When creating / updating / deleting a topic:**
-> ✅ Topic **"Product Reviews"** created — ID: `t-abc`  
-> ✅ Topic `t-abc` updated.  
-> 🗑️ Topic `t-abc` deleted.
+### When listing topics (`manage_topics.py list`)
+
+> 🗂️  **Topics** — Project `<project-id>` (N total)
+
+```
+┌────┬────────────────────────┬───────────┬─────────┐
+│  # │ Topic Name             │ Topic ID  │ Prompts │
+├────┼────────────────────────┼───────────┼─────────┤
+│  1 │ Product Reviews        │ t-abc     │      12 │
+│  2 │ SEO Guides             │ t-def     │       8 │
+│  3 │ Case Studies           │ t-ghi     │       0 │
+└────┴────────────────────────┴───────────┴─────────┘
+```
+
+Truncate long topic names to ~22 chars with `…`.
 
 ---
 
-**When listing prompts** (`manage_prompts.py list`):
-> 💬 **Prompts** — Topic: *"Product Reviews"* (N total)
+### When creating / updating / deleting a topic
 
-| # | Prompt | Prompt ID | Platforms | Region |
-|---|--------|-----------|-----------|--------|
-| 1 | "What is the best GEO tool for small businesses?" | `p-123` | ChatGPT, Perplexity, Google AIO | US |
-| 2 | "How do I improve my AI search visibility?" | `p-456` | ChatGPT | US |
+> ✅  Topic **"Product Reviews"** created — ID: `t-abc`  
+> ✅  Topic `t-abc` updated — *<changed fields>*  
+> 🗑️  Topic `t-abc` deleted.
 
 ---
 
-**When creating / updating / deleting a prompt:**
-> ✅ Prompt created — ID: `p-123`  
-> ✅ Prompt `p-123` updated.  
-> 🗑️ Prompt `p-123` deleted.
+### When listing prompts (`manage_prompts.py list`)
+
+> 💬  **Prompts** — Topic: *"Product Reviews"* (N total)
+
+```
+┌────┬──────────────────────────────────────┬──────────┬──────────────────────┬────────┐
+│  # │ Prompt                               │ ID       │ Platforms            │ Region │
+├────┼──────────────────────────────────────┼──────────┼──────────────────────┼────────┤
+│  1 │ What is the best GEO tool for sma…   │ p-123    │ ChatGPT, Perp, AIO   │ US     │
+│  2 │ How do I improve my AI search vis…   │ p-456    │ ChatGPT              │ US     │
+└────┴──────────────────────────────────────┴──────────┴──────────────────────┴────────┘
+```
+
+Truncate prompts to ~36 chars with `…`. Use platform shortcodes: ChatGPT, Perp, AIO.
 
 ---
 
-**When generating prompts** (`generate_prompts.py`):
-- Progress: `⏳ Generating prompts for topic "<name>"… (~10–60 s)`
-- On completion:
+### When creating / updating / deleting a prompt
 
-> ✅ **Generated N prompts** for *"<topic name>"*
+> ✅  Prompt created — ID: `p-123`  
+> ✅  Prompt `p-123` updated.  
+> 🗑️  Prompt `p-123` deleted.
 
-| # | Prompt |
-|---|--------|
-| 1 | "What tools help with generative engine optimization?" |
-| 2 | "How do AI search engines rank websites differently?" |
-| … | … (all N prompts) |
+---
+
+### When generating prompts (`generate_prompts.py`)
+
+- Progress: `⏳  **Generating prompts** for topic *"<name>"*… (~10–60 s, polling)`
+- On completion, show a count block then the list:
+
+```
+✅  Generated N Prompts   ·   Topic: "<name>"
+┌────┬──────────────────────────────────────────────────────┐
+│  # │ Prompt                                               │
+├────┼──────────────────────────────────────────────────────┤
+│  1 │ What tools help with generative engine optimization? │
+│  2 │ How do AI search engines rank websites differently?  │
+│  … │ …                                                    │
+└────┴──────────────────────────────────────────────────────┘
+```
 
 > **Next:** run citation tests →  
 > `python3 geo-citation/scripts/create_tests.py --prompt-ids <id1,id2,...>`

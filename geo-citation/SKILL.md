@@ -69,41 +69,74 @@ Shows all URLs that were cited across tests for a set of prompts.
 
 ## Output Format
 
-**When submitting tests** (`create_tests.py`):
-> ✅ Citation tests submitted for **N** prompt(s). Results will be ready in ~5–15 minutes.
+> ⚠️ **CRITICAL — Telegram rendering rules:**
+> - **Do NOT use Markdown pipe tables** — Telegram strips them.
+> - Render tables as **fenced code blocks** with **box-drawing characters**.
+> - Use `[label](url)` for clickable URLs in Telegram.
 
 ---
 
-**When showing results for a prompt** (`get_results.py`):
+### When submitting tests (`create_tests.py`)
 
-**Header:**
-> 🔍 **Citation Results** — "*`<prompt text>`*"  
-> Prompt ID: `<id>` · Project: `<project-id>`
-
-**Results table:**
-
-| Platform | Status | Cited? | Cited URLs |
-|----------|--------|--------|------------|
-| ChatGPT | ✅ Done | ✅ Yes | example.com/article, example.com/about |
-| Perplexity | ✅ Done | ❌ No | — |
-| Google AIO | ⏳ Pending | — | — |
-
-For each platform where **Cited = Yes**, add a detail block beneath the table:
-
-> **ChatGPT response excerpt:**
-> *"<first 250 chars of AI response text>…"*
-
-**Summary line:**
-> 📊 **Citation rate: 2 / 3 platforms (67%)** for this prompt.
+> ✅  **Citation tests submitted** for **N** prompt(s).  
+> Results will be ready in ~5–15 minutes. Poll with `get_results.py --prompt-id <id>`.
 
 ---
 
-**When showing aggregated URLs** (`--aggregate`):
+### When showing results for a prompt (`get_results.py`)
 
-| # | URL | Times Cited |
-|---|-----|-------------|
-| 1 | https://example.com/guide | 8 |
-| 2 | https://example.com/about | 5 |
-| 3 | https://example.com/pricing | 2 |
+**1. Header (blockquote):**
 
-Close with: > 📊 N URLs cited across M prompts.
+> 🔍  **Citation Results**  
+> Prompt: *"\<prompt text\>"*  
+> ID: `<prompt-id>` · Project: `<project-id>`
+
+**2. Per-platform results (fenced monospace):**
+
+```
+🎯  Per-Platform Results
+┌──────────────┬───────────┬─────────┬──────────────┐
+│ Platform     │ Status    │ Cited?  │ # URLs cited │
+├──────────────┼───────────┼─────────┼──────────────┤
+│ ChatGPT      │ ✅ Done   │ ✅ Yes  │            2 │
+│ Perplexity   │ ✅ Done   │ ❌ No   │            0 │
+│ Google AIO   │ ⏳ Pending│ —       │            — │
+└──────────────┴───────────┴─────────┴──────────────┘
+```
+
+**3. For each platform where Cited = Yes**, add a labeled section with the response excerpt + clickable URLs:
+
+```
+### 🔗 ChatGPT — Cited
+```
+
+> *"<first 250 chars of AI response>…"*
+
+**Cited URLs:**
+- [example.com/article-1](https://example.com/article-1)
+- [example.com/about](https://example.com/about)
+
+**4. Summary footer (blockquote):**
+
+> 📊  **Citation rate: 2 / 3 platforms (67%)** for this prompt.
+
+---
+
+### When showing aggregated URLs (`--aggregate`)
+
+```
+🔗  Most Cited URLs   (across N prompts)
+┌────┬─────────────────────────────────────┬────────┐
+│  # │ URL                                 │ Cited  │
+├────┼─────────────────────────────────────┼────────┤
+│  1 │ example.com/guide                   │     8× │
+│  2 │ example.com/about                   │     5× │
+│  3 │ example.com/pricing                 │     2× │
+└────┴─────────────────────────────────────┴────────┘
+```
+
+Then list each URL as a clickable Markdown link below the block so Telegram users can tap them:
+- [example.com/guide](https://example.com/guide) — 8×
+- [example.com/about](https://example.com/about) — 5×
+
+Close with: > 📊 **N unique URLs** cited across **M prompts**.

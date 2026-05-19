@@ -56,39 +56,72 @@ Without `--refresh`, returns the cached report. With `--refresh`, triggers a new
 
 ## Output Format
 
-**Header:**
-> 🔬 **Page Health** — `<path>` (`<strategy>`)  
+> ⚠️ **CRITICAL — Telegram rendering rules:**
+> - **Do NOT use Markdown pipe tables** — Telegram strips them.
+> - Render tables as **fenced code blocks** with **box-drawing characters**.
+> - Use **bold**, *italic*, emoji, and `[label](url)` links freely.
+
+---
+
+### 1. Header (blockquote)
+
+> 🔬  **Page Health** — `<path>` *(<strategy>)*  
 > Project: `<project-id>` · Analyzed: `<timestamp>`
 
-**Score summary table:**
+### 2. Score card (fenced monospace)
 
-| Score | Rating | Visual |
-|-------|--------|--------|
-| 78 / 100 | ⚠️ Needs Improvement | `████████████████░░░░` |
+```
+🎯  Overall Score
+┌──────────────────────────────────────────────────┐
+│  78 / 100   ⚠️ Needs Improvement                 │
+│                                                  │
+│  ███████████████░░░░░  78%                       │
+└──────────────────────────────────────────────────┘
+```
 
-Score thresholds: 90–100 ✅ Good · 50–89 ⚠️ Needs Improvement · 0–49 ❌ Poor
+**Score bar logic** — 20 cells total, `█` for filled, `░` for empty:
+- score `78` → 15 filled (`78/100 * 20 = 15.6 → 15`)
+- score `92` → 18 filled
+- score `45` → 9 filled
 
----
+**Rating icons:** 90–100 ✅ Good · 50–89 ⚠️ Needs Improvement · 0–49 ❌ Poor
 
-**All health checks as a single table:**
+### 3. Health checks (single fenced block)
 
-| Category | Check | Status | Notes |
-|----------|-------|--------|-------|
-| 🕷️ Crawlability | Robots.txt | ✅ Allowed | — |
-| 🕷️ Crawlability | Noindex directive | ✅ None found | — |
-| 🕷️ Crawlability | Auth wall | ❌ Detected | AI crawlers blocked |
-| 🤖 AI Optimization | Schema markup | ✅ Present | Article, BreadcrumbList |
-| 🤖 AI Optimization | FAQ schema | ⚠️ Missing | Add for AI snippets |
-| 📑 Indexing | Indexed | ✅ Yes | Last crawled: 2025-05-10 |
-| 📝 Content Health | Word count | ⚠️ Too short | 450 words (min 800) |
-| 📝 Content Health | Duplicate titles | ✅ None | — |
+```
+🩺  Health Checks
+┌──────────────────┬──────────────────┬────────────┬─────────────────────┐
+│ Category         │ Check            │ Status     │ Notes               │
+├──────────────────┼──────────────────┼────────────┼─────────────────────┤
+│ 🕷️  Crawlability │ Robots.txt       │ ✅ Allowed │ —                   │
+│ 🕷️  Crawlability │ Noindex          │ ✅ None    │ —                   │
+│ 🕷️  Crawlability │ Auth wall        │ ❌ Found   │ AI crawlers blocked │
+│ 🤖  AI Optimize  │ Schema markup    │ ✅ Present │ Article, Breadcrumb │
+│ 🤖  AI Optimize  │ FAQ schema       │ ⚠️  Missing│ Add for snippets    │
+│ 📑  Indexing     │ Indexed          │ ✅ Yes     │ Crawled 2025-05-10  │
+│ 📝  Content      │ Word count       │ ⚠️  Short  │ 450 / min 800       │
+│ 📝  Content      │ Duplicate titles │ ✅ None    │ —                   │
+└──────────────────┴──────────────────┴────────────┴─────────────────────┘
+```
 
----
+### 4. Recommended actions (only if any ⚠️ or ❌ exist)
 
-**Recommended actions** (only if issues exist):
+```
+💡  Top Actions
+┌────────────┬──────────────────────────────────────────────────┐
+│ Priority   │ Action                                           │
+├────────────┼──────────────────────────────────────────────────┤
+│ 🔴 High    │ Remove auth wall or add AI crawler exception     │
+│ 🟡 Medium  │ Expand content to 800+ words                     │
+│ 🟡 Medium  │ Add FAQ schema markup                            │
+└────────────┴──────────────────────────────────────────────────┘
+```
 
-| Priority | Action |
-|----------|--------|
-| 🔴 High | Remove auth wall or add AI crawler exception |
-| 🟡 Medium | Expand content to 800+ words |
-| 🟡 Medium | Add FAQ schema markup |
+Priority assignment:
+- ❌ Failed checks → 🔴 High
+- ⚠️ Warnings on crawlability/indexing → 🔴 High
+- ⚠️ Warnings on content/optimization → 🟡 Medium
+- Nice-to-haves → 🟢 Low
+
+If all checks pass, replace this section with:
+> 🎉  **All checks pass.** No action needed.
