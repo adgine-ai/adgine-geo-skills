@@ -72,42 +72,38 @@ Shows all URLs that were cited across tests for a set of prompts.
 **When submitting tests** (`create_tests.py`):
 > ✅ Citation tests submitted for **N** prompt(s). Results will be ready in ~5–15 minutes.
 
+---
+
 **When showing results for a prompt** (`get_results.py`):
 
-```
-🔍 Citation Results — "<prompt text>"
-Prompt ID: <id>  |  Project: <project-id>
+**Header:**
+> 🔍 **Citation Results** — "*`<prompt text>`*"  
+> Prompt ID: `<id>` · Project: `<project-id>`
 
-Platform        Status      Cited?   
-─────────────────────────────────────
-ChatGPT         ✅ Done     ✅ Yes   
-Perplexity      ✅ Done     ❌ No    
-Google AIO      ⏳ Pending  —        
-```
+**Results table:**
 
-For each platform where citation = Yes, show:
-```
-  🔗 ChatGPT — Your brand was cited
-     Cited URLs:
-       • https://example.com/article-1
-       • https://example.com/about
-     AI Response (excerpt):
-       "<first 200 chars of AI response>…"
-```
+| Platform | Status | Cited? | Cited URLs |
+|----------|--------|--------|------------|
+| ChatGPT | ✅ Done | ✅ Yes | example.com/article, example.com/about |
+| Perplexity | ✅ Done | ❌ No | — |
+| Google AIO | ⏳ Pending | — | — |
 
-For platforms where citation = No, show:
-```
-  ❌ Perplexity — Not cited in this response
-```
+For each platform where **Cited = Yes**, add a detail block beneath the table:
 
-**Summary line** at the end:
-> 📊 Citation rate: **2 / 3 platforms** (67%) for this prompt.
+> **ChatGPT response excerpt:**
+> *"<first 250 chars of AI response text>…"*
+
+**Summary line:**
+> 📊 **Citation rate: 2 / 3 platforms (67%)** for this prompt.
+
+---
 
 **When showing aggregated URLs** (`--aggregate`):
-List all cited URLs as a ranked bullet list, showing how many times each was cited:
-```
-🔗 Most Cited URLs (across N prompts)
-  1. https://example.com/guide      — cited 8 times
-  2. https://example.com/about      — cited 5 times
-  3. https://example.com/pricing    — cited 2 times
-```
+
+| # | URL | Times Cited |
+|---|-----|-------------|
+| 1 | https://example.com/guide | 8 |
+| 2 | https://example.com/about | 5 |
+| 3 | https://example.com/pricing | 2 |
+
+Close with: > 📊 N URLs cited across M prompts.

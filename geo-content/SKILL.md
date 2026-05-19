@@ -73,39 +73,50 @@ See `WORKFLOW.md` for the detailed step-by-step content creation flow.
 ## Output Format
 
 **When listing content** (`list_content.py`):
-```
-📄 Content Library — <project-id>  (Page 1 of N)
+> 📄 **Content Library** — `<project-id>` (Page 1 of N)
 
-  1. 📝 [draft]    "How to Improve Your SEO in 2025"        ID: abc123
-  2. 📋 [outline]  "Top 10 GEO Strategies for SaaS"         ID: def456
-  3. ✅ [article]  "What is Generative Engine Optimization?" ID: ghi789
-```
-Status icons: 📝 draft · 📋 outline · ✅ article
+| # | Status | Title | Content ID |
+|---|--------|-------|------------|
+| 1 | 📝 Draft | "How to Improve Your SEO in 2025" | `abc123` |
+| 2 | 📋 Outline | "Top 10 GEO Strategies for SaaS" | `def456` |
+| 3 | ✅ Article | "What is Generative Engine Optimization?" | `ghi789` |
+
+Status icons: 📝 Draft · 📋 Outline · ✅ Article
+
+---
 
 **When suggesting titles** (`generate_titles.py`):
-```
-💡 Suggested Titles
-  1. "How to Dominate AI Search in 2025"
-  2. "The Complete Guide to GEO for SaaS Companies"
-  3. "Why Traditional SEO Is Not Enough Anymore"
-  ... (up to 10)
-Ask the user: "Which title would you like to use for the outline?"
-```
+> 💡 **Suggested Titles** — pick one to generate an outline:
+
+| # | Title |
+|---|-------|
+| 1 | "How to Dominate AI Search in 2025" |
+| 2 | "The Complete Guide to GEO for SaaS Companies" |
+| 3 | "Why Traditional SEO Is Not Enough Anymore" |
+| … | … (up to 10) |
+
+Ask the user: *"Which title would you like to use for the outline?"*
+
+---
 
 **When generating an outline** (`generate_outline.py`):
-- Progress: `⏳ Generating outline… (30–90 s)`
-- On completion, show the full outline with section headings as a numbered list.
-- End with: `✅ Outline ready. Content ID: **<id>**  Run generate_article.py to write the full article.`
+- Progress: `⏳ Generating outline… (~30–90 s)`
+- On completion, show the outline headings as a numbered list, then:
+
+> ✅ **Outline ready.** Content ID: `<id>`  
+> Run `generate_article.py --content-id <id>` to write the full article.
+
+---
 
 **When generating an article** (`generate_article.py`):
-- Progress: `⏳ Writing article… (60–180 s)`
-- On completion:
-```
-✅ Article complete!
-  Title:    "<title>"
-  Content ID: <id>
-  Words:    ~1,200
-  Status:   article
+- Progress: `⏳ Writing article… (~60–180 s)`
+- On completion, open with a summary table then the full article text:
 
-<full article text shown below>
-```
+| Field | Value |
+|-------|-------|
+| Title | "<title>" |
+| Content ID | `<id>` |
+| Word Count | ~1,200 |
+| Status | ✅ Article |
+
+Then show the full article text below.

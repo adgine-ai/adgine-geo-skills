@@ -112,44 +112,51 @@ Generates AI search prompts relevant to the topic automatically. Polls until don
 ## Output Format
 
 **When listing topics** (`manage_topics.py list`):
-```
-🗂️ Topics — <project-id>  (N total)
+> 🗂️ **Topics** — `<project-id>` (N total)
 
-  1. Product Reviews       ID: t-abc  |  12 prompts
-  2. SEO Guides            ID: t-def  |  8 prompts
-  3. Case Studies          ID: t-ghi  |  0 prompts
-```
+| # | Topic Name | Topic ID | Prompts |
+|---|------------|----------|---------|
+| 1 | Product Reviews | `t-abc` | 12 |
+| 2 | SEO Guides | `t-def` | 8 |
+| 3 | Case Studies | `t-ghi` | 0 |
+
+---
 
 **When creating / updating / deleting a topic:**
-> ✅ Topic **"Product Reviews"** created. ID: `t-abc`  
-> ✅ Topic **t-abc** updated.  
-> 🗑️ Topic **t-abc** deleted.
+> ✅ Topic **"Product Reviews"** created — ID: `t-abc`  
+> ✅ Topic `t-abc` updated.  
+> 🗑️ Topic `t-abc` deleted.
+
+---
 
 **When listing prompts** (`manage_prompts.py list`):
-```
-💬 Prompts — Topic: "Product Reviews"  (N total)
+> 💬 **Prompts** — Topic: *"Product Reviews"* (N total)
 
-  1. "What is the best GEO tool for small businesses?"
-     ID: p-123  |  Platforms: ChatGPT, Perplexity, Google AIO  |  Region: US
+| # | Prompt | Prompt ID | Platforms | Region |
+|---|--------|-----------|-----------|--------|
+| 1 | "What is the best GEO tool for small businesses?" | `p-123` | ChatGPT, Perplexity, Google AIO | US |
+| 2 | "How do I improve my AI search visibility?" | `p-456` | ChatGPT | US |
 
-  2. "How do I improve my AI search visibility?"
-     ID: p-456  |  Platforms: ChatGPT  |  Region: US
-```
+---
 
 **When creating / updating / deleting a prompt:**
-> ✅ Prompt created. ID: `p-123`  
-> ✅ Prompt **p-123** updated.  
-> 🗑️ Prompt **p-123** deleted.
+> ✅ Prompt created — ID: `p-123`  
+> ✅ Prompt `p-123` updated.  
+> 🗑️ Prompt `p-123` deleted.
+
+---
 
 **When generating prompts** (`generate_prompts.py`):
-- Progress: `⏳ Generating prompts for topic "<name>"… (10–60 s)`
+- Progress: `⏳ Generating prompts for topic "<name>"… (~10–60 s)`
 - On completion:
-```
-✅ Generated N prompts for "<topic name>"
 
-  1. "What tools help with generative engine optimization?"
-  2. "How do AI search engines rank websites differently?"
-  … (all N prompts listed)
+> ✅ **Generated N prompts** for *"<topic name>"*
 
-Next: run citation tests → geo-citation/scripts/create_tests.py --prompt-ids <ids>
-```
+| # | Prompt |
+|---|--------|
+| 1 | "What tools help with generative engine optimization?" |
+| 2 | "How do AI search engines rank websites differently?" |
+| … | … (all N prompts) |
+
+> **Next:** run citation tests →  
+> `python3 geo-citation/scripts/create_tests.py --prompt-ids <id1,id2,...>`

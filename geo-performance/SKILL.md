@@ -56,46 +56,39 @@ Without `--refresh`, returns the cached report. With `--refresh`, triggers a new
 
 ## Output Format
 
-Present page health results using this structure:
-
 **Header:**
-```
-🔬 Page Health — <path>  (<strategy>)
-Project: <project-id>  |  Analyzed: <timestamp>
-```
+> 🔬 **Page Health** — `<path>` (`<strategy>`)  
+> Project: `<project-id>` · Analyzed: `<timestamp>`
 
-**Score summary** (one line with visual bar):
-```
-Overall Score: 78/100  ⚠️ Needs Improvement
-████████████████░░░░  (78%)
-```
-Score icons per range: 90–100 ✅  · 50–89 ⚠️ · 0–49 ❌
+**Score summary table:**
 
-**Check results** as a grouped list:
-```
-🕷️ Crawlability
-  ✅ Robots.txt — allowed
-  ✅ No noindex directive
-  ❌ Auth wall detected — AI crawlers cannot access this page
+| Score | Rating | Visual |
+|-------|--------|--------|
+| 78 / 100 | ⚠️ Needs Improvement | `████████████████░░░░` |
 
-🤖 AI Optimization
-  ✅ Schema markup present (Article, BreadcrumbList)
-  ⚠️ Missing FAQ schema — consider adding for AI snippet eligibility
-  ✅ Content structure is clear
+Score thresholds: 90–100 ✅ Good · 50–89 ⚠️ Needs Improvement · 0–49 ❌ Poor
 
-📑 Indexing Status
-  ✅ Indexed
-  Last crawled: 2025-05-10
+---
 
-📝 Content Health
-  ⚠️ Content too short (450 words — recommend 800+)
-  ✅ No duplicate title issues
-```
+**All health checks as a single table:**
 
-**Recommendation summary** (only if issues exist):
-```
-💡 Top Actions
-  1. Remove auth wall or add crawler exception for AI bots
-  2. Expand content to 800+ words
-  3. Add FAQ schema markup
-```
+| Category | Check | Status | Notes |
+|----------|-------|--------|-------|
+| 🕷️ Crawlability | Robots.txt | ✅ Allowed | — |
+| 🕷️ Crawlability | Noindex directive | ✅ None found | — |
+| 🕷️ Crawlability | Auth wall | ❌ Detected | AI crawlers blocked |
+| 🤖 AI Optimization | Schema markup | ✅ Present | Article, BreadcrumbList |
+| 🤖 AI Optimization | FAQ schema | ⚠️ Missing | Add for AI snippets |
+| 📑 Indexing | Indexed | ✅ Yes | Last crawled: 2025-05-10 |
+| 📝 Content Health | Word count | ⚠️ Too short | 450 words (min 800) |
+| 📝 Content Health | Duplicate titles | ✅ None | — |
+
+---
+
+**Recommended actions** (only if issues exist):
+
+| Priority | Action |
+|----------|--------|
+| 🔴 High | Remove auth wall or add AI crawler exception |
+| 🟡 Medium | Expand content to 800+ words |
+| 🟡 Medium | Add FAQ schema markup |

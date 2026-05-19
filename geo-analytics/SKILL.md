@@ -57,45 +57,74 @@ Sections return `null` if the integration is not connected for that project.
 
 When presenting analytics results to the user, always use this structure:
 
-**Header line:**
-> 📊 **Analytics Overview** — `<start>` to `<end>` (`<period>`)  
-> Project: `<project-id>`
+**Header:**
+> 📊 **Analytics Overview** — `<start>` to `<end>` (`<period>`) · Project: `<project-id>`
 
-**Integration status** (one line):
-> GSC ✅ · GA4 ✅ · Cloudflare ❌
+**Integration status table:**
 
-**Search Performance (GSC)** — if available:
-```
-🔍 Search Performance
-  • Clicks:       12,345   📈 +1,200 vs prev period
-  • Impressions:  98,765   📉 −3,400 vs prev period
-  • Avg CTR:      12.5%
-  • Avg Position: 8.2
-```
-Then list **Top 5 queries** as a numbered list: `1. "query text" — 123 clicks, pos 4.5`
+| Service | Status |
+|---------|--------|
+| Google Search Console | ✅ Connected |
+| Google Analytics 4 | ✅ Connected |
+| Cloudflare | ❌ Not connected |
 
-**Traffic (GA4)** — if available:
-```
-📈 Traffic (GA4)
-  • Sessions:      5,432   📈 +320
-  • Active Users:  3,210
-```
-Then list **Top 3 sources** as bullets: `• organic / google — 2,100 sessions`
+---
 
-**AI Impact** — if available:
-```
-🤖 AI Impact
-  • AI Referral Sessions: 87   📈 +12
-  • AI Crawler Requests:  4,320
-```
+**🔍 Search Performance (GSC)** — if available:
 
-**Infrastructure (Cloudflare)** — if available:
-```
-☁️ Infrastructure
-  • Total Requests: 120,000
-  • Bandwidth:      4.5 GB
-  • Threats Blocked: 23
-```
+| Metric | Value | vs Prev Period |
+|--------|-------|----------------|
+| Clicks | 12,345 | 📈 +1,200 |
+| Impressions | 98,765 | 📉 −3,400 |
+| Avg CTR | 12.5% | — |
+| Avg Position | 8.2 | 📈 +0.5 |
 
-**Change indicators:** use 📈 for positive, 📉 for negative, — for no data.  
-If a section is null, show: `🔌 <Section> — not connected. Link at https://platform.adgine.ai`
+**Top Queries:**
+
+| # | Query | Clicks | Impressions | Position |
+|---|-------|--------|-------------|----------|
+| 1 | "best seo tool" | 1,234 | 8,900 | 3.2 |
+| 2 | "geo optimization" | 876 | 5,400 | 5.1 |
+| … | … | … | … | … |
+
+---
+
+**📈 Traffic (GA4)** — if available:
+
+| Metric | Value | vs Prev Period |
+|--------|-------|----------------|
+| Sessions | 5,432 | 📈 +320 |
+| Active Users | 3,210 | — |
+
+**Top Sources:**
+
+| Source / Medium | Sessions | Share |
+|-----------------|----------|-------|
+| organic / google | 2,100 | 38.7% |
+| direct / none | 1,200 | 22.1% |
+
+---
+
+**🤖 AI Impact** — if available:
+
+| Metric | Value | vs Prev Period |
+|--------|-------|----------------|
+| AI Referral Sessions | 87 | 📈 +12 |
+| AI Crawler Requests | 4,320 | — |
+
+---
+
+**☁️ Infrastructure (Cloudflare)** — if available:
+
+| Metric | Value |
+|--------|-------|
+| Total Requests | 120,000 |
+| Bandwidth | 4.5 GB |
+| Threats Blocked | 23 |
+
+---
+
+**Rules:**
+- Change indicators: 📈 positive · 📉 negative · — no data or N/A
+- If a section is null: show one line `🔌 <Section> — not connected. [Connect at platform.adgine.ai]`
+- Always show all tables that have data; skip (with the 🔌 note) those that are null
