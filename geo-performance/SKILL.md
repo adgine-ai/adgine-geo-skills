@@ -56,72 +56,68 @@ Without `--refresh`, returns the cached report. With `--refresh`, triggers a new
 
 ## Output Format
 
-> ⚠️ **CRITICAL — Telegram rendering rules:**
-> - **Do NOT use Markdown pipe tables** — Telegram strips them.
-> - Render tables as **fenced code blocks** with **box-drawing characters**.
-> - Use **bold**, *italic*, emoji, and `[label](url)` links freely.
+> ⚠️ **CRITICAL — Table cell content rule (must follow exactly):**
+> Tables use fenced code blocks with box-drawing borders. They only align correctly when **every cell contains ASCII characters exclusively**.
+> - **NEVER** put emoji inside table cells. They are 2 display units wide but count as 1 character, permanently misaligning all following columns.
+> - Emoji go ONLY on the label line **above** the ` ``` ` fence.
+> - Status in cells: `Pass` / `Fail` / `Warn` (NOT ✅/❌/⚠️)
+> - Priority in cells: `High` / `Medium` / `Low` (NOT 🔴/🟡/🟢)
 
 ---
 
-### 1. Header (blockquote)
+### 1. Header
 
-> 🔬  **Page Health** — `<path>` *(<strategy>)*  
+> 🔬 **Page Health** — `<path>` *(<strategy>)*
 > Project: `<project-id>` · Analyzed: `<timestamp>`
 
-### 2. Score card (fenced monospace)
+### 2. Score card
 
+🎯 Overall Score
 ```
-🎯  Overall Score
 ┌──────────────────────────────────────────────────┐
-│  78 / 100   ⚠️ Needs Improvement                 │
+│  <N> / 100   <rating text>                       │
 │                                                  │
-│  ███████████████░░░░░  78%                       │
+│  ████████████████░░░░  <N>%                      │
 └──────────────────────────────────────────────────┘
 ```
+Score bar: 20 chars total — `<N>/100 * 20` filled with `█`, rest with `░`.
+Rating text in cell (ASCII only): `Good` / `Needs Improvement` / `Poor`
 
-**Score bar logic** — 20 cells total, `█` for filled, `░` for empty:
-- score `78` → 15 filled (`78/100 * 20 = 15.6 → 15`)
-- score `92` → 18 filled
-- score `45` → 9 filled
+### 3. Health checks
 
-**Rating icons:** 90–100 ✅ Good · 50–89 ⚠️ Needs Improvement · 0–49 ❌ Poor
-
-### 3. Health checks (single fenced block)
-
+🩺 Health Checks
 ```
-🩺  Health Checks
-┌──────────────────┬──────────────────┬────────────┬─────────────────────┐
-│ Category         │ Check            │ Status     │ Notes               │
-├──────────────────┼──────────────────┼────────────┼─────────────────────┤
-│ 🕷️  Crawlability │ Robots.txt       │ ✅ Allowed │ —                   │
-│ 🕷️  Crawlability │ Noindex          │ ✅ None    │ —                   │
-│ 🕷️  Crawlability │ Auth wall        │ ❌ Found   │ AI crawlers blocked │
-│ 🤖  AI Optimize  │ Schema markup    │ ✅ Present │ Article, Breadcrumb │
-│ 🤖  AI Optimize  │ FAQ schema       │ ⚠️  Missing│ Add for snippets    │
-│ 📑  Indexing     │ Indexed          │ ✅ Yes     │ Crawled 2025-05-10  │
-│ 📝  Content      │ Word count       │ ⚠️  Short  │ 450 / min 800       │
-│ 📝  Content      │ Duplicate titles │ ✅ None    │ —                   │
-└──────────────────┴──────────────────┴────────────┴─────────────────────┘
+┌──────────────┬──────────────────┬────────┐
+│ Category     │ Check            │ Status │
+├──────────────┼──────────────────┼────────┤
+│ Crawlability │ Robots.txt       │ Pass   │
+│ Crawlability │ Noindex          │ Pass   │
+│ Crawlability │ Auth wall        │ Fail   │
+│ AI Optimize  │ Schema markup    │ Pass   │
+│ AI Optimize  │ FAQ schema       │ Warn   │
+│ Indexing     │ Indexed          │ Pass   │
+│ Content      │ Word count       │ Warn   │
+│ Content      │ Duplicate titles │ Pass   │
+└──────────────┴──────────────────┴────────┘
 ```
 
-### 4. Recommended actions (only if any ⚠️ or ❌ exist)
+For each `Fail` or `Warn` row, add a note line below the table:
+- Auth wall — Fail: AI crawlers are blocked
+- FAQ schema — Warn: add for AI snippet eligibility
+- Word count — Warn: 450 words, recommend 800+
 
+### 4. Recommended actions (only if any Fail or Warn exist)
+
+💡 Top Actions
 ```
-💡  Top Actions
-┌────────────┬──────────────────────────────────────────────────┐
-│ Priority   │ Action                                           │
-├────────────┼──────────────────────────────────────────────────┤
-│ 🔴 High    │ Remove auth wall or add AI crawler exception     │
-│ 🟡 Medium  │ Expand content to 800+ words                     │
-│ 🟡 Medium  │ Add FAQ schema markup                            │
-└────────────┴──────────────────────────────────────────────────┘
+┌──────────┬────────────────────────────────────────────┐
+│ Priority │ Action                                     │
+├──────────┼────────────────────────────────────────────┤
+│ High     │ Remove auth wall or add AI crawler rule    │
+│ Medium   │ Expand content to 800+ words               │
+│ Medium   │ Add FAQ schema markup                      │
+└──────────┴────────────────────────────────────────────┘
 ```
+Priority assignment: `Fail` → `High` · crawlability/indexing `Warn` → `High` · other `Warn` → `Medium`
 
-Priority assignment:
-- ❌ Failed checks → 🔴 High
-- ⚠️ Warnings on crawlability/indexing → 🔴 High
-- ⚠️ Warnings on content/optimization → 🟡 Medium
-- Nice-to-haves → 🟢 Low
-
-If all checks pass, replace this section with:
-> 🎉  **All checks pass.** No action needed.
+If all checks pass: > 🎉 **All checks pass.** No action needed.

@@ -89,80 +89,77 @@ Pass `--json` for raw JSON (useful for piping to other scripts).
 
 ## Output Format
 
-> ⚠️ **CRITICAL — Telegram rendering rules:**
-> - **Do NOT use Markdown pipe tables** — Telegram strips them.
-> - Render tables as **fenced code blocks** with **box-drawing characters**.
-> - Use `[label](url)` for clickable URLs.
+> ⚠️ **CRITICAL — Table cell content rule (must follow exactly):**
+> Tables use fenced code blocks with box-drawing borders. They only align correctly when **every cell contains ASCII characters exclusively**.
+> - **NEVER** put emoji inside table cells. They are 2 display units wide but count as 1 character, permanently misaligning all following columns.
+> - Emoji go ONLY on the label line **above** the ` ``` ` fence.
+> - Integration status in cells: `Connected` / `---` (NOT ✅/❌)
 
 ---
 
 ### When listing projects (`list_projects.py`)
 
-> 📁  **Your GEO Projects** (N total)
+> 📁 **Your GEO Projects** — **N** total
 
+📋 Projects
 ```
 ┌────┬──────────────────┬─────────────┬─────┬─────┬─────┬────────────┐
 │  # │ Name             │ Project ID  │ GSC │ GA4 │ CF  │ Created    │
 ├────┼──────────────────┼─────────────┼─────┼─────┼─────┼────────────┤
-│  1 │ Example Site     │ abc-123-def │ ✅  │ ✅  │ ❌  │ 2025-01-15 │
-│  2 │ My Blog          │ xyz-456-ghi │ ❌  │ ❌  │ ❌  │ 2025-03-22 │
+│  1 │ Example Site     │ abc-123-def │ OK  │ OK  │ --- │ 2025-01-15 │
+│  2 │ My Blog          │ xyz-456-ghi │ --- │ --- │ --- │ 2025-03-22 │
 └────┴──────────────────┴─────────────┴─────┴─────┴─────┴────────────┘
 ```
-
-Below the block, list URLs as clickable Markdown links (Telegram makes them tappable):
+List project URLs below as clickable links:
 - `abc-123-def` → [example.com](https://example.com)
 - `xyz-456-ghi` → [myblog.io](https://myblog.io)
 
-After listing, if a selection is needed ask: *"Which project would you like to work with?"*
+If a selection is needed ask: *"Which project would you like to work with?"*
 
 ---
 
 ### When showing project details (`manage_project.py get`)
 
+📁 Project Details
 ```
-📁  Project Details
-┌────────────┬──────────────────────────────────┐
-│ Name       │ Example Site                     │
-│ Project ID │ abc-123-def                      │
-│ URL        │ https://example.com              │
-│ Created    │ 2025-01-15                       │
-│ GSC        │ ✅ Connected                     │
-│ GA4        │ ✅ Connected                     │
-│ Cloudflare │ ❌ Not connected                 │
-└────────────┴──────────────────────────────────┘
+┌────────────┬──────────────────────────────────────┐
+│ Name       │ Example Site                         │
+│ Project ID │ abc-123-def                          │
+│ URL        │ https://example.com                  │
+│ Created    │ 2025-01-15                           │
+│ GSC        │ Connected                            │
+│ GA4        │ Connected                            │
+│ Cloudflare │ ---                                  │
+└────────────┴──────────────────────────────────────┘
 ```
-
-If any integration is `❌`, append: > 🔌  Connect missing integrations at [platform.adgine.ai](https://platform.adgine.ai).
+If any integration is `---`: > 🔌 Connect integrations at [platform.adgine.ai](https://platform.adgine.ai)
 
 ---
 
 ### When creating a project
 
-> ✅  **Project created!**
-
+✅ Project Created
 ```
-┌────────────┬──────────────────────────────────┐
-│ Name       │ Example Site                     │
-│ Project ID │ abc-123-def                      │
-│ URL        │ https://example.com              │
-└────────────┴──────────────────────────────────┘
+┌────────────┬──────────────────────────────────────┐
+│ Name       │ Example Site                         │
+│ Project ID │ abc-123-def                          │
+│ URL        │ https://example.com                  │
+└────────────┴──────────────────────────────────────┘
 ```
-
-> **Next:** connect integrations at [platform.adgine.ai](https://platform.adgine.ai).
+> **Next:** connect integrations at [platform.adgine.ai](https://platform.adgine.ai)
 
 ### When updating
 
-> ✅  Project `abc-123-def` updated.  
-> Changed: **<field>** → `<new value>`
+> ✅ Project `abc-123-def` updated — **<field>** → `<new value>`
 
 ### When deleting
 
-> 🗑️  Project `abc-123-def` deleted.
+> 🗑️ Project `abc-123-def` deleted.
 
 ### After auth check (`check_auth.py`)
 
-> ✅  **Authenticated** — key is valid for user `<email or user-id>`
+> ✅ **Authenticated** — key valid for `<email or user-id>`
 
-Or on failure:
+On failure:
 
-> ❌  **Authentication failed.** Check your `GEO_API_KEY` — get a new key at [platform.adgine.ai](https://platform.adgine.ai).
+> ❌ **Authentication failed.** Check `GEO_API_KEY` — get a key at [platform.adgine.ai](https://platform.adgine.ai)

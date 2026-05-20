@@ -111,17 +111,19 @@ Generates AI search prompts relevant to the topic automatically. Polls until don
 
 ## Output Format
 
-> ⚠️ **CRITICAL — Telegram rendering rules:**
-> - **Do NOT use Markdown pipe tables** — Telegram strips them.
-> - Render tables as **fenced code blocks** with **box-drawing characters**.
-> - Use **bold**, *italic*, `code`, and emoji freely.
+> ⚠️ **CRITICAL — Table cell content rule (must follow exactly):**
+> Tables use fenced code blocks with box-drawing borders. They only align correctly when **every cell contains ASCII characters exclusively**.
+> - **NEVER** put emoji inside table cells. They are 2 display units wide but count as 1 character, permanently misaligning all following columns.
+> - Emoji go ONLY on the label line **above** the ` ``` ` fence.
+> - All cell content must be ASCII: letters, digits, spaces, `+/-/%` only.
 
 ---
 
 ### When listing topics (`manage_topics.py list`)
 
-> 🗂️  **Topics** — Project `<project-id>` (N total)
+> 🗂️ **Topics** — Project `<project-id>` (**N** total)
 
+🗂️ Topics
 ```
 ┌────┬────────────────────────┬───────────┬─────────┐
 │  # │ Topic Name             │ Topic ID  │ Prompts │
@@ -131,59 +133,59 @@ Generates AI search prompts relevant to the topic automatically. Polls until don
 │  3 │ Case Studies           │ t-ghi     │       0 │
 └────┴────────────────────────┴───────────┴─────────┘
 ```
-
-Truncate long topic names to ~22 chars with `…`.
+Truncate long names to ~22 chars with `...`.
 
 ---
 
 ### When creating / updating / deleting a topic
 
-> ✅  Topic **"Product Reviews"** created — ID: `t-abc`  
-> ✅  Topic `t-abc` updated — *<changed fields>*  
-> 🗑️  Topic `t-abc` deleted.
+> ✅ Topic **"Product Reviews"** created — ID: `t-abc`
+> ✅ Topic `t-abc` updated — *<changed fields>*
+> 🗑️ Topic `t-abc` deleted.
 
 ---
 
 ### When listing prompts (`manage_prompts.py list`)
 
-> 💬  **Prompts** — Topic: *"Product Reviews"* (N total)
+> 💬 **Prompts** — Topic: *"Product Reviews"* (**N** total)
 
+💬 Prompts
 ```
-┌────┬──────────────────────────────────────┬──────────┬──────────────────────┬────────┐
-│  # │ Prompt                               │ ID       │ Platforms            │ Region │
-├────┼──────────────────────────────────────┼──────────┼──────────────────────┼────────┤
-│  1 │ What is the best GEO tool for sma…   │ p-123    │ ChatGPT, Perp, AIO   │ US     │
-│  2 │ How do I improve my AI search vis…   │ p-456    │ ChatGPT              │ US     │
-└────┴──────────────────────────────────────┴──────────┴──────────────────────┴────────┘
+┌────┬──────────────────────────────────────┬──────────┬───────────────────┬────────┐
+│  # │ Prompt                               │ ID       │ Platforms         │ Region │
+├────┼──────────────────────────────────────┼──────────┼───────────────────┼────────┤
+│  1 │ What is the best GEO tool for sma... │ p-123    │ ChatGPT,Perp,AIO  │ US     │
+│  2 │ How do I improve my AI search vis... │ p-456    │ ChatGPT           │ US     │
+└────┴──────────────────────────────────────┴──────────┴───────────────────┴────────┘
 ```
-
-Truncate prompts to ~36 chars with `…`. Use platform shortcodes: ChatGPT, Perp, AIO.
+Truncate prompts to ~36 chars with `...`.
 
 ---
 
 ### When creating / updating / deleting a prompt
 
-> ✅  Prompt created — ID: `p-123`  
-> ✅  Prompt `p-123` updated.  
-> 🗑️  Prompt `p-123` deleted.
+> ✅ Prompt created — ID: `p-123`
+> ✅ Prompt `p-123` updated.
+> 🗑️ Prompt `p-123` deleted.
 
 ---
 
 ### When generating prompts (`generate_prompts.py`)
 
-- Progress: `⏳  **Generating prompts** for topic *"<name>"*… (~10–60 s, polling)`
-- On completion, show a count block then the list:
+- Progress: `⏳ **Generating prompts** for topic *"<name>"*… (~10–60 s)`
+- On completion:
 
+> ✅ **Generated N prompts** for topic *"<name>"*
+
+✨ Generated Prompts
 ```
-✅  Generated N Prompts   ·   Topic: "<name>"
 ┌────┬──────────────────────────────────────────────────────┐
 │  # │ Prompt                                               │
 ├────┼──────────────────────────────────────────────────────┤
 │  1 │ What tools help with generative engine optimization? │
 │  2 │ How do AI search engines rank websites differently?  │
-│  … │ …                                                    │
 └────┴──────────────────────────────────────────────────────┘
 ```
 
-> **Next:** run citation tests →  
+> **Next:** run citation tests:
 > `python3 geo-citation/scripts/create_tests.py --prompt-ids <id1,id2,...>`

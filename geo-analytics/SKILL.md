@@ -55,110 +55,112 @@ Sections return `null` if the integration is not connected for that project.
 
 ## Output Format
 
-> ⚠️ **CRITICAL — Telegram / Discord / Feishu rendering rules:**
-> - **Do NOT use Markdown pipe tables** (`| col | col |` with `|---|`). Telegram strips them and shows ugly raw pipes.
-> - Render every "table" as a **fenced code block** (triple backticks ` ``` `) using **monospace ASCII alignment with box-drawing characters** (`─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`). These render perfectly as `<pre>` blocks in Telegram and look great in Discord/Feishu too.
-> - Use **bold** (`**text**`), *italic* (`*text*`), `inline code`, and emoji generously.
-> - Wrap URLs as `[label](url)` so Telegram makes them clickable.
+> ⚠️ **CRITICAL — Table cell content rule (must follow exactly):**
+> Use fenced code blocks with box-drawing border tables. They align perfectly — **only if every cell contains ASCII characters exclusively**.
+> - **NEVER** put emoji (`✅` `❌` `📈` etc.) or non-ASCII text inside table cells. Emoji render as 2 display units but count as 1 character → all columns after them shift right permanently.
+> - Emoji are allowed ONLY on the label line **immediately above** the opening ` ``` ` fence.
+> - Status values in cells: `Connected` / `---` / `Pending` (NOT ✅/❌)
+> - Change values in cells: `+1,200` / `-3,400` / `--` (NOT 📈/📉)
+> - Box-drawing border chars (`┌─┬─┐ │ ├─┼─┤ └─┴─┘`) are fine — they are narrow 1-unit chars.
 
 When presenting analytics results, follow this structure exactly.
 
-### 1. Header (blockquote)
+### 1. Header
 
-```
-> 📊 **Analytics Overview** — `<start>` → `<end>`  (`<period>`)
+> 📊 **Analytics Overview** — `<start>` → `<end>` (`<period>`)
 > Project: `<project-id>`
-```
 
-### 2. Integration status (monospace block)
+### 2. Integration status
 
+📡 Integrations
 ```
-┌──────────────────────┬──────────────────┐
-│ Service              │ Status           │
-├──────────────────────┼──────────────────┤
-│ Google Search Console│ ✅ Connected     │
-│ Google Analytics 4   │ ✅ Connected     │
-│ Cloudflare           │ ❌ Not connected │
-└──────────────────────┴──────────────────┘
+┌────────────────────────┬─────────────┐
+│ Service                │ Status      │
+├────────────────────────┼─────────────┤
+│ Google Search Console  │ Connected   │
+│ Google Analytics 4     │ Connected   │
+│ Cloudflare             │ ---         │
+└────────────────────────┴─────────────┘
 ```
 
 ### 3. Search Performance (GSC) — if available
 
+🔍 Search Performance (GSC)
 ```
-🔍  Search Performance (GSC)
-┌──────────────┬─────────┬──────────────────┐
-│ Metric       │ Value   │ vs Prev Period   │
-├──────────────┼─────────┼──────────────────┤
-│ Clicks       │  12,345 │ 📈 +1,200        │
-│ Impressions  │  98,765 │ 📉 −3,400        │
-│ Avg CTR      │   12.5% │ —                │
-│ Avg Position │     8.2 │ 📈 +0.5          │
-└──────────────┴─────────┴──────────────────┘
+┌──────────────────┬──────────┬──────────┐
+│ Metric           │    Value │ vs Prev  │
+├──────────────────┼──────────┼──────────┤
+│ Clicks           │   12,345 │ +1,200   │
+│ Impressions      │   98,765 │ -3,400   │
+│ Avg CTR          │    12.5% │ --       │
+│ Avg Position     │      8.2 │ +0.5     │
+└──────────────────┴──────────┴──────────┘
 ```
 
-Then **Top Queries** — same monospace style, max 5 rows, truncate long queries to ~30 chars:
-
+🔝 Top Queries (max 5 rows, truncate query to ~30 chars with `…`)
 ```
-🔝  Top Queries
 ┌────┬────────────────────────────────┬────────┬──────────┐
-│ #  │ Query                          │ Clicks │ Position │
+│  # │ Query                          │ Clicks │ Position │
 ├────┼────────────────────────────────┼────────┼──────────┤
-│ 1  │ best seo tool                  │  1,234 │      3.2 │
-│ 2  │ geo optimization               │    876 │      5.1 │
+│  1 │ best seo tool                  │  1,234 │      3.2 │
+│  2 │ geo optimization               │    876 │      5.1 │
 └────┴────────────────────────────────┴────────┴──────────┘
 ```
 
 ### 4. Traffic (GA4) — if available
 
+📈 Traffic (GA4)
 ```
-📈  Traffic (GA4)
-┌───────────────┬─────────┬──────────────┐
-│ Metric        │ Value   │ vs Prev      │
-├───────────────┼─────────┼──────────────┤
-│ Sessions      │   5,432 │ 📈 +320      │
-│ Active Users  │   3,210 │ —            │
-└───────────────┴─────────┴──────────────┘
+┌────────────────────────┬──────────┬─────────┐
+│ Metric                 │    Value │ vs Prev │
+├────────────────────────┼──────────┼─────────┤
+│ Sessions               │    5,432 │ +320    │
+│ Active Users           │    3,210 │ --      │
+│ Pageviews              │    8,100 │ --      │
+│ Bounce Rate            │    42.1% │ --      │
+│ Avg Session Duration   │   2m 34s │ --      │
+└────────────────────────┴──────────┴─────────┘
 ```
 
+🌐 Top Sources (max 3 rows)
 ```
-🌐  Top Sources
-┌──────────────────┬──────────┬───────┐
-│ Source / Medium  │ Sessions │ Share │
-├──────────────────┼──────────┼───────┤
-│ organic / google │    2,100 │ 38.7% │
-│ direct / none    │    1,200 │ 22.1% │
-└──────────────────┴──────────┴───────┘
+┌────────────────────┬──────────┬───────┐
+│ Source / Medium    │ Sessions │ Share │
+├────────────────────┼──────────┼───────┤
+│ organic / google   │    2,100 │ 38.7% │
+│ direct / none      │    1,200 │ 22.1% │
+└────────────────────┴──────────┴───────┘
 ```
 
 ### 5. AI Impact — if available
 
+🤖 AI Impact
 ```
-🤖  AI Impact
-┌────────────────────────┬───────┬──────────┐
-│ Metric                 │ Value │ vs Prev  │
-├────────────────────────┼───────┼──────────┤
-│ AI Referral Sessions   │    87 │ 📈 +12   │
-│ AI Crawler Requests    │ 4,320 │ —        │
-└────────────────────────┴───────┴──────────┘
+┌────────────────────────┬────────┬─────────┐
+│ Metric                 │  Value │ vs Prev │
+├────────────────────────┼────────┼─────────┤
+│ AI Referral Sessions   │     87 │ +12     │
+│ AI Crawler Requests    │  4,320 │ --      │
+└────────────────────────┴────────┴─────────┘
 ```
 
 ### 6. Infrastructure (Cloudflare) — if available
 
+☁️ Infrastructure (Cloudflare)
 ```
-☁️  Infrastructure (Cloudflare)
-┌─────────────────┬─────────┐
-│ Metric          │ Value   │
-├─────────────────┼─────────┤
-│ Total Requests  │ 120,000 │
-│ Bandwidth       │  4.5 GB │
-│ Threats Blocked │      23 │
-└─────────────────┴─────────┘
+┌──────────────────┬─────────┐
+│ Metric           │   Value │
+├──────────────────┼─────────┤
+│ Total Requests   │ 120,000 │
+│ Bandwidth        │  4.5 GB │
+│ Threats Blocked  │      23 │
+└──────────────────┴─────────┘
 ```
 
 ### Rules
 
-- **Numbers:** right-align inside cells, use thousands separators (`12,345`)
-- **Change indicators:** 📈 positive · 📉 negative · — no data
-- **If a section is null:** render one line `🔌 <Section> — not connected. [Connect](https://platform.adgine.ai)`
-- **Column widths:** keep each block under ~60 chars wide so it fits Telegram mobile without horizontal scroll
-- **Always wrap each visual block in its own ``` fence** — Telegram renders each fence as one cohesive monospace pane
+- Status cells: `Connected` or `---` — **never** ✅/❌ inside cells
+- Change cells: `+N` / `-N` / `--` — **never** 📈/📉 inside cells
+- If a section is null/not connected: skip its table, show one line `🔌 **<Service>** — not connected. [Connect](https://platform.adgine.ai)`
+- Keep total table width under ~60 chars (fits Telegram mobile without scroll)
+- Each table in its own separate ` ``` ` fence

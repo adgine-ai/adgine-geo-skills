@@ -72,37 +72,37 @@ See `WORKFLOW.md` for the detailed step-by-step content creation flow.
 
 ## Output Format
 
-> ⚠️ **CRITICAL — Telegram rendering rules:**
-> - **Do NOT use Markdown pipe tables** — Telegram strips them.
-> - Render tables as **fenced code blocks** with **box-drawing characters**.
-> - Use **bold**, *italic*, `code`, emoji, and `[label](url)` links freely.
+> ⚠️ **CRITICAL — Table cell content rule (must follow exactly):**
+> Tables use fenced code blocks with box-drawing borders. They only align correctly when **every cell contains ASCII characters exclusively**.
+> - **NEVER** put emoji inside table cells. They are 2 display units wide but count as 1 character, permanently misaligning all following columns.
+> - Emoji go ONLY on the label line **above** the ` ``` ` fence.
+> - Status in cells: `Draft` / `Outline` / `Article` (NOT 📝/📋/✅)
 
 ---
 
 ### When listing content (`list_content.py`)
 
-> 📄  **Content Library** — Project `<project-id>` (Page 1 / N)
+> 📄 **Content Library** — Project `<project-id>` (Page 1 / N)
 
+📚 Items
 ```
-📚  Items
-┌────┬───────────┬──────────────────────────────────────┬──────────┐
-│  # │ Status    │ Title                                │ ID       │
-├────┼───────────┼──────────────────────────────────────┼──────────┤
-│  1 │ 📝 Draft  │ How to Improve Your SEO in 2025      │ abc123   │
-│  2 │ 📋 Outline│ Top 10 GEO Strategies for SaaS       │ def456   │
-│  3 │ ✅ Article│ What is Generative Engine Optimi…    │ ghi789   │
-└────┴───────────┴──────────────────────────────────────┴──────────┘
+┌────┬─────────┬──────────────────────────────────────┬──────────┐
+│  # │ Status  │ Title                                │ ID       │
+├────┼─────────┼──────────────────────────────────────┼──────────┤
+│  1 │ Draft   │ How to Improve Your SEO in 2025      │ abc123   │
+│  2 │ Outline │ Top 10 GEO Strategies for SaaS       │ def456   │
+│  3 │ Article │ What is Generative Engine Optimi...  │ ghi789   │
+└────┴─────────┴──────────────────────────────────────┴──────────┘
 ```
-
-Status icons: 📝 Draft · 📋 Outline · ✅ Article  
-Truncate long titles to ~36 chars with `…`.
+Truncate long titles to ~36 chars with `...`.
 
 ---
 
 ### When suggesting titles (`generate_titles.py`)
 
-> 💡  **Suggested Titles** — pick one to generate an outline
+> 💡 **Suggested Titles** — pick one to generate an outline:
 
+💡 Title Options
 ```
 ┌────┬──────────────────────────────────────────────────────┐
 │  # │ Title                                                │
@@ -110,55 +110,41 @@ Truncate long titles to ~36 chars with `…`.
 │  1 │ How to Dominate AI Search in 2025                    │
 │  2 │ The Complete Guide to GEO for SaaS Companies         │
 │  3 │ Why Traditional SEO Is Not Enough Anymore            │
-│  … │ …                                                    │
 └────┴──────────────────────────────────────────────────────┘
 ```
-
-Ask: *"Which title would you like to use for the outline?"*
+*Which title would you like to use for the outline?*
 
 ---
 
 ### When generating an outline (`generate_outline.py`)
 
-- Progress: `⏳  **Generating outline…** (~30–90 s, polling)`
-- On completion, show the outline as a **nested numbered list**:
+- Progress: `⏳ **Generating outline…** (~30–90 s)`
+- On completion, show the outline as a nested numbered list, then:
 
-```
-### 📋 Outline — "<title>"
-1. Section heading one
-   - Sub-bullet
-   - Sub-bullet
-2. Section heading two
-   - Sub-bullet
-3. Section heading three
-```
-
-Then a confirmation block:
-
-```
 ✅ Outline Ready
-┌────────────┬──────────────────────────────┐
-│ Content ID │ <id>                         │
-│ Sections   │ 6                            │
-│ Next       │ generate_article.py -c <id>  │
-└────────────┴──────────────────────────────┘
+```
+┌────────────┬────────────────────────────────────┐
+│ Content ID │ <id>                               │
+│ Sections   │ 6                                  │
+│ Next step  │ generate_article.py -c <id>        │
+└────────────┴────────────────────────────────────┘
 ```
 
 ---
 
 ### When generating an article (`generate_article.py`)
 
-- Progress: `⏳  **Writing article…** (~60–180 s, polling)`
-- On completion, show a summary block, then the full article body using `##` and `###` headings:
+- Progress: `⏳ **Writing article…** (~60–180 s)`
+- On completion:
 
-```
 ✅ Article Complete
-┌────────────┬──────────────────────────────┐
-│ Title      │ <title>                      │
-│ Content ID │ <id>                         │
-│ Word Count │ ~1,200                       │
-│ Status     │ ✅ Article                   │
-└────────────┴──────────────────────────────┘
+```
+┌────────────┬────────────────────────────────────┐
+│ Title      │ <title>                            │
+│ Content ID │ <id>                               │
+│ Word Count │ ~1,200                             │
+│ Status     │ Article                            │
+└────────────┴────────────────────────────────────┘
 ```
 
-Then the **full article text** rendered with proper Markdown headings (`##`, `###`), paragraphs, and bullet lists — never wrap the article body in a code fence.
+Then the **full article text** with `##`/`###` headings and bullet lists — never wrap article body in a code fence.

@@ -71,79 +71,72 @@ See `WORKFLOW.md` for the recommended first-time setup sequence.
 
 ## Output Format
 
-> ⚠️ **CRITICAL — Telegram rendering rules:**
-> - **Do NOT use Markdown pipe tables** (`| col |…|---|`). Telegram strips them.
-> - Render tables as **fenced code blocks** with **box-drawing characters** (`─ │ ┌ ┐ └ ┘ ├ ┤`).
-> - Use **bold**, *italic*, `inline code`, emoji, and `[label](url)` links freely.
+> ⚠️ **CRITICAL — Table cell content rule (must follow exactly):**
+> Tables use fenced code blocks with box-drawing borders. They only align correctly when **every cell contains ASCII characters exclusively**.
+> - **NEVER** put emoji inside table cells — they are 2 display units wide but count as 1 character, permanently misaligning all following columns.
+> - Emoji go ONLY on the label line **above** the ` ``` ` fence.
+> - Status values in cells: `Completed` / `Generating` / `Not set` / `Failed` (NOT ✅/⏳/❌)
 
 ---
 
 ### When showing an existing brand profile (`get_brand.py`)
 
-Open with the status block, then each content field as its own labeled section.
+**1. Status table:**
 
-**1. Status block (fenced code, monospace):**
-
+🏷️ Brand Profile
 ```
-🏷️  Brand Profile
-┌────────────┬──────────────────────────────────┐
-│ Project    │ <project-id>                     │
-│ Status     │ ✅ Completed                     │
-│ Language   │ English                          │
-│ Region     │ US                               │
-│ CTA Text   │ <cta_text>                       │
-│ CTA URL    │ <cta_landing_page>               │
-└────────────┴──────────────────────────────────┘
+┌────────────┬──────────────────────────────────────┐
+│ Field      │ Value                                │
+├────────────┼──────────────────────────────────────┤
+│ Project    │ <project-id>                         │
+│ Status     │ Completed                            │
+│ Language   │ English                              │
+│ Region     │ US                                   │
+│ CTA Text   │ <cta_text>                           │
+│ CTA URL    │ <cta_landing_page>                   │
+└────────────┴──────────────────────────────────────┘
 ```
+Status values in cell: `Completed` / `Generating` / `Not set` / `Failed`
 
-Status icons: ✅ Completed · ⏳ Generating… · ➕ Not set up · ❌ Failed
+**2. Content fields** — use `###` headings + full text (never truncate). Skip empty with *"not set yet"*:
 
-**2. Content sections** — use Markdown `###` headings, show full text (never truncate):
-
-```
-### 📌 Brand Introduction
+### Brand Introduction
 <brand_introduction text>
 
-### 👥 Ideal Customer
+### Ideal Customer
 <ideal_customer text>
 
-### ⚔️ Competitors
+### Competitors
 <competitors text>
 
-### 💡 Brand Perspective
+### Brand Perspective
 <brand_perspective text>
 
-### ✍️ Author Persona
+### Author Persona
 <author_persona text>
 
-### 🎙️ Voice & Tone
+### Voice & Tone
 <voice_and_tone text>
 
-### 📋 Writing Rules
+### Writing Rules
 <writing_rules text>
-```
-
-Skip any section whose value is empty; replace it with: `_<field> not set yet._`
 
 ---
 
 ### When generating a brand profile (`generate_brand.py`)
 
-- Initial line: `⏳  **Generating brand profile…** (~30–90 s, polling)`
-- On completion, render the status block + all content sections as above.
+- Initial line: `⏳ **Generating brand profile…** (~30–90 s)`
+- On completion, show the status table + all content sections above.
 
 ---
 
 ### When updating a field (`update_brand.py`)
 
-Confirm with a fenced code block:
-
-```
 ✅ Field Updated
-┌────────────────┬─────────────────────────────────┐
-│ Field          │ <field_name>                    │
-│ New Value      │ <truncated preview, 60 chars>   │
-└────────────────┴─────────────────────────────────┘
 ```
-
-Then show the full new value below the box if it was truncated.
+┌────────────┬──────────────────────────────────────┐
+│ Field      │ <field_name>                         │
+│ New Value  │ <preview, first 60 chars>            │
+└────────────┴──────────────────────────────────────┘
+```
+Then show the full new value below the table if it was truncated.
