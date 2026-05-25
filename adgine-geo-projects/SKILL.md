@@ -117,16 +117,16 @@ Pass `--json` for raw JSON (useful for piping to other scripts).
 
 📋 Projects
 ```
-┌────┬──────────────────┬─────────────┬─────┬─────┬─────┬────────────┐
-│  # │ Name             │ Project ID  │ GSC │ GA4 │ CF  │ Created    │
-├────┼──────────────────┼─────────────┼─────┼─────┼─────┼────────────┤
-│  1 │ Example Site     │ abc-123-def │ OK  │ OK  │ --- │ 2025-01-15 │
-│  2 │ My Blog          │ xyz-456-ghi │ --- │ --- │ --- │ 2025-03-22 │
-└────┴──────────────────┴─────────────┴─────┴─────┴─────┴────────────┘
+┌────┬──────────────────┬─────┬─────┬────────────┐
+│  # │ Name             │ GA4 │ CF  │ Created    │
+├────┼──────────────────┼─────┼─────┼────────────┤
+│  1 │ Example Site     │ OK  │ --- │ 2025-01-15 │
+│  2 │ My Blog          │ --- │ --- │ 2025-03-22 │
+└────┴──────────────────┴─────┴─────┴────────────┘
 ```
 List project URLs below as clickable links:
-- `abc-123-def` → [example.com](https://example.com)
-- `xyz-456-ghi` → [myblog.io](https://myblog.io)
+- Example Site → [example.com](https://example.com)
+- My Blog → [myblog.io](https://myblog.io)
 
 If a selection is needed ask: *"Which project would you like to work with?"*
 
@@ -138,10 +138,8 @@ If a selection is needed ask: *"Which project would you like to work with?"*
 ```
 ┌────────────┬──────────────────────────────────────┐
 │ Name       │ Example Site                         │
-│ Project ID │ abc-123-def                          │
 │ URL        │ https://example.com                  │
 │ Created    │ 2025-01-15                           │
-│ GSC        │ Connected                            │
 │ GA4        │ Connected                            │
 │ Cloudflare │ ---                                  │
 └────────────┴──────────────────────────────────────┘
@@ -156,7 +154,7 @@ If any integration is `---`: > 🔌 Connect integrations at [platform.adgine.ai]
 ```
 ┌────────────┬──────────────────────────────────────┐
 │ Name       │ Example Site                         │
-│ Project ID │ abc-123-def                          │
+
 │ URL        │ https://example.com                  │
 └────────────┴──────────────────────────────────────┘
 ```

@@ -75,7 +75,6 @@ python3 scripts/check_integrations.py disconnect --service ga4 --yes    # DESTRU
 ### Recommended layout
 
 > 📊 **Dashboard Overview** — `<start>` → `<end>` (`<period>`)
-> Project: `<project-id>`
 
 📈 Snapshot
 ```

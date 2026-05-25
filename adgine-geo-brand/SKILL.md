@@ -98,9 +98,6 @@ See `WORKFLOW.md` for the recommended first-time setup sequence.
 🏷️ Brand Profile
 ```
 ┌────────────┬──────────────────────────────────────┐
-│ Field      │ Value                                │
-├────────────┼──────────────────────────────────────┤
-│ Project    │ <project-id>                         │
 │ Status     │ Completed                            │
 │ Language   │ English                              │
 │ Region     │ US                                   │

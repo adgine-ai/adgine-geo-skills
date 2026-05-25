@@ -102,17 +102,17 @@ See `WORKFLOW.md` for the detailed step-by-step content creation flow.
 
 ### When listing content (`list_content.py`)
 
-> 📄 **Content Library** — Project `<project-id>` (Page 1 / N)
+> 📄 **Content Library** — (Page 1 / N)
 
 📚 Items
 ```
-┌────┬─────────┬──────────────────────────────────────┬──────────┐
-│  # │ Status  │ Title                                │ ID       │
-├────┼─────────┼──────────────────────────────────────┼──────────┤
-│  1 │ Draft   │ How to Improve Your SEO in 2025      │ abc123   │
-│  2 │ Outline │ Top 10 GEO Strategies for SaaS       │ def456   │
-│  3 │ Article │ What is Generative Engine Optimi...  │ ghi789   │
-└────┴─────────┴──────────────────────────────────────┴──────────┘
+┌────┬─────────┬───────────────────────────────┐
+│  # │ Status  │ Title                                │
+├────┼─────────┼───────────────────────────────┤
+│  1 │ Draft   │ How to Improve Your SEO in 2025      │
+│  2 │ Outline │ Top 10 GEO Strategies for SaaS       │
+│  3 │ Article │ What is Generative Engine Optimi...  │
+└────┴─────────┴───────────────────────────────┘
 ```
 Truncate long titles to ~36 chars with `...`.
 

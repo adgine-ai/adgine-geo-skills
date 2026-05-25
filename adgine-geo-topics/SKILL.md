@@ -116,17 +116,17 @@ Generates AI search prompts relevant to the topic automatically. Polls until don
 
 ### When listing topics (`manage_topics.py list`)
 
-> 🗂️ **Topics** — Project `<project-id>` (**N** total)
+> 🗂️ **Topics** — **N** total
 
 🗂️ Topics
 ```
-┌────┬────────────────────────┬───────────┬─────────┐
-│  # │ Topic Name             │ Topic ID  │ Prompts │
-├────┼────────────────────────┼───────────┼─────────┤
-│  1 │ Product Reviews        │ t-abc     │      12 │
-│  2 │ SEO Guides             │ t-def     │       8 │
-│  3 │ Case Studies           │ t-ghi     │       0 │
-└────┴────────────────────────┴───────────┴─────────┘
+┌────┬────────────────────────┬─────────┐
+│  # │ Topic Name             │ Prompts │
+├────┼────────────────────────┼─────────┤
+│  1 │ Product Reviews        │      12 │
+│  2 │ SEO Guides             │       8 │
+│  3 │ Case Studies           │       0 │
+└────┴────────────────────────┴─────────┘
 ```
 Truncate long names to ~22 chars with `...`.
 
@@ -146,12 +146,12 @@ Truncate long names to ~22 chars with `...`.
 
 💬 Prompts
 ```
-┌────┬──────────────────────────────────────┬──────────┬───────────────────┬────────┐
-│  # │ Prompt                               │ ID       │ Platforms         │ Region │
-├────┼──────────────────────────────────────┼──────────┼───────────────────┼────────┤
-│  1 │ What is the best GEO tool for sma... │ p-123    │ ChatGPT,Perp,AIO  │ US     │
-│  2 │ How do I improve my AI search vis... │ p-456    │ ChatGPT           │ US     │
-└────┴──────────────────────────────────────┴──────────┴───────────────────┴────────┘
+┌────┬──────────────────────────────────────┬───────────────────┬────────┐
+│  # │ Prompt                               │ Platforms         │ Region │
+├────┼──────────────────────────────────────┼───────────────────┼────────┤
+│  1 │ What is the best GEO tool for sma... │ ChatGPT,Perp,AIO  │ US     │
+│  2 │ How do I improve my AI search vis... │ ChatGPT           │ US     │
+└────┴──────────────────────────────────────┴───────────────────┴────────┘
 ```
 Truncate prompts to ~36 chars with `...`.
 

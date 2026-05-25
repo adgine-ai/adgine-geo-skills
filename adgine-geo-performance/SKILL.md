@@ -68,7 +68,7 @@ Without `--refresh`, returns the cached report. With `--refresh`, triggers a new
 ### 1. Header
 
 > 🔬 **Page Health** — `<path>` *(<strategy>)*
-> Project: `<project-id>` · Analyzed: `<timestamp>`
+> Analyzed: `<timestamp>`
 
 ### 2. Score card
 

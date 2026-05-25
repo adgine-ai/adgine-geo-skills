@@ -1,13 +1,10 @@
 ---
 name: adgine/geo-analytics
-description: Queries SEO and traffic analytics for GEO projects, including Google
-  Search Console search performance (clicks, impressions, CTR, keyword positions,
-  top queries), Google Analytics 4 traffic data (sessions, active users, source
-  breakdown), AI crawler and bot traffic, and site-wide dashboard overviews with
-  comparison periods. Use when the user asks about website traffic, search rankings,
-  organic clicks, impressions, click-through rate, keyword positions, AI-generated
-  referral traffic, Cloudflare bot data, SEO performance, or any analytics and
-  reporting metrics.
+description: Queries traffic analytics for GEO projects, including Google Analytics
+  4 traffic data (sessions, active users, source breakdown), AI crawler and bot
+  traffic, and site-wide dashboard overviews with comparison periods. Use when the
+  user asks about website traffic, AI-generated referral traffic, Cloudflare bot
+  data, or any analytics and reporting metrics.
 ---
 
 # GEO Analytics
@@ -40,7 +37,6 @@ python3 scripts/get_overview.py --project-id <id> [--period 30d] [--json]
 
 | Section | Source | Key metrics |
 |---|---|---|
-| `search` | Google Search Console | clicks, impressions, CTR, position, top queries |
 | `traffic` | Google Analytics 4 | sessions, active users, top sources |
 | `ai_impact` | GA4 + Cloudflare | AI referral sessions, AI crawler requests |
 | `infrastructure` | Cloudflare | total requests, bandwidth, threat data |
@@ -68,7 +64,6 @@ When presenting analytics results, follow this structure exactly.
 ### 1. Header
 
 > 📊 **Analytics Overview** — `<start>` → `<end>` (`<period>`)
-> Project: `<project-id>`
 
 ### 2. Integration status
 
@@ -77,37 +72,12 @@ When presenting analytics results, follow this structure exactly.
 ┌────────────────────────┬─────────────┐
 │ Service                │ Status      │
 ├────────────────────────┼─────────────┤
-│ Google Search Console  │ Connected   │
 │ Google Analytics 4     │ Connected   │
 │ Cloudflare             │ ---         │
 └────────────────────────┴─────────────┘
 ```
 
-### 3. Search Performance (GSC) — if available
-
-🔍 Search Performance (GSC)
-```
-┌──────────────────┬──────────┬──────────┐
-│ Metric           │    Value │ vs Prev  │
-├──────────────────┼──────────┼──────────┤
-│ Clicks           │   12,345 │ +1,200   │
-│ Impressions      │   98,765 │ -3,400   │
-│ Avg CTR          │    12.5% │ --       │
-│ Avg Position     │      8.2 │ +0.5     │
-└──────────────────┴──────────┴──────────┘
-```
-
-🔝 Top Queries (max 5 rows, truncate query to ~30 chars with `…`)
-```
-┌────┬────────────────────────────────┬────────┬──────────┐
-│  # │ Query                          │ Clicks │ Position │
-├────┼────────────────────────────────┼────────┼──────────┤
-│  1 │ best seo tool                  │  1,234 │      3.2 │
-│  2 │ geo optimization               │    876 │      5.1 │
-└────┴────────────────────────────────┴────────┴──────────┘
-```
-
-### 4. Traffic (GA4) — if available
+### 3. Traffic (GA4) — if available
 
 📈 Traffic (GA4)
 ```
@@ -132,7 +102,7 @@ When presenting analytics results, follow this structure exactly.
 └────────────────────┴──────────┴───────┘
 ```
 
-### 5. AI Impact — if available
+### 4. AI Impact — if available
 
 🤖 AI Impact
 ```
@@ -144,7 +114,7 @@ When presenting analytics results, follow this structure exactly.
 └────────────────────────┴────────┴─────────┘
 ```
 
-### 6. Infrastructure (Cloudflare) — if available
+### 5. Infrastructure (Cloudflare) — if available
 
 ☁️ Infrastructure (Cloudflare)
 ```

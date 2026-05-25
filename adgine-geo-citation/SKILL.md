@@ -90,7 +90,7 @@ Shows all URLs that were cited across tests for a set of prompts.
 
 > 🔍 **Citation Results**
 > Prompt: *"<prompt text>"*
-> ID: `<prompt-id>` · Project: `<project-id>`
+> ID: `<prompt-id>`
 
 🎯 Per-Platform Results
 ```
