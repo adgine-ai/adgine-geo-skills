@@ -11,6 +11,37 @@ import urllib.request as _req
 import urllib.error as _uerr
 import urllib.parse as _up
 
+def _load_dot_env():
+    """Load .env from the repo root (adgine-geo-skills/) into os.environ.
+
+    Resolved relative to this file's location, so it works regardless of the
+    agent's working directory (e.g. Hermes, OpenClaw, or any other runtime).
+    Existing environment variables are never overwritten.
+    """
+    if os.environ.get("GEO_API_KEY"):
+        return
+    # _client.py is at <repo_root>/adgine-geo-<skill>/scripts/_client.py
+    repo_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    env_path = os.path.join(repo_root, ".env")
+    if not os.path.isfile(env_path):
+        return
+    with open(env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if not _line or _line.startswith("#") or "=" not in _line:
+                continue
+            _k, _, _v = _line.partition("=")
+            _k = _k.strip()
+            _v = _v.strip()
+            if _k and _k not in os.environ:
+                os.environ[_k] = _v
+
+
+_load_dot_env()
+
+
 
 def get_api_config():
     """Read GEO_API_KEY and GEO_API_BASE_URL from environment.
