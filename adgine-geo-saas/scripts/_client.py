@@ -56,10 +56,25 @@ def get_api_config():
     key = os.environ.get("GEO_API_KEY", "")
     base = os.environ.get("GEO_API_BASE_URL", "https://platform.adgine.ai").rstrip("/")
     if not key:
+        repo_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
+        env_path = os.path.join(repo_root, ".env")
+        example_path = os.path.join(repo_root, ".env.example")
+        setup_path = os.path.join(repo_root, "setup.py")
         print("ERROR: GEO_API_KEY is not set.")
-        print("  1. Get your API key: https://platform.adgine.ai")
-        print("  2. Run: export GEO_API_KEY=geo_sk_live_xxx")
-        print("  3. To persist: add the export line to ~/.zshrc or ~/.bashrc")
+        print(f"  Expected location: {env_path}")
+        print()
+        print("  One-shot fix (recommended):")
+        print(f"    python3 {setup_path} <YOUR_KEY>")
+        print()
+        print("  Or set it manually:")
+        if not os.path.isfile(env_path):
+            print(f"    cp {example_path} {env_path}")
+        print(f"    edit {env_path} and set GEO_API_KEY=geo_sk_live_xxx")
+        print()
+        print("  Get your key at: https://platform.adgine.ai")
+        print("  The .env file is gitignored — your key stays local and private.")
         sys.exit(1)
     return key, base
 
@@ -240,10 +255,25 @@ def get_api_config():
     key = os.environ.get("GEO_API_KEY", "")
     base = os.environ.get("GEO_API_BASE_URL", "https://platform.adgine.ai").rstrip("/")
     if not key:
+        repo_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
+        env_path = os.path.join(repo_root, ".env")
+        example_path = os.path.join(repo_root, ".env.example")
+        setup_path = os.path.join(repo_root, "setup.py")
         print("ERROR: GEO_API_KEY is not set.")
-        print("  1. Get your API key: https://platform.adgine.ai")
-        print("  2. Run: export GEO_API_KEY=geo_sk_live_xxx")
-        print("  3. To persist: add the export line to ~/.zshrc or ~/.bashrc")
+        print(f"  Expected location: {env_path}")
+        print()
+        print("  One-shot fix (recommended):")
+        print(f"    python3 {setup_path} <YOUR_KEY>")
+        print()
+        print("  Or set it manually:")
+        if not os.path.isfile(env_path):
+            print(f"    cp {example_path} {env_path}")
+        print(f"    edit {env_path} and set GEO_API_KEY=geo_sk_live_xxx")
+        print()
+        print("  Get your key at: https://platform.adgine.ai")
+        print("  The .env file is gitignored — your key stays local and private.")
         sys.exit(1)
     return key, base
 

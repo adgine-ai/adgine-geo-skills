@@ -1,41 +1,71 @@
 ---
 name: adgine/geo-projects
-description: Lists, creates, retrieves, updates, and deletes GEO platform website projects, manages a project's competitor list (add / list / remove), and verifies API authentication. Use when the user needs to see their website projects, select a project to work on, create a new website project, check which project is active, manage competitors (竞争对手 / 竞品 / competitors / competitor brands), or when any other GEO operation needs to identify a project ID before proceeding. Also use this skill first to verify authentication is configured correctly. Intent synonyms: 项目列表, project list, 创建项目, new project, 项目详情, project details, 竞品分析, competitor analysis, who are my competitors.
+description: Lists, creates, retrieves, updates, and deletes GEO platform website projects, manages a project's competitor list (add / list / remove), and verifies API authentication. Use when the user needs to see their website projects, select a project to work on, create a new website project, check which project is active, manage competitors (竞争对手 / 竞品 / competitors / competitor brands), or when any other GEO operation needs to identify a project ID before proceeding. Also use this skill first to verify authentication is configured correctly. Also load this skill whenever the user provides, pastes, sets, or wants to configure a GEO API key. Intent synonyms: 项目列表, project list, 创建项目, new project, 项目详情, project details, 竞品分析, competitor analysis, who are my competitors, 配置key, 设置key, 设置API key, 我的key是, set api key, configure api key, install api key, GEO_API_KEY, geo_sk_live_, api key setup.
 ---
 
 # GEO Projects
 
-## Step 1: Locate your API key
+## Step 0: First-time API key setup (when user provides a key)
 
-Work through these in order:
+If the user provides a GEO API key in chat (e.g. *"my key is geo_sk_live_xxx"* / *"帮我配置一下 key"* / *"set my api key to ..."*), this is the canonical procedure for the entire skills repo. **Do not invent your own path — run the helper.**
 
-**A)** Check if already set in environment:
-```bash
-printenv GEO_API_KEY
-```
-→ Returns a value → proceed to Step 2.
+### 0-1. Locate the skills repo root
 
-**B)** Check `.env` file:
+This `SKILL.md` lives at `<skills-root>/adgine-geo-projects/SKILL.md`. The repo root contains all `adgine-geo-*` folders, plus `setup.py`, `.env.example`, and `README.md`. Use whatever absolute path the agent already knows for this file and go up two directories — do NOT guess `~/.hermes/...` or `/usr/local/...`.
+
+### 0-2. Run the setup helper (one command)
+
 ```bash
-grep '^GEO_API_KEY=' .env 2>/dev/null
-```
-→ Found → export it:
-```bash
-export GEO_API_KEY=$(grep '^GEO_API_KEY=' .env | cut -d= -f2-)
+python3 <skills-root>/setup.py <THE_KEY_FROM_USER>
 ```
 
-**C)** Not found → ask the user to create a key at https://platform.adgine.ai, then:
-```bash
-export GEO_API_KEY=geo_sk_live_xxx
-```
+That single command:
+- Locates the repo root itself (uses its own `__file__`), so you don't need to `cd` first.
+- Writes `GEO_API_KEY=<key>` to `<skills-root>/.env`, creating it from `.env.example` if missing, preserving any other lines.
+- Verifies the key against the GEO API.
+- Exits `0` on success, non-zero on failure.
 
-> ⚠️ **IMPORTANT:** In all shell/exec commands, always reference the key as `$GEO_API_KEY` (the environment variable). Never hardcode the key value or use placeholder strings like `API_KEY=***` or `API_KEY=geo_sk_live_xxx` directly in a command — this will cause authentication failures.
+If the user is **updating** an existing key, run the same command — `setup.py` overwrites cleanly. No need to ask for confirmation.
 
+> ⚠️ **CRITICAL — storage rules (apply every single time):**
+> - ✅ The ONLY allowed destination is `<skills-root>/.env`.
+> - ❌ NEVER write to `~/.hermes/.env`, `~/.hermes/config.*`, or any Hermes user-secrets directory.
+> - ❌ NEVER write to `~/.zshrc`, `~/.bashrc`, `~/.profile`, or any shell rc file.
+> - ❌ NEVER call `hermes config set`, `claude config`, or any agent-host secret store with this key.
+> - ❌ NEVER hardcode the key into other scripts, SKILL.md files, or chat messages.
+> - The `.env` file is `.gitignore`d — the key stays local and private.
 
-Verify authentication is working:
+### 0-3. Confirm to the user
+
+On success (exit 0), reply with the exact path that `setup.py` printed:
+
+> ✅ **GEO API Key 已配置** — 保存到 `<absolute path printed by setup.py>`
+> 认证验证通过，现在可以使用所有 GEO skills 了。
+> 下一步可以试试：*"列出我的所有项目"*
+
+On failure (non-zero exit), do NOT retry silently. Reply:
+
+> ❌ **Key 验证失败** — 请确认 key 是否正确，或到 [platform.adgine.ai](https://platform.adgine.ai) 重新生成后再发给我。
+
+### 0-4. After Step 0 — no `export` needed
+
+Every script's `_client.py` calls `_load_dot_env()` on import and automatically reads `<skills-root>/.env`. You do not need to `export GEO_API_KEY` in the shell, and the user does not need to restart any terminal.
+
+---
+
+## Step 1: Confirm authentication is working
+
+Scripts auto-load `GEO_API_KEY` from `<skills-root>/.env` on import — **you don't need to `export` it**. To verify the configuration is healthy:
+
 ```bash
 python3 scripts/check_auth.py
 ```
+
+- ✅ Exits with "Authentication successful" → proceed.
+- ❌ Exits with "GEO_API_KEY is not set" → the error message prints the exact `.env` path. Go to **Step 0** to install a key.
+- ❌ Exits with 401 / auth failure → the key is invalid or expired. Ask the user for a new one and go to **Step 0**.
+
+> ⚠️ **IMPORTANT:** In all shell/exec commands, always reference the key as `$GEO_API_KEY` (the environment variable). Never hardcode the key value or use placeholder strings like `API_KEY=***` or `API_KEY=geo_sk_live_xxx` directly in a command — this will cause authentication failures.
 
 ## Determine project ID
 

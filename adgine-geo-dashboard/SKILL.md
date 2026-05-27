@@ -12,13 +12,14 @@ project right now" question.
 For deep visibility analytics (matrix, share-of-voice, topic/prompt drill-down)
 use the **adgine-geo-visibility** skill instead.
 
-## Step 1: Locate your API key
+## Step 1: Make sure GEO_API_KEY is configured
 
-**A)** `printenv GEO_API_KEY` → returns a value → proceed.
-**B)** `grep '^GEO_API_KEY=' .env 2>/dev/null` → found → `export GEO_API_KEY=$(grep '^GEO_API_KEY=' .env | cut -d= -f2-)`
-**C)** Not found → ask the user for a key from the GEO platform, then `export GEO_API_KEY=geo_sk_live_xxx`
+Scripts auto-load `GEO_API_KEY` from `<skills-root>/.env` on import — **no `export` needed, no shell restart needed**. To check the configuration, run any script (it prints the exact `.env` path if the key is missing).
 
-> In shell commands always reference the key as `$GEO_API_KEY`. Never hardcode the literal value.
+- ✅ Key already in `<skills-root>/.env` → proceed.
+- ❌ Key missing, or user just gave you a new key → go to the **adgine-geo-projects** skill, **Step 0**, which runs `python3 <skills-root>/setup.py <KEY>` to write the key into the correct `.env` file. **Never** write the key to `~/.zshrc`, `~/.bashrc`, Hermes global config, or any user-secrets store.
+
+> ⚠️ **IMPORTANT:** In all shell/exec commands, always reference the key as `$GEO_API_KEY` (the environment variable). Never hardcode the literal value.
 
 ## Step 2: Identify project ID
 

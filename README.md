@@ -24,7 +24,15 @@ Or clone manually and add to your agent's skills path:
 
 ```bash
 git clone https://github.com/adgine-ai/adgine-geo-skills.git
+cd adgine-geo-skills
+
+# One-shot setup — writes your API key to a local .env (gitignored):
+python3 setup.py <YOUR_GEO_API_KEY>
+# ...or run the interactive wizard:
+python3 setup.py
 ```
+
+All scripts auto-load `GEO_API_KEY` from `.env` on import — no `export`, no shell rc edits, no terminal restart needed.
 
 ---
 
@@ -80,16 +88,21 @@ Sign in at [platform.adgine.ai](https://platform.adgine.ai) and generate an API 
 
 ### 2. Configure environment
 
+Use the included setup helper — it writes the key to `<repo>/.env` and verifies it:
+
+```bash
+python3 setup.py <YOUR_GEO_API_KEY>     # non-interactive (good for AI agents)
+python3 setup.py                         # interactive wizard
+```
+
+Prefer to do it manually? Copy the template and edit:
+
 ```bash
 cp .env.example .env
-# Set GEO_API_KEY=geo_sk_live_YOUR_KEY_HERE in .env
+# then edit .env and set GEO_API_KEY=geo_sk_live_YOUR_KEY_HERE
 ```
 
-Export for your session:
-
-```bash
-export GEO_API_KEY=$(grep '^GEO_API_KEY=' .env | cut -d= -f2-)
-```
+All scripts read `.env` automatically on import — no `export` needed.
 
 ### 3. Find your project ID
 
