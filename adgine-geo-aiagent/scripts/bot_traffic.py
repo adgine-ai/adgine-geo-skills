@@ -73,7 +73,13 @@ def cmd_overview(args, key, base, pid):
     if args.json:
         print_json(data)
         return
-    kpis = data.get("kpis") or data
+    kpis_raw = data.get("kpis") or data
+    # API returns kpis as a list of {key, label, current, prev, delta}
+    # Build a lookup dict keyed by the "key" field
+    if isinstance(kpis_raw, list):
+        kpis = {item["key"]: item for item in kpis_raw if "key" in item}
+    else:
+        kpis = kpis_raw if isinstance(kpis_raw, dict) else {}
     print("AI Bot Traffic Overview")
     print()
     print("```")
@@ -83,16 +89,23 @@ def cmd_overview(args, key, base, pid):
     for k, label in [
         ("ai_citation", "AI Citation"),
         ("ai_training", "AI Training"),
-        ("ai_index", "AI Index"),
-        ("ai_agent", "AI Agent"),
-        ("total_bots", "All bot visits"),
+        ("ai_search",   "AI Index"),
+        ("ai_agent",    "AI Agent"),
+        ("all_bots",    "All bot visits"),
     ]:
-        v = kpis.get(k) if isinstance(kpis, dict) else None
+        v = kpis.get(k)
         if isinstance(v, dict):
-            cur, ch = v.get("current"), v.get("change")
+            cur = v.get("current")
+            delta = v.get("delta")
+            prev = v.get("prev")
+            if delta is not None and prev:
+                pct = (delta / prev * 100)
+                ch_str = f"+{pct:.1f}%" if pct >= 0 else f"{pct:.1f}%"
+            else:
+                ch_str = _fmt_change(None)
         else:
-            cur, ch = v, None
-        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {_fmt_change(ch):>12} │")
+            cur, ch_str = v, "--"
+        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
