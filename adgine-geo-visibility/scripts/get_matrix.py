@@ -46,7 +46,9 @@ def main():
     key, base = get_api_config()
     pid = get_project_id(args.project_id)
 
-    params = {"metric": args.metric}
+    # API expects "share_of_voice" not "sov"
+    metric_param = "share_of_voice" if args.metric == "sov" else args.metric
+    params = {"metric": metric_param}
     if args.start:
         params["start_date"] = args.start
     if args.end:
