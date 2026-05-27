@@ -15,6 +15,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -77,8 +78,8 @@ def main():
     print("┌────────────────────┬──────────────┬──────────────┬──────────────┐")
     print("│ Metric             │      Current │     Previous │       Change │")
     print("├────────────────────┼──────────────┼──────────────┼──────────────┤")
-    print(f"│ {'Visibility Score':<18} │ {_fmt(vs.get('current')):>12} │ {_fmt(vs.get('previous')):>12} │ {_fmt_change(vs.get('change')):>12} │")
-    print(f"│ {'Average Position':<18} │ {_fmt(ap.get('current')):>12} │ {_fmt(ap.get('previous')):>12} │ {_fmt_change(ap.get('change')):>12} │")
+    print(f"│ {pad('Visibility Score', 18)} │ {_fmt(vs.get('current')):>12} │ {_fmt(vs.get('previous')):>12} │ {_fmt_change(vs.get('change')):>12} │")
+    print(f"│ {pad('Average Position', 18)} │ {_fmt(ap.get('current')):>12} │ {_fmt(ap.get('previous')):>12} │ {_fmt_change(ap.get('change')):>12} │")
     print("└────────────────────┴──────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -94,7 +95,7 @@ def main():
             name = truncate(p.get("name") or p.get("platform") or p.get("code"), 18)
             v = _fmt(p.get("visibility_score") or p.get("visibility"))
             a = _fmt(p.get("average_position") or p.get("avg_position"))
-            print(f"│ {name:<18} │ {v:>8} │ {a:>8} │")
+            print(f"│ {pad(name, 18)} │ {v:>8} │ {a:>8} │")
         print("└────────────────────┴──────────┴──────────┘")
         print("```")
 

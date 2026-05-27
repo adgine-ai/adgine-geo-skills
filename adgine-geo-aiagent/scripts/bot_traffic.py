@@ -29,6 +29,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -105,7 +106,7 @@ def cmd_overview(args, key, base, pid):
                 ch_str = _fmt_change(None)
         else:
             cur, ch_str = v, "--"
-        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
+        print(f"│ {pad(label, 18)} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -132,7 +133,7 @@ def cmd_platforms(args, key, base, pid):
         req = _fmt_num(p.get("requests") or p.get("count") or p.get("total"))
         pct = p.get("share") or p.get("percentage") or p.get("pct")
         pct_str = (f"{float(pct):.1f}%" if pct is not None else "--")
-        print(f"│ {name:<18} │ {req:>12} │ {pct_str:>12} │")
+        print(f"│ {pad(name, 18)} │ {req:>12} │ {pct_str:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -158,7 +159,7 @@ def cmd_by_platform(args, key, base, pid):
         for b in bots[:5]:
             bn = truncate(b.get("name") or b.get("bot"), 28)
             br = _fmt_num(b.get("requests") or b.get("count"))
-            print(f"    - {bn:<28} {br:>10}")
+            print(f"    - {pad(bn, 28)} {br:>10}")
         print()
 
 
@@ -184,7 +185,7 @@ def cmd_types(args, key, base, pid):
         req = _fmt_num(t.get("requests") or t.get("count"))
         pct = t.get("share") or t.get("percentage")
         pct_str = (f"{float(pct):.1f}%" if pct is not None else "--")
-        print(f"│ {name:<18} │ {req:>12} │ {pct_str:>12} │")
+        print(f"│ {pad(name, 18)} │ {req:>12} │ {pct_str:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -210,7 +211,7 @@ def cmd_useragents(args, key, base, pid):
         name = truncate(u.get("bot_name") or u.get("name") or u.get("user_agent"), 28)
         plat = truncate(u.get("platform") or "--", 18)
         req = _fmt_num(u.get("requests") or u.get("count"))
-        print(f"│ {name:<28} │ {plat:<18} │ {req:>12} │")
+        print(f"│ {pad(name, 28)} │ {pad(plat, 18)} │ {req:>12} │")
     print("└──────────────────────────────┴────────────────────┴──────────────┘")
     print("```")
 
@@ -236,7 +237,7 @@ def cmd_pages_by_bot(args, key, base, pid):
         for p in (b.get("pages") or [])[:args.limit]:
             path = truncate(p.get("path") or p.get("url"), 50)
             hits = _fmt_num(p.get("requests") or p.get("count"))
-            print(f"    {path:<50} {hits:>8}")
+            print(f"    {pad(path, 50)} {hits:>8}")
         print()
 
 

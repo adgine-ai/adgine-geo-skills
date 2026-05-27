@@ -22,6 +22,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get, api_put,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -51,7 +52,7 @@ def cmd_list(args, key, base, pid):
         rid = truncate(r.get("id") or r.get("record_id"), 36)
         title = truncate(r.get("title") or r.get("wp_post_title") or "(untitled)", 28)
         pub = truncate((r.get("published_at") or r.get("created_at") or "--")[:10], 10)
-        print(f"│ {rid:<36} │ {title:<28} │ {pub:<10} │")
+        print(f"│ {pad(rid, 36)} │ {pad(title, 28)} │ {pad(pub, 10)} │")
     print("└──────────────────────────────────────┴──────────────────────────────┴────────────┘")
     print("```")
 

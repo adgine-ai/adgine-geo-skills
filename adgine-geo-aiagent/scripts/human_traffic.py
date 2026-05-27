@@ -31,6 +31,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -103,7 +104,7 @@ def cmd_overview(args, key, base, pid):
                 ch_str = "--"
         else:
             cur, ch_str = v, "--"
-        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
+        print(f"│ {pad(label, 18)} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -129,7 +130,7 @@ def cmd_platforms(args, key, base, pid):
         name = truncate(p.get("name") or p.get("platform"), 18)
         v = _fmt_num(p.get("visits") or p.get("sessions") or p.get("count"))
         ch = _fmt_change(p.get("change") or p.get("delta"))
-        print(f"│ {name:<18} │ {v:>12} │ {ch:>12} │")
+        print(f"│ {pad(name, 18)} │ {v:>12} │ {ch:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -157,7 +158,7 @@ def cmd_pages(args, key, base, pid):
     for p in items:
         path = truncate(p.get("path") or p.get("url"), 42)
         v = _fmt_num(p.get("visits") or p.get("count"))
-        print(f"│ {path:<42} │ {v:>8} │")
+        print(f"│ {pad(path, 42)} │ {v:>8} │")
     print("└────────────────────────────────────────────┴──────────┘")
     print("```")
 
@@ -202,7 +203,7 @@ def cmd_referral(args, key, base, pid):
     for s in items:
         name = truncate(s.get("name") or s.get("source"), 18)
         v = _fmt_num(s.get("sessions") or s.get("visits"))
-        print(f"│ {name:<18} │ {v:>12} │")
+        print(f"│ {pad(name, 18)} │ {v:>12} │")
     print("└────────────────────┴──────────────┘")
     print("```")
 
@@ -227,7 +228,7 @@ def cmd_ga_overview(args, key, base, pid):
         ("transactions", "Transactions"),
     ]:
         if k in data:
-            print(f"│ {label:<18} │ {_fmt_num(data.get(k)):>12} │")
+            print(f"│ {pad(label, 18)} │ {_fmt_num(data.get(k)):>12} │")
     print("└────────────────────┴──────────────┘")
     print("```")
 
@@ -256,7 +257,7 @@ def cmd_ga_platforms(args, key, base, pid):
         r = _fmt_num(p.get("revenue"))
         c = p.get("conversion_rate")
         c_str = (f"{float(c):.2f}%" if c is not None else "--")
-        print(f"│ {name:<18} │ {s:>8} │ {t:>8} │ {r:>8} │ {c_str:>8} │")
+        print(f"│ {pad(name, 18)} │ {s:>8} │ {t:>8} │ {r:>8} │ {c_str:>8} │")
     print("└────────────────────┴──────────┴──────────┴──────────┴──────────┘")
     print("```")
 
@@ -284,7 +285,7 @@ def cmd_ga_landing_pages(args, key, base, pid):
         path = truncate(p.get("path") or p.get("url") or p.get("page_path"), 36)
         s = _fmt_num(p.get("sessions"))
         r = _fmt_num(p.get("revenue"))
-        print(f"│ {path:<36} │ {s:>8} │ {r:>8} │")
+        print(f"│ {pad(path, 36)} │ {s:>8} │ {r:>8} │")
     print("└──────────────────────────────────────┴──────────┴──────────┘")
     print("```")
 

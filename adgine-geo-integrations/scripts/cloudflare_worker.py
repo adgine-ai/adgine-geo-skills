@@ -29,6 +29,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get, api_post, api_delete,
     extract_data, print_json, truncate,
+    pad,
 )
 
 def _fmt_num(n):
@@ -102,13 +103,13 @@ def cmd_deploy_status(args, key, base, pid):
     print("┌────────────────────┬──────────────────────────────┐")
     print("│ Field              │ Value                        │")
     print("├────────────────────┼──────────────────────────────┤")
-    print(f"│ {'deployed':<18} │ {('Yes' if deployed else 'No'):<28} │")
+    print(f"│ {pad('deployed', 18)} │ {pad(('Yes' if deployed else 'No'), 28)} │")
     for k in ("worker_name", "routes", "script_name"):
         if k in data:
             val = data.get(k)
             if isinstance(val, list):
                 val = ", ".join(str(v) for v in val)
-            print(f"│ {k:<18} │ {truncate(val, 28):<28} │")
+            print(f"│ {pad(k, 18)} │ {pad(truncate(val, 28), 28)} │")
     print("└────────────────────┴──────────────────────────────┘")
     print("```")
 
@@ -137,7 +138,7 @@ def cmd_overview(args, key, base, pid):
         ("total_events", "Total events"),
     ]:
         if k in data:
-            print(f"│ {label:<18} │ {_fmt_num(data.get(k)):>12} │")
+            print(f"│ {pad(label, 18)} │ {_fmt_num(data.get(k)):>12} │")
     print("└────────────────────┴──────────────┘")
     print("```")
 
@@ -162,7 +163,7 @@ def cmd_pages(args, key, base, pid):
     for p in items:
         path = truncate(p.get("page_path") or p.get("path") or p.get("url"), 42)
         hits = _fmt_num(p.get("ai_hits") or p.get("hits") or p.get("count"))
-        print(f"│ {path:<42} │ {hits:>8} │")
+        print(f"│ {pad(path, 42)} │ {hits:>8} │")
     print("└────────────────────────────────────────────┴──────────┘")
     print("```")
 

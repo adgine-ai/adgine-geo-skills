@@ -31,6 +31,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get, api_post,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -92,7 +93,7 @@ def cmd_kpi(args, key, base, pid):
             cur, ch = v.get("current"), v.get("change")
         else:
             cur, ch = v, None
-        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {_fmt_change(ch):>12} │")
+        print(f"│ {pad(label, 18)} │ {_fmt_num(cur):>12} │ {_fmt_change(ch):>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -122,7 +123,7 @@ def cmd_logs(args, key, base, pid):
         t = truncate((e.get("timestamp") or e.get("created_at") or "")[:19], 18)
         bot = truncate(e.get("bot_name") or e.get("user_agent") or "(human)", 18)
         plat = truncate(e.get("platform") or "--", 10)
-        print(f"│ {t:<18} │ {bot:<18} │ {plat:<10} │")
+        print(f"│ {pad(t, 18)} │ {pad(bot, 18)} │ {pad(plat, 10)} │")
     print("└────────────────────┴────────────────────┴────────────┘")
     print("```")
 
@@ -153,7 +154,7 @@ def cmd_platforms(args, key, base, pid):
         h = _fmt_num(p.get("human_referral") or p.get("human"))
         pct = p.get("share") or p.get("percentage")
         pct_s = (f"{float(pct):.1f}%" if pct is not None else "--")
-        print(f"│ {name:<18} │ {c:>4} │ {i:>4} │ {t:>4} │ {a:>4} │ {h:>6} │ {pct_s:>6} │")
+        print(f"│ {pad(name, 18)} │ {c:>4} │ {i:>4} │ {t:>4} │ {a:>4} │ {h:>6} │ {pct_s:>6} │")
     print("└────────────────────┴──────┴──────┴──────┴──────┴────────┴────────┘")
     print("```")
 
@@ -183,7 +184,7 @@ def cmd_related(args, key, base, pid):
         a = _fmt_num(p.get("ai_agent"))
         cp = p.get("ai_citation_pct")
         cp_s = (f"{float(cp):.1f}" if cp is not None else "--")
-        print(f"│ {path:<30} │ {c:>4} │ {i:>4} │ {t:>4} │ {a:>4} │ {cp_s:>4} │")
+        print(f"│ {pad(path, 30)} │ {c:>4} │ {i:>4} │ {t:>4} │ {a:>4} │ {cp_s:>4} │")
     print("└────────────────────────────────┴──────┴──────┴──────┴──────┴──────┘")
     print("```")
 

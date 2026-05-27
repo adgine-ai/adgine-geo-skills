@@ -28,6 +28,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get,
     extract_data, print_json,
+    pad,
 )
 
 
@@ -75,11 +76,11 @@ def _print_metric(label, unit, data, suffix=""):
     print("┌────────────────────┬──────────────┐")
     print("│ Field              │        Value │")
     print("├────────────────────┼──────────────┤")
-    print(f"│ {'current':<18} │ {(_fmt_metric(cur) + unit):>12} │")
+    print(f"│ {pad('current', 18)} │ {(_fmt_metric(cur) + unit):>12} │")
     if prev is not None:
-        print(f"│ {'previous':<18} │ {(_fmt_metric(prev) + unit):>12} │")
+        print(f"│ {pad('previous', 18)} │ {(_fmt_metric(prev) + unit):>12} │")
     if change is not None:
-        print(f"│ {'change':<18} │ {_fmt_change(change):>12} │")
+        print(f"│ {pad('change', 18)} │ {_fmt_change(change):>12} │")
     print("└────────────────────┴──────────────┘")
     print("```")
     if suffix:

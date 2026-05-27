@@ -22,6 +22,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get, api_post,
     extract_data, print_json, truncate,
+    pad,
 )
 
 def _fmt_num(n):
@@ -77,7 +78,7 @@ def cmd_overview(args, key, base, pid):
         ("ai_referral_sessions", "AI ref sessions"),
     ]:
         if k in data:
-            print(f"│ {label:<18} │ {_fmt_num(data.get(k)):>12} │")
+            print(f"│ {pad(label, 18)} │ {_fmt_num(data.get(k)):>12} │")
     print("└────────────────────┴──────────────┘")
     print("```")
 
@@ -100,7 +101,7 @@ def cmd_ai_referrals(args, key, base, pid):
         name = truncate(p.get("name") or p.get("platform"), 18)
         sess = _fmt_num(p.get("sessions"))
         users = _fmt_num(p.get("users") or p.get("active_users"))
-        print(f"│ {name:<18} │ {sess:>12} │ {users:>12} │")
+        print(f"│ {pad(name, 18)} │ {sess:>12} │ {users:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -126,7 +127,7 @@ def cmd_pages(args, key, base, pid):
         path = truncate(p.get("page_path") or p.get("path") or p.get("url"), 42)
         views = _fmt_num(p.get("views") or p.get("page_views"))
         sess = _fmt_num(p.get("sessions"))
-        print(f"│ {path:<42} │ {views:>8} │ {sess:>8} │")
+        print(f"│ {pad(path, 42)} │ {views:>8} │ {sess:>8} │")
     print("└────────────────────────────────────────────┴──────────┴──────────┘")
     print("```")
 
@@ -151,7 +152,7 @@ def cmd_sources(args, key, base, pid):
     for s in items[:10]:
         name = truncate(s.get("name") or s.get("channel") or s.get("source"), 18)
         sess = _fmt_num(s.get("sessions"))
-        print(f"│ {name:<18} │ {sess:>12} │")
+        print(f"│ {pad(name, 18)} │ {sess:>12} │")
     print("└────────────────────┴──────────────┘")
     print("```")
 

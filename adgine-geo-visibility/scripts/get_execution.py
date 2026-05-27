@@ -23,6 +23,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -64,7 +65,7 @@ def cmd_list(args, key, base, pid):
         if mentioned is None:
             mentioned = bool(e.get("brand_mentions") or e.get("self_mentioned"))
         bm = "Yes" if mentioned else "No"
-        print(f"│ {eid:<36} │ {plat:<10} │ {date:<10} │ {bm:<10} │")
+        print(f"│ {pad(eid, 36)} │ {pad(plat, 10)} │ {pad(date, 10)} │ {pad(bm, 10)} │")
     print("└──────────────────────────────────────┴────────────┴────────────┴────────────┘")
     print("```")
 
@@ -106,7 +107,7 @@ def cmd_get(args, key, base, pid):
             rank = m.get("rank") or m.get("position") or "--"
             sent = truncate(m.get("sentiment") or "--", 10)
             mine = "Yes" if (m.get("is_self") or m.get("self")) else "No"
-            print(f"│ {name:<28} │ {str(rank):>6} │ {sent:<10} │ {mine:<10} │")
+            print(f"│ {pad(name, 28)} │ {str(rank):>6} │ {pad(sent, 10)} │ {pad(mine, 10)} │")
         print("└──────────────────────────────┴────────┴────────────┴────────────┘")
         print("```")
         print()

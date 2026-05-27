@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from _client import (
     get_api_config, get_project_id,
     api_get, extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -51,7 +52,7 @@ def main():
     for i, c in enumerate(items, 1):
         cid = truncate(c.get("id") or c.get("content_id"), 36)
         title = truncate(c.get("title") or "(untitled)", 36)
-        print(f"│ {i:>2} │ {cid:<36} │ {title:<36} │")
+        print(f"│ {i:>2} │ {pad(cid, 36)} │ {pad(title, 36)} │")
     print("└────┴──────────────────────────────────────┴──────────────────────────────────────┘")
     print("```")
 

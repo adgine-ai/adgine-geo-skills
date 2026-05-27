@@ -14,6 +14,7 @@ import argparse
 sys.path.insert(0, os.path.dirname(__file__))
 from _client import (
     get_api_config, get_project_id, api_get, extract_data, print_json, fmt_change,
+    pad,
 )
 
 
@@ -81,7 +82,7 @@ def main():
         for point in trend[:14]:
             date = str(point.get("date", "--"))[:10]
             score = _fmt_score(point.get("score"))
-            print(f"│ {date:<10} │ {score:>8} │")
+            print(f"│ {pad(date, 10)} │ {score:>8} │")
         print("└────────────┴──────────┘")
         print("```")
     else:

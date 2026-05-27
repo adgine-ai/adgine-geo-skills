@@ -27,6 +27,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -103,7 +104,7 @@ def cmd_overview_kpi(args, key, base, pid):
         ("ai_human_ratio", "AI Referral %"),
     ]:
         cur, ch_str = _get_kpi(data, k)
-        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
+        print(f"│ {pad(label, 18)} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -140,7 +141,7 @@ def cmd_pages(args, key, base, pid):
         bot = _fmt_num(p.get("bot_requests") or p.get("ai_hits") or p.get("count"))
         human = _fmt_num(p.get("human_referral_requests"))
         total_ai = _fmt_num(p.get("total_ai_requests") or p.get("references"))
-        print(f"│ {path:<42} │ {bot:>8} │ {human:>6} │ {total_ai:>8} │")
+        print(f"│ {pad(path, 42)} │ {bot:>8} │ {human:>6} │ {total_ai:>8} │")
     print("└────────────────────────────────────────────┴──────────┴────────┴──────────┘")
     print("```")
 
@@ -179,7 +180,7 @@ def cmd_pages_detail(args, key, base, pid):
         t = _fmt_num(p.get("ai_training"))
         a = _fmt_num(p.get("ai_agent"))
         r = _fmt_num(p.get("ai_referral") or p.get("ai_referral_visits"))
-        print(f"│ {path:<30} │ {c:>4} │ {i:>4} │ {t:>4} │ {a:>4} │ {r:>4} │")
+        print(f"│ {pad(path, 30)} │ {c:>4} │ {i:>4} │ {t:>4} │ {a:>4} │ {r:>4} │")
     print("└────────────────────────────────┴──────┴──────┴──────┴──────┴──────┘")
     print("```")
 
@@ -258,7 +259,7 @@ def cmd_logs(args, key, base, pid):
             18)
         plat = truncate(e.get("platform_name") or e.get("platform") or "--", 10)
         path = truncate(e.get("path") or e.get("url"), 24)
-        print(f"│ {t:<18} │ {ttype:<18} │ {plat:<10} │ {path:<24} │")
+        print(f"│ {pad(t, 18)} │ {pad(ttype, 18)} │ {pad(plat, 10)} │ {pad(path, 24)} │")
     print("└────────────────────┴────────────────────┴────────────┴──────────────────────────┘")
     print("```")
 

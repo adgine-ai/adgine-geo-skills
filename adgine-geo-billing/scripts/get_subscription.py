@@ -12,7 +12,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 from _client import get_api_config, api_get, extract_data, print_json, truncate
 
 
-def main():
+def main(,
+    pad,
+):
     parser = argparse.ArgumentParser(description="Get current GEO subscription")
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
     args = parser.parse_args()
@@ -39,7 +41,7 @@ def main():
               "current_period_end", "renews_at", "cancel_at_period_end",
               "trial_end", "credits_remaining", "credits_total"):
         if k in data:
-            print(f"│ {k:<18} │ {truncate(data.get(k), 28):<28} │")
+            print(f"│ {pad(k, 18)} │ {pad(truncate(data.get(k), 28), 28)} │")
     print("└────────────────────┴──────────────────────────────┘")
     print("```")
 

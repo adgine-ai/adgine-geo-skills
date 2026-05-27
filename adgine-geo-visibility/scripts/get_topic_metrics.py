@@ -26,6 +26,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -77,7 +78,7 @@ def cmd_list(args, key, base, pid):
         sov = _fmt(t.get("share_of_voice") or t.get("sov"))
         ap = _fmt(t.get("average_position") or t.get("avg_position"))
         ch = _fmt_change(t.get("visibility_change") or t.get("change"))
-        print(f"│ {name:<28} │ {vis:>8} │ {sov:>8} │ {ap:>8} │ {ch:>8} │")
+        print(f"│ {pad(name, 28)} │ {vis:>8} │ {sov:>8} │ {ap:>8} │ {ch:>8} │")
     print("└──────────────────────────────┴──────────┴──────────┴──────────┴──────────┘")
     print("```")
 
@@ -103,7 +104,7 @@ def cmd_visibility(args, key, base, pid):
         tid = truncate(t.get("id") or t.get("topic_id"), 36)
         name = truncate(t.get("name") or t.get("topic"), 28)
         vis = _fmt(t.get("visibility_score") or t.get("score") or t.get("visibility"))
-        print(f"│ {tid:<36} │ {name:<28} │ {vis:>8} │")
+        print(f"│ {pad(tid, 36)} │ {pad(name, 28)} │ {vis:>8} │")
     print("└──────────────────────────────────────┴──────────────────────────────┴──────────┘")
     print("```")
 
@@ -132,7 +133,7 @@ def cmd_prompts(args, key, base, pid):
         vis = _fmt(p.get("visibility_score") or p.get("visibility"))
         sov = _fmt(p.get("share_of_voice") or p.get("sov"))
         ap = _fmt(p.get("average_position") or p.get("avg_position"))
-        print(f"│ {text:<40} │ {vis:>8} │ {sov:>8} │ {ap:>8} │")
+        print(f"│ {pad(text, 40)} │ {vis:>8} │ {sov:>8} │ {ap:>8} │")
     print("└──────────────────────────────────────────┴──────────┴──────────┴──────────┘")
     print("```")
 
@@ -160,7 +161,7 @@ def cmd_prompts_visibility(args, key, base, pid):
         pid_ = truncate(p.get("id") or p.get("prompt_id"), 36)
         text = truncate(p.get("text") or p.get("prompt"), 28)
         vis = _fmt(p.get("visibility_score") or p.get("score") or p.get("visibility"))
-        print(f"│ {pid_:<36} │ {text:<28} │ {vis:>8} │")
+        print(f"│ {pad(pid_, 36)} │ {pad(text, 28)} │ {vis:>8} │")
     print("└──────────────────────────────────────┴──────────────────────────────┴──────────┘")
     print("```")
 

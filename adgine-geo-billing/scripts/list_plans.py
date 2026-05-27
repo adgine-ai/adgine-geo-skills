@@ -14,7 +14,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 from _client import get_api_config, api_get, extract_data, print_json, truncate
 
 
-def _fmt_price(p):
+def _fmt_price(p,
+    pad,
+):
     if p is None:
         return "--"
     try:
@@ -57,7 +59,7 @@ def main():
         price_str = f"{price} {currency}".strip()
         interval = truncate(p.get("interval") or p.get("billing_cycle") or "--", 8)
         note = truncate(p.get("description") or "", 24)
-        print(f"│ {name:<18} │ {price_str:>8} │ {interval:<8} │ {note:<24} │")
+        print(f"│ {pad(name, 18)} │ {price_str:>8} │ {pad(interval, 8)} │ {pad(note, 24)} │")
     print("└────────────────────┴──────────┴──────────┴──────────────────────────┘")
     print("```")
 

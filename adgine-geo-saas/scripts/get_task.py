@@ -14,6 +14,7 @@ import argparse
 sys.path.insert(0, os.path.dirname(__file__))
 from _client import (
     get_api_config, api_get, extract_data, print_json, poll_job, truncate,
+    pad,
 )
 
 
@@ -55,11 +56,11 @@ def main():
     print("┌────────────────────┬──────────────────────────────┐")
     print("│ Field              │ Value                        │")
     print("├────────────────────┼──────────────────────────────┤")
-    print(f"│ {'status':<18} │ {_norm_status(data.get('status')):<28} │")
+    print(f"│ {pad('status', 18)} │ {pad(_norm_status(data.get('status')), 28)} │")
     for k in ("phase", "current_phase", "progress", "url", "subdomain",
               "started_at", "completed_at", "error_message"):
         if k in data:
-            print(f"│ {k:<18} │ {truncate(data.get(k), 28):<28} │")
+            print(f"│ {pad(k, 18)} │ {pad(truncate(data.get(k), 28), 28)} │")
     print("└────────────────────┴──────────────────────────────┘")
     print("```")
 

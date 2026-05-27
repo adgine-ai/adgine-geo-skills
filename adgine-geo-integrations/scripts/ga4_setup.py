@@ -23,6 +23,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get, api_post,
     extract_data, print_json, truncate,
+    pad,
 )
 
 def cmd_auth_url(args, key, base, pid):
@@ -68,7 +69,7 @@ def cmd_properties(args, key, base, pid):
         pid_ = truncate(p.get("id") or p.get("property_id"), 20)
         name = truncate(p.get("display_name") or p.get("name"), 26)
         domain = truncate(p.get("domain") or p.get("web_domain") or "--", 18)
-        print(f"│ {pid_:<20} │ {name:<26} │ {domain:<18} │")
+        print(f"│ {pad(pid_, 20)} │ {pad(name, 26)} │ {pad(domain, 18)} │")
     print("└──────────────────────┴────────────────────────────┴────────────────────┘")
     print("```")
 

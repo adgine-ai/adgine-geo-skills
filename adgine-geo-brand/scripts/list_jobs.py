@@ -20,6 +20,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get, api_post,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -60,7 +61,7 @@ def cmd_list(args, key, base, pid):
         jid = truncate(j.get("id") or j.get("job_id"), 36)
         st = _norm_status(j.get("status"))
         created = truncate(j.get("created_at") or j.get("started_at") or "--", 20)
-        print(f"│ {jid:<36} │ {st:<12} │ {created:<20} │")
+        print(f"│ {pad(jid, 36)} │ {pad(st, 12)} │ {pad(created, 20)} │")
     print("└──────────────────────────────────────┴──────────────┴──────────────────────┘")
     print("```")
 
@@ -86,7 +87,7 @@ def cmd_get(args, key, base, pid):
             val = data.get(k)
             if k == "status":
                 val = _norm_status(val)
-            print(f"│ {k:<18} │ {truncate(val, 36):<36} │")
+            print(f"│ {pad(k, 18)} │ {pad(truncate(val, 36), 36)} │")
     print("└────────────────────┴──────────────────────────────────────┘")
     print("```")
 
@@ -101,7 +102,7 @@ def cmd_get(args, key, base, pid):
         for p in phases:
             name = truncate(p.get("name") or p.get("phase"), 30)
             st = _norm_status(p.get("status"))
-            print(f"│ {name:<30} │ {st:<12} │")
+            print(f"│ {pad(name, 30)} │ {pad(st, 12)} │")
         print("└────────────────────────────────┴──────────────┘")
         print("```")
 

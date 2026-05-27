@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import time
+import unicodedata
 import urllib.request as _req
 import urllib.error as _uerr
 import urllib.parse as _up
@@ -169,6 +170,35 @@ def extract_data(response):
 def print_json(data):
     """Print data as formatted JSON."""
     print(json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def truncate(text, n=60, ellipsis="…"):
+    """Truncate text to n characters, adding ellipsis if cut. ASCII-safe for tables."""
+    if text is None:
+        return "--"
+    s = str(text)
+    if len(s) <= n:
+        return s
+    return s[: max(0, n - len(ellipsis))] + ellipsis
+
+
+def display_width(s):
+    """Return the display width of a string (CJK chars count as 2 columns)."""
+    w = 0
+    for c in str(s):
+        eaw = unicodedata.east_asian_width(c)
+        w += 2 if eaw in ('W', 'F') else 1
+    return w
+
+
+def pad(s, width, align='left'):
+    """Pad string to display width for CJK-aware table alignment.
+    Replaces f'{s:<N}' (align='left') and f'{s:>N}' (align='right').
+    """
+    s = str(s)
+    dw = display_width(s)
+    spaces = max(0, width - dw) * ' '
+    return spaces + s if align == 'right' else s + spaces
 
 
 def poll_job(path, key, base, interval=5, max_wait=300):

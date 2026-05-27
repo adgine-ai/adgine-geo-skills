@@ -14,6 +14,7 @@ import argparse
 sys.path.insert(0, os.path.dirname(__file__))
 from _client import (
     get_api_config, get_project_id, api_get, extract_data, print_json, fmt_change,
+    pad,
 )
 
 
@@ -105,7 +106,7 @@ def main():
         print("│ Metric                 │    Value │ vs Prev  │")
         print("├────────────────────────┼──────────┼──────────┤")
         for label, val, change in rows:
-            print(f"│ {label:<22} │ {_fmt_num(val):>8} │ {fmt_change(change):>8} │")
+            print(f"│ {pad(label, 22)} │ {_fmt_num(val):>8} │ {fmt_change(change):>8} │")
         print("└────────────────────────┴──────────┴──────────┘")
         print("```")
         print()
@@ -122,14 +123,14 @@ def main():
         print(f"{title}")
         print("```")
         print("┌────┬────────────────────────────────────────┬──────────┐")
-        print(f"│  # │ {'Name':<38} │ {value_label:<8} │")
+        print(f"│  # │ {pad('Name', 38)} │ {pad(value_label, 8)} │")
         print("├────┼────────────────────────────────────────┼──────────┤")
         for idx, item in enumerate(items[:5], 1):
             name = str(item.get(name_field, ""))
             value = str(item.get(value_field, ""))
             if len(name) > 38:
                 name = name[:37] + "…"
-            print(f"│ {idx:>2} │ {name:<38} │ {value:<8} │")
+            print(f"│ {idx:>2} │ {pad(name, 38)} │ {pad(value, 8)} │")
         print("└────┴────────────────────────────────────────┴──────────┘")
         print("```")
         print()

@@ -25,6 +25,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get, api_put, api_delete,
     extract_data, print_json, truncate,
+    pad,
 )
 
 def cmd_status(args, key, base, pid):
@@ -46,10 +47,10 @@ def cmd_status(args, key, base, pid):
         status = "Connected"
     else:
         status = "Disconnected"
-    print(f"│ {'Status':<18} │ {status:<28} │")
+    print(f"│ {pad('Status', 18)} │ {pad(status, 28)} │")
     for k in ("site_url", "username", "connected_at", "last_verified_at"):
         if k in data:
-            print(f"│ {k:<18} │ {truncate(data.get(k), 28):<28} │")
+            print(f"│ {pad(k, 18)} │ {pad(truncate(data.get(k), 28), 28)} │")
     print("└────────────────────┴──────────────────────────────┘")
     print("```")
 
@@ -98,7 +99,7 @@ def cmd_categories(args, key, base, pid):
         name = truncate(c.get("name"), 34)
         count = c.get("count")
         count_str = str(count) if count is not None else "--"
-        print(f"│ {str(cid):<8} │ {name:<34} │ {count_str:<8} │")
+        print(f"│ {pad(str(cid), 8)} │ {pad(name, 34)} │ {pad(count_str, 8)} │")
     print("└──────────┴────────────────────────────────────┴──────────┘")
     print("```")
 

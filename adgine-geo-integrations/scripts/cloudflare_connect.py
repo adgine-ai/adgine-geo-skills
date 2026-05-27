@@ -24,6 +24,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get, api_post,
     extract_data, print_json, truncate,
+    pad,
 )
 
 def _fmt_num(n):
@@ -58,7 +59,7 @@ def cmd_list_zones(args, key, base, pid):
     for z in items:
         zid = truncate(z.get("id") or z.get("zone_id"), 20)
         name = truncate(z.get("name") or z.get("domain"), 26)
-        print(f"│ {zid:<20} │ {name:<26} │")
+        print(f"│ {pad(zid, 20)} │ {pad(name, 26)} │")
     print("└──────────────────────┴────────────────────────────┘")
     print("```")
 
@@ -114,7 +115,7 @@ def cmd_overview(args, key, base, pid):
         ("threats_blocked", "Threats blocked"),
     ]:
         if k in data:
-            print(f"│ {label:<18} │ {_fmt_num(data.get(k)):>12} │")
+            print(f"│ {pad(label, 18)} │ {_fmt_num(data.get(k)):>12} │")
     print("└────────────────────┴──────────────┘")
     print("```")
 

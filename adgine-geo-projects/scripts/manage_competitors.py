@@ -21,6 +21,7 @@ from _client import (
     get_api_config, get_project_id,
     api_get, api_post, api_delete,
     extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -47,7 +48,7 @@ def cmd_list(args, key, base, pid):
         cid = truncate(c.get("id") or c.get("competitor_id") or c.get("brand_id"), 36)
         name = truncate(c.get("name"), 18)
         domain = truncate(c.get("domain") or "--", 18)
-        print(f"│ {cid:<36} │ {name:<18} │ {domain:<18} │")
+        print(f"│ {pad(cid, 36)} │ {pad(name, 18)} │ {pad(domain, 18)} │")
     print("└──────────────────────────────────────┴────────────────────┴────────────────────┘")
     print("```")
 

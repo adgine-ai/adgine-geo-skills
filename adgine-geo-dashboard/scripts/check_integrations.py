@@ -20,6 +20,7 @@ import argparse
 sys.path.insert(0, os.path.dirname(__file__))
 from _client import (
     get_api_config, get_project_id, api_get, api_delete, extract_data, print_json, truncate,
+    pad,
 )
 
 
@@ -55,7 +56,7 @@ def cmd_list(args, key, base, pid):
         else:
             status = truncate(item.get("status"), 12)
         connected_at = truncate(item.get("connected_at") or item.get("created_at") or "--", 20)
-        print(f"│ {service:<14} │ {status:<12} │ {connected_at:<20} │")
+        print(f"│ {pad(service, 14)} │ {pad(status, 12)} │ {pad(connected_at, 20)} │")
     print("└────────────────┴──────────────┴──────────────────────┘")
     print("```")
 
@@ -82,7 +83,7 @@ def cmd_status(args, key, base, pid):
     print("├────────────────────┼──────────────────────────────┤")
     for k in ("service", "status", "connected_at", "expires_at", "account", "property_id"):
         if k in data:
-            print(f"│ {k:<18} │ {truncate(data.get(k), 28):<28} │")
+            print(f"│ {pad(k, 18)} │ {pad(truncate(data.get(k), 28), 28)} │")
     print("└────────────────────┴──────────────────────────────┘")
     print("```")
 
