@@ -75,7 +75,13 @@ def cmd_overview(args, key, base, pid):
     if args.json:
         print_json(data)
         return
-    kpis = data.get("kpis") or data
+    kpis_raw = data.get("kpis") or data
+    # API returns kpis as a list of {key, label, current, prev, delta, delta_pct}
+    # Build a lookup dict keyed by the "key" field
+    if isinstance(kpis_raw, list):
+        kpis = {item["key"]: item for item in kpis_raw if "key" in item}
+    else:
+        kpis = kpis_raw if isinstance(kpis_raw, dict) else {}
     print("AI Human Traffic Overview")
     print()
     print("```")
@@ -83,16 +89,21 @@ def cmd_overview(args, key, base, pid):
     print("│ KPI                │      Current │       Change │")
     print("├────────────────────┼──────────────┼──────────────┤")
     for k, label in [
-        ("utm_visits", "UTM AI visits"),
-        ("referral_visits", "Referral visits"),
-        ("ai_share", "AI share %"),
+        ("utm",      "UTM AI visits"),
+        ("referral", "Referral visits"),
+        ("ai_ratio", "AI share %"),
     ]:
-        v = kpis.get(k) if isinstance(kpis, dict) else None
+        v = kpis.get(k)
         if isinstance(v, dict):
-            cur, ch = v.get("current"), v.get("change")
+            cur = v.get("current")
+            delta_pct = v.get("delta_pct")
+            if delta_pct is not None:
+                ch_str = f"+{delta_pct:.1f}%" if delta_pct >= 0 else f"{delta_pct:.1f}%"
+            else:
+                ch_str = "--"
         else:
-            cur, ch = v, None
-        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {_fmt_change(ch):>12} │")
+            cur, ch_str = v, "--"
+        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
