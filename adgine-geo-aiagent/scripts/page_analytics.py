@@ -224,25 +224,38 @@ def cmd_logs(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/logs",
                      key, base, params=params)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("logs") or (data or {}).get("events", [])
+    # API returns {items, total, page, limit, pages}
+    if isinstance(data, list):
+        items = data
+        total = len(data)
+    elif isinstance(data, dict):
+        items = data.get("items") or data.get("logs") or data.get("events", [])
+        total = data.get("total", len(items))
+    else:
+        items = []
+        total = 0
     if args.json:
         print_json(items)
         return
     if not items:
         print("No log events.")
         return
-    print(f"Raw AI event logs ({len(items)})")
+    print(f"Raw AI event logs (total {total}, showing {len(items)})")
     print()
     print("```")
     print("┌────────────────────┬────────────────────┬────────────┬──────────────────────────┐")
-    print("│ Time               │ Bot / UA           │ Platform   │ Path                     │")
+    print("│ Time (UTC)         │ Type               │ Platform   │ Path                     │")
     print("├────────────────────┼────────────────────┼────────────┼──────────────────────────┤")
     for e in items:
-        t = truncate((e.get("timestamp") or e.get("created_at") or "")[:19], 18)
-        bot = truncate(e.get("bot_name") or e.get("user_agent") or "(human)", 18)
-        plat = truncate(e.get("platform") or "--", 10)
+        t = truncate(
+            (e.get("occurred_at") or e.get("timestamp") or e.get("created_at") or "")[:19].replace("T", " "),
+            18)
+        ttype = truncate(
+            e.get("traffic_type_label") or e.get("bot_name") or e.get("traffic_type") or "(human)",
+            18)
+        plat = truncate(e.get("platform_name") or e.get("platform") or "--", 10)
         path = truncate(e.get("path") or e.get("url"), 24)
-        print(f"│ {t:<18} │ {bot:<18} │ {plat:<10} │ {path:<24} │")
+        print(f"│ {t:<18} │ {ttype:<18} │ {plat:<10} │ {path:<24} │")
     print("└────────────────────┴────────────────────┴────────────┴──────────────────────────┘")
     print("```")
 
