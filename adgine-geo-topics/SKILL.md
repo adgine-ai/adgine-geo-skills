@@ -5,6 +5,26 @@ description: Creates and manages GEO content topics and AI answer prompts for SE
 
 # GEO Topics
 
+## Output rules — IDs (apply to every reply)
+
+These rules apply to **every list, table, and confirmation message** in this skill. Their goal: keep user-facing output friendly while preserving the IDs the agent needs internally.
+
+1. **Lists & tables — never show raw UUIDs in cells.** Use a 1-based `#` index column instead. Keep a private mental mapping of `#N → actual UUID` so that follow-up commands like *"delete #3"*, *"run citation test on #1 #2"*, *"show details of the 2nd one"* resolve to the right entity.
+   - Index numbers restart from 1 in each new list — they are not stable across calls.
+   - If the user references *"the topic about X"* / *"that Poki vs CrazyGames prompt"*, match by visible content (name / title / domain / prompt text), not by ID.
+
+2. **Single-item operations — prefer a human name over an ID.**
+   - ✅ *"Project **Poki vs Competitors** deleted."*
+   - ✅ *"Topic **Brand mentions in 2024** updated — name → 'Brand mentions 2025'."*
+   - ❌ *"Project `a4305b57-1c79-4cec-a17c-16eb1d959ea6` deleted."*
+   - If the entity has **no human-readable name** (e.g. an anonymous prompt or a job), use a short 8-character prefix: *"Prompt `2a2a8f4f…` deleted."* Never paste the full UUID.
+
+3. **Always exception: `--json` mode.** When the user passes `--json` to a script or explicitly asks for raw JSON / debug output, print the script output verbatim — do not strip IDs.
+
+4. **Internally, the agent still uses full UUIDs** for every API call (`--project-id`, `--topic-id`, `--prompt-id`, etc.). The display rules only affect what is shown back to the user.
+
+---
+
 ## Step 1: Make sure GEO_API_KEY is configured
 
 Scripts auto-load `GEO_API_KEY` from `<skills-root>/.env` on import — **no `export` needed, no shell restart needed**. To check the configuration, run any script (it prints the exact `.env` path if the key is missing).
@@ -135,9 +155,9 @@ Truncate long names to ~22 chars with `...`.
 
 ### When creating / updating / deleting a topic
 
-> ✅ Topic **"Product Reviews"** created — ID: `t-abc`
-> ✅ Topic `t-abc` updated — *<changed fields>*
-> 🗑️ Topic `t-abc` deleted.
+> ✅ Topic **"Product Reviews"** created.
+> ✅ Topic **&lt;topic name&gt;** updated — *<changed fields>*
+> 🗑️ Topic **&lt;topic name&gt;** deleted.
 
 ---
 
@@ -160,9 +180,11 @@ Truncate prompts to ~36 chars with `...`.
 
 ### When creating / updating / deleting a prompt
 
-> ✅ Prompt created — ID: `p-123`
-> ✅ Prompt `p-123` updated.
-> 🗑️ Prompt `p-123` deleted.
+> ✅ Prompt created under topic **"&lt;topic name&gt;"** (now #&lt;index in latest list&gt;).
+> ✅ Prompt **#&lt;index&gt;** updated.
+> 🗑️ Prompt **#&lt;index&gt;** deleted.
+
+(Refer to the prompt by the `#N` index shown in the most recent list. If no list is in context, fall back to the prompt's first 60 characters of text — not its UUID.)
 
 ---
 
