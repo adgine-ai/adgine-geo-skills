@@ -71,26 +71,12 @@ def cmd_overview_kpi(args, key, base, pid):
     if args.json:
         print_json(data)
         return
-    kpis_raw = data.get("kpis") or data
-    # API returns kpis as a list of {key, label, current, prev, delta, delta_pct}
-    if isinstance(kpis_raw, list):
-        kpis = {item["key"]: item for item in kpis_raw if "key" in item}
-    else:
-        kpis = kpis_raw if isinstance(kpis_raw, dict) else {}
-    print("Site AI Overview — 5 KPI cards")
-    print()
-    print("```")
-    print("┌────────────────────┬──────────────┬──────────────┐")
-    print("│ KPI                │      Current │       Change │")
-    print("├────────────────────┼──────────────┼──────────────┤")
-    for k, label in [
-        ("ai_citation",     "AI Citation"),
-        ("ai_search",       "AI Index"),
-        ("ai_training",     "AI Training"),
-        ("ai_agent",        "AI Agent"),
-        ("human_referrals", "AI Referral"),
-    ]:
-        v = kpis.get(k)
+    # This endpoint returns a flat dict:
+    # {ai_citations, ai_index, ai_training, ai_agent, human_referrals, ai_human_ratio, ...}
+    # Each value is a {current, prev, delta, delta_pct, ...} dict.
+
+    def _get_kpi(d, k):
+        v = d.get(k)
         if isinstance(v, dict):
             cur = v.get("current")
             delta_pct = v.get("delta_pct")
@@ -100,6 +86,23 @@ def cmd_overview_kpi(args, key, base, pid):
                 ch_str = "--"
         else:
             cur, ch_str = v, "--"
+        return cur, ch_str
+
+    print("Site AI Overview — 5 KPI cards")
+    print()
+    print("```")
+    print("┌────────────────────┬──────────────┬──────────────┐")
+    print("│ KPI                │      Current │       Change │")
+    print("├────────────────────┼──────────────┼──────────────┤")
+    for k, label in [
+        ("ai_citations",   "AI Citation"),
+        ("ai_index",       "AI Index"),
+        ("ai_training",    "AI Training"),
+        ("ai_agent",       "AI Agent"),
+        ("human_referrals","AI Referral"),
+        ("ai_human_ratio", "AI Referral %"),
+    ]:
+        cur, ch_str = _get_kpi(data, k)
         print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
