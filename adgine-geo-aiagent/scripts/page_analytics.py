@@ -71,7 +71,12 @@ def cmd_overview_kpi(args, key, base, pid):
     if args.json:
         print_json(data)
         return
-    kpis = data.get("kpis") or data
+    kpis_raw = data.get("kpis") or data
+    # API returns kpis as a list of {key, label, current, prev, delta, delta_pct}
+    if isinstance(kpis_raw, list):
+        kpis = {item["key"]: item for item in kpis_raw if "key" in item}
+    else:
+        kpis = kpis_raw if isinstance(kpis_raw, dict) else {}
     print("Site AI Overview — 5 KPI cards")
     print()
     print("```")
@@ -79,18 +84,23 @@ def cmd_overview_kpi(args, key, base, pid):
     print("│ KPI                │      Current │       Change │")
     print("├────────────────────┼──────────────┼──────────────┤")
     for k, label in [
-        ("ai_citation", "AI Citation"),
-        ("ai_index", "AI Index"),
-        ("ai_training", "AI Training"),
-        ("ai_agent", "AI Agent"),
-        ("ai_referral", "AI Referral"),
+        ("ai_citation",     "AI Citation"),
+        ("ai_search",       "AI Index"),
+        ("ai_training",     "AI Training"),
+        ("ai_agent",        "AI Agent"),
+        ("human_referrals", "AI Referral"),
     ]:
-        v = kpis.get(k) if isinstance(kpis, dict) else None
+        v = kpis.get(k)
         if isinstance(v, dict):
-            cur, ch = v.get("current"), v.get("change")
+            cur = v.get("current")
+            delta_pct = v.get("delta_pct")
+            if delta_pct is not None:
+                ch_str = f"+{delta_pct:.1f}%" if delta_pct >= 0 else f"{delta_pct:.1f}%"
+            else:
+                ch_str = "--"
         else:
-            cur, ch = v, None
-        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {_fmt_change(ch):>12} │")
+            cur, ch_str = v, "--"
+        print(f"│ {label:<18} │ {_fmt_num(cur):>12} │ {ch_str:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
 
@@ -102,24 +112,33 @@ def cmd_pages(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/pages",
                      key, base, params=params)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("pages", [])
+    # API returns {items, total, ...} not a bare list or {"pages": [...]}
+    if isinstance(data, list):
+        items = data
+    elif isinstance(data, dict):
+        items = data.get("items") or data.get("pages", [])
+    else:
+        items = []
+    total = data.get("total", len(items)) if isinstance(data, dict) else len(items)
     if args.json:
         print_json(items)
         return
     if not items:
         print("No page data.")
         return
-    print(f"Top AI-referenced pages ({len(items)})")
+    print(f"Top AI-referenced pages ({total} total, showing {len(items)})")
     print()
     print("```")
-    print("┌────────────────────────────────────────────┬──────────┐")
-    print("│ Page                                       │   AI Hits│")
-    print("├────────────────────────────────────────────┼──────────┤")
+    print("┌────────────────────────────────────────────┬──────────┬────────┬──────────┐")
+    print("│ Page                                       │ Bot Hits │  Human │ Total AI │")
+    print("├────────────────────────────────────────────┼──────────┼────────┼──────────┤")
     for p in items:
         path = truncate(p.get("path") or p.get("url"), 42)
-        v = _fmt_num(p.get("ai_hits") or p.get("count") or p.get("references"))
-        print(f"│ {path:<42} │ {v:>8} │")
-    print("└────────────────────────────────────────────┴──────────┘")
+        bot = _fmt_num(p.get("bot_requests") or p.get("ai_hits") or p.get("count"))
+        human = _fmt_num(p.get("human_referral_requests"))
+        total_ai = _fmt_num(p.get("total_ai_requests") or p.get("references"))
+        print(f"│ {path:<42} │ {bot:>8} │ {human:>6} │ {total_ai:>8} │")
+    print("└────────────────────────────────────────────┴──────────┴────────┴──────────┘")
     print("```")
 
 
@@ -130,14 +149,21 @@ def cmd_pages_detail(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/pages-detail",
                      key, base, params=params)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("pages", [])
+    # API returns {items, total, ...} not a bare list or {"pages": [...]}
+    if isinstance(data, list):
+        items = data
+    elif isinstance(data, dict):
+        items = data.get("items") or data.get("pages", [])
+    else:
+        items = []
+    total = data.get("total", len(items)) if isinstance(data, dict) else len(items)
     if args.json:
         print_json(items)
         return
     if not items:
         print("No page detail data.")
         return
-    print(f"Pages — 5-metric detail ({len(items)})")
+    print(f"Pages — 5-metric detail ({total} total, showing {len(items)})")
     print()
     print("```")
     print("┌────────────────────────────────┬──────┬──────┬──────┬──────┬──────┐")
@@ -146,10 +172,10 @@ def cmd_pages_detail(args, key, base, pid):
     for p in items:
         path = truncate(p.get("path") or p.get("url"), 30)
         c = _fmt_num(p.get("ai_citation"))
-        i = _fmt_num(p.get("ai_index"))
+        i = _fmt_num(p.get("ai_search") or p.get("ai_index"))
         t = _fmt_num(p.get("ai_training"))
         a = _fmt_num(p.get("ai_agent"))
-        r = _fmt_num(p.get("ai_referral"))
+        r = _fmt_num(p.get("ai_referral") or p.get("ai_referral_visits"))
         print(f"│ {path:<30} │ {c:>4} │ {i:>4} │ {t:>4} │ {a:>4} │ {r:>4} │")
     print("└────────────────────────────────┴──────┴──────┴──────┴──────┴──────┘")
     print("```")
