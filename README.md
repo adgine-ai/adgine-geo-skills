@@ -2,25 +2,30 @@
 
 Agent Skills are folders of instructions, scripts, and resources that AI agents load to perform specialized tasks in a repeatable way. This repository packages the full [Adgine GEO platform](https://platform.adgine.ai) workflow as a set of skills — from setting up a project and measuring AI visibility, to generating optimized content and publishing it to WordPress.
 
-**Seamlessly compatible with [OpenClaw](https://github.com/openclaw/openclaw) and [Hermes](https://github.com/hermes-agent/hermes).** Also works with Claude Code, Codex, Cursor, GitHub Copilot Agent, and any agent that supports the skill convention.
+**Works with all mainstream AI agents.** Supports [WorkBuddy](https://workbuddy.ai), [Codex](https://openai.com/codex), [OpenClaw](https://github.com/openclaw/openclaw), and [Hermes](https://github.com/hermes-agent/hermes).
 
 ---
 
 ## Install
 
-**OpenClaw** — send this prompt directly to your OpenClaw agent:
+The install prompt is the same for every supported agent — send it directly to your agent of choice:
 
 ```
 Install skills from https://github.com/adgine-ai/adgine-geo-skills
 ```
 
-**Hermes** — send this prompt directly to your Hermes agent:
+Known compatible agents:
 
-```
-Install skills from https://github.com/adgine-ai/adgine-geo-skills
-```
+- **[WorkBuddy](https://workbuddy.ai)**
+- **[Codex](https://openai.com/codex)**
+- **[OpenClaw](https://github.com/openclaw/openclaw)**
+- **[Hermes](https://github.com/hermes-agent/hermes)**
 
-Or clone manually and add to your agent's skills path:
+After the agent finishes installing, paste your GEO API key in chat (e.g. *"my GEO API key is geo_sk_live_xxx, please configure it"*). The agent will run the included `setup.py` helper to write the key to a local, gitignored `.env` file at the skills repo root — not to your shell rc, not to the agent's global config.
+
+### Manual install (advanced)
+
+Clone the repo and run the setup helper yourself:
 
 ```bash
 git clone https://github.com/adgine-ai/adgine-geo-skills.git
