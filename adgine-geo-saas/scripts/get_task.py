@@ -50,19 +50,43 @@ def main():
         print_json(data)
         return
 
+    norm_status = _norm_status(data.get('status'))
+
     print(f"SaaS task: {args.task_id}")
     print()
     print("```")
     print("┌────────────────────┬──────────────────────────────┐")
     print("│ Field              │ Value                        │")
     print("├────────────────────┼──────────────────────────────┤")
-    print(f"│ {pad('status', 18)} │ {pad(_norm_status(data.get('status')), 28)} │")
+    print(f"│ {pad('status', 18)} │ {pad(norm_status, 28)} │")
     for k in ("phase", "current_phase", "progress", "url", "subdomain",
               "started_at", "completed_at", "error_message"):
         if k in data:
             print(f"│ {pad(k, 18)} │ {pad(truncate(data.get(k), 28), 28)} │")
     print("└────────────────────┴──────────────────────────────┘")
     print("```")
+
+    # When deployment succeeds, show WordPress login credentials
+    if norm_status == "Completed":
+        domain = data.get("domain", "")
+        wp_user = data.get("wp_username", "")
+        wp_pass = data.get("wp_password", "")
+        if domain and (wp_user or wp_pass):
+            wp_login_url = f"https://{domain}/wp-login.php"
+            print()
+            print("🎉 Your website is live! WordPress login details:")
+            print()
+            print("```")
+            print("┌────────────────────┬──────────────────────────────┐")
+            print("│ WordPress          │ Info                         │")
+            print("├────────────────────┼──────────────────────────────┤")
+            print(f"│ {pad('login URL', 18)} │ {pad(truncate(wp_login_url, 28), 28)} │")
+            if wp_user:
+                print(f"│ {pad('username', 18)} │ {pad(truncate(wp_user, 28), 28)} │")
+            if wp_pass:
+                print(f"│ {pad('password', 18)} │ {pad(truncate(wp_pass, 28), 28)} │")
+            print("└────────────────────┴──────────────────────────────┘")
+            print("```")
 
 
 if __name__ == "__main__":

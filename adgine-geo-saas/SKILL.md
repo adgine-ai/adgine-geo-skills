@@ -77,7 +77,7 @@ Add `--poll` to block until the task reaches `Completed` or `Failed`.
 >
 > ⏳ **Step 3.** Poll status (use `--poll`).
 >
-> ✅ When the task reports `Completed`, the website URL is available in the task payload.
+> ✅ When the task reports `Completed`, the script prints the site URL **and** the WordPress admin login URL, username, and password automatically.
 
 ## Output Format
 
@@ -93,6 +93,25 @@ ASCII tables only. Status vocabulary:
 │ subdomain          │ mysite                       │
 └────────────────────┴──────────────────────────────┘
 ```
+
+### Completed state — always show WordPress credentials
+
+When `status` is `Completed` **and** the response includes `wp_username` / `wp_password`, the script automatically appends a second table with the WordPress login details:
+
+```
+🎉 Your website is live! WordPress login details:
+
+┌────────────────────┬──────────────────────────────┐
+│ WordPress          │ Info                         │
+├────────────────────┼──────────────────────────────┤
+│ login URL          │ https://mysite.adgine.net/wp-login.php │
+│ username           │ admin                        │
+│ password           │ xxxxxxxx                     │
+└────────────────────┴──────────────────────────────┘
+```
+
+- The login URL is derived from the `domain` field in the task response: `https://<domain>/wp-login.php`. The `domain` is the full subdomain (e.g. `gamecalc.adgine.net`); `adgine.net` and `/wp-login.php` are always fixed.
+- **Never omit** the credentials table when status is Completed — this is the primary way the user learns how to access their new site.
 
 ## Related endpoints
 
