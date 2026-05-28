@@ -41,7 +41,8 @@ def main():
     key, base = get_api_config()
 
     if args.poll:
-        data = poll_job(f"/api/saas/task/{args.task_id}", key, base) or {}
+        data = poll_job(f"/api/saas/task/{args.task_id}", key, base,
+                        interval=10, max_wait=1200) or {}
     else:
         result = api_get(f"/api/saas/task/{args.task_id}", key, base)
         data = extract_data(result) or {}

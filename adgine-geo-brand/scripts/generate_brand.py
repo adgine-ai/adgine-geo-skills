@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate an AI brand cognition profile for a GEO project (async job).
 
-Starts a brand generation job, polls until completed (~30–90 s), and prints
+Starts a brand generation job, polls until completed (~2–5 min), and prints
 the resulting brand profile.
 
 Usage:
@@ -47,14 +47,14 @@ if not job_id:
     sys.exit(1)
 
 print(f"Job ID: {job_id}")
-print("Polling for completion (press Ctrl+C to cancel and check status later)...")
+print("Polling for completion (this typically takes 2–5 minutes)...")
 
 # Job status polled via: api_get(f"/api/projects/{pid}/brand/jobs/{job_id}", key, base)
 final_job = poll_job(
     f"/api/projects/{pid}/brand/jobs/{job_id}",
     key, base,
-    interval=5,
-    max_wait=300,
+    interval=8,
+    max_wait=600,
 )
 
 if args.json:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """AI-powered bulk prompt generation for a GEO topic (async job).
 
-Starts a generate-prompts job, polls until completed (~10–60 s), and prints
+Starts a generate-prompts job, polls until completed (~1–3 min), and prints
 the generated prompts.
 
 Usage:
@@ -80,13 +80,13 @@ if not task_id:
     sys.exit(1)
 
 print(f"Task ID: {task_id}")
-print("Polling for completion...")
+print("Polling for completion (this typically takes 1–3 minutes)...")
 
 # Poll the task status endpoint
 frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 elapsed = 0
-max_wait = 180
-interval = 3
+max_wait = 600
+interval = 5
 idx = 0
 final_task = None
 

@@ -67,7 +67,7 @@ python3 scripts/generate_titles.py --topic-id <tid> --prompt-ids <id1,id2,...> \
 ```
 Returns 5–10 AI-suggested article titles for the given topic and prompts.
 
-### Generate article outline (async, ~30–90 s)
+### Generate article outline (async, ~10–15 min)
 ```bash
 python3 scripts/generate_outline.py --topic-id <tid> --prompt-ids <id1,id2,...> \
   [--project-id <id>] [--title "Your chosen title"] \
@@ -76,11 +76,15 @@ python3 scripts/generate_outline.py --topic-id <tid> --prompt-ids <id1,id2,...> 
 ```
 Creates a content item with status `outline` once complete.
 
-### Generate full article from outline (async, ~60–180 s)
+> ⏳ **Expected duration: 10–15 minutes.** The script polls automatically (interval 10 s, timeout 20 min). Do NOT cancel early — this is a large LLM job.
+
+### Generate full article from outline (async, ~5–10 min)
 ```bash
 python3 scripts/generate_article.py --content-id <cid> [--project-id <id>]
 ```
 Content item must have status `outline`. Produces the full article.
+
+> ⏳ **Expected duration: 5–10 minutes.** The script polls automatically (interval 10 s, timeout 15 min). Do NOT cancel early.
 
 ### Inspect & retry generation jobs
 
@@ -159,7 +163,7 @@ Truncate long titles to ~36 chars with `...`.
 
 ### When generating an outline (`generate_outline.py`)
 
-- Progress: `⏳ **Generating outline…** (~30–90 s)`
+- Progress: `⏳ **Generating outline…** (~10–15 min)`
 - On completion, show the outline as a nested numbered list, then:
 
 ✅ Outline Ready
@@ -175,7 +179,7 @@ Truncate long titles to ~36 chars with `...`.
 
 ### When generating an article (`generate_article.py`)
 
-- Progress: `⏳ **Writing article…** (~60–180 s)`
+- Progress: `⏳ **Writing article…** (~5–10 min)`
 - On completion:
 
 ✅ Article Complete

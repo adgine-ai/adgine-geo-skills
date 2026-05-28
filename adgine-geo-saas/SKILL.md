@@ -69,6 +69,8 @@ python3 scripts/get_task.py --task-id <id> [--poll] [--json]
 
 Add `--poll` to block until the task reaches `Completed` or `Failed`.
 
+> ⏳ **Expected duration: 5–15 minutes.** The script polls automatically (interval 10 s, timeout 20 min). Do NOT cancel early — website deployment involves provisioning infrastructure.
+
 ## Recommended flow
 
 > 🌐 **Step 1.** Check `mysite` is available.

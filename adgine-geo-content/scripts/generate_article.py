@@ -2,7 +2,7 @@
 """Generate a full article from an approved outline (async job).
 
 The content item must have status='outline' and a completed outline.
-Polls until the article is done (~60–180 s), then prints a summary.
+Polls until the article is done (~5–10 min), then prints a summary.
 
 Usage:
   python3 scripts/generate_article.py --content-id <cid> [--project-id <id>] [--json]
@@ -56,14 +56,14 @@ if not job_id:
     sys.exit(1)
 
 print(f"Job ID: {job_id}")
-print("Polling for completion (this may take 60–180 seconds)...")
+print("Polling for completion (this typically takes 5–10 minutes)...")
 
 # Job status polled via: api_get(f"/api/projects/{pid}/content/jobs/{job_id}", key, base)
 final_job = poll_job(
     f"/api/projects/{pid}/content/jobs/{job_id}",
     key, base,
-    interval=6,
-    max_wait=360,
+    interval=10,
+    max_wait=900,
 )
 
 if args.json:

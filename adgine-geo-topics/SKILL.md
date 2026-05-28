@@ -123,7 +123,9 @@ python3 scripts/generate_prompts.py --topic-id <tid> [--project-id <id>] \
   [--instructions "Focus on enterprise buyers"]
 ```
 
-Generates AI search prompts relevant to the topic automatically. Polls until done (~10–60 s).
+Generates AI search prompts relevant to the topic automatically. Polls until done (~1–3 min).
+
+> ⏳ **Expected duration: 1–3 minutes.** The script polls automatically (interval 5 s, timeout 10 min). Do NOT cancel early.
 
 ## Output Format
 
@@ -190,7 +192,7 @@ Truncate prompts to ~36 chars with `...`.
 
 ### When generating prompts (`generate_prompts.py`)
 
-- Progress: `⏳ **Generating prompts** for topic *"<name>"*… (~10–60 s)`
+- Progress: `⏳ **Generating prompts** for topic *"<name>"*… (~1–3 min)`
 - On completion:
 
 > ✅ **Generated N prompts** for topic *"<name>"*

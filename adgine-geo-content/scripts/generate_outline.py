@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate an AI-optimized article outline (async job).
 
-Starts an outline generation job, polls until completed (~30–90 s), then prints
+Starts an outline generation job, polls until completed (~10–15 min), then prints
 the outline and the content_id needed for article generation.
 
 Usage:
@@ -71,14 +71,14 @@ if not job_id:
     sys.exit(1)
 
 print(f"Job ID: {job_id}")
-print("Polling for completion (this may take 30–90 seconds)...")
+print("Polling for completion (this typically takes 10–15 minutes)...")
 
 # Job status polled via: api_get(f"/api/projects/{pid}/content/jobs/{job_id}", key, base)
 final_job = poll_job(
     f"/api/projects/{pid}/content/jobs/{job_id}",
     key, base,
-    interval=5,
-    max_wait=300,
+    interval=10,
+    max_wait=1200,
 )
 
 if args.json:

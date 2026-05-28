@@ -54,11 +54,13 @@ python3 scripts/get_brand.py [--project-id <id>] [--json]
 ```
 Shows: status (`none` / `generating` / `completed`), all brand fields.
 
-### Generate brand profile (AI-powered, async ~30–90 s)
+### Generate brand profile (AI-powered, async ~2–5 min)
 ```bash
 python3 scripts/generate_brand.py [--project-id <id>] [--language English] [--region US]
 ```
 Starts an AI generation job, polls automatically, then prints the completed profile.
+
+> ⏳ **Expected duration: 2–5 minutes.** The script polls automatically (interval 8 s, timeout 10 min). Do NOT cancel early.
 
 ### Update individual brand fields
 ```bash
@@ -155,7 +157,7 @@ Status values in cell: `Completed` / `Generating` / `Not set` / `Failed`
 
 ### When generating a brand profile (`generate_brand.py`)
 
-- Initial line: `⏳ **Generating brand profile…** (~30–90 s)`
+- Initial line: `⏳ **Generating brand profile…** (~2–5 min)`
 - On completion, show the status table + all content sections above.
 
 ---
