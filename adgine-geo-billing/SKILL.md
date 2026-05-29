@@ -1,13 +1,14 @@
 ---
 name: adgine/geo-billing
-description: Queries GEO platform subscription information — lists all available subscription plans (pricing, features, billing interval) and reports the current user's active subscription (plan, status, renewal date, credits remaining). Use when the user asks about pricing, plans, subscription status, billing, renewal, credits, 套餐, 订阅, 价格, 续费, 余额, 我用的什么套餐. Read-only — does not perform purchases or plan changes (that requires the web UI).
+description: Queries GEO platform subscription and credits information — lists subscription plans, reports active subscription status, and queries detailed credits balance (subscription pool + purchased pool). Use when the user asks about pricing, plans, subscription status, billing, renewal, credits, balance, 套餐, 订阅, 价格, 续费, 余额, 积分, 充值, 支付, 查询积分, 我的积分, credits balance, 我用的什么套餐, 还剩多少积分, 购买积分. Read-only — does not perform purchases or plan changes (that requires the web UI).
 ---
 
 # GEO Billing
 
-Read-only access to subscription state. Use this skill when the user asks
+Read-only access to subscription and credits state. Use this skill when the user asks
 "what plan am I on?" / "how much does X cost?" / "when does my subscription
-renew?" / "how many credits do I have left?".
+renew?" / "how many credits do I have left?" / "查询积分" / "我还有多少积分" /
+"积分余额" / "充值了多少".
 
 For purchases or plan changes, direct the user to the web checkout flow on the
 GEO platform — those operations are not covered by this skill.
@@ -55,6 +56,25 @@ python3 scripts/list_plans.py [--json]
 python3 scripts/get_subscription.py [--json]
 ```
 
+### Get the current user's credits balance
+
+```bash
+python3 scripts/get_credits.py [--json]
+```
+
+Returns detailed credits breakdown: subscription pool (monthly allocation) vs
+purchased pool (top-ups). Use this when the user asks about credits, 积分, 余额,
+balance, or "how many credits do I have".
+
+### Get credits pricing information
+
+```bash
+python3 scripts/get_credits_pricing.py [--json]
+```
+
+Returns unit price, min/max purchase limits, and preset options. Use when the
+user asks "how much do credits cost?" / "积分多少钱" / "充值价格".
+
 ## Output Format
 
 > **Table cell rule:** ASCII only inside fenced tables. Emoji allowed only on
@@ -90,7 +110,9 @@ python3 scripts/get_subscription.py [--json]
 
 ## Related endpoints
 
-| Method | Path |
-|---|---|
-| GET | `/api/payments/plans` |
-| GET | `/api/payments/subscription` |
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/payments/plans` | 所有套餐列表 |
+| GET | `/api/payments/subscription` | 当前订阅状态 |
+| GET | `/api/payments/credits/me` | 积分余额（订阅池+购买池） |
+| GET | `/api/payments/credits/pricing` | 积分购买定价信息 |
