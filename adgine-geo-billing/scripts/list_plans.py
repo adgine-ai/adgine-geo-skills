@@ -11,12 +11,10 @@ import os
 import argparse
 
 sys.path.insert(0, os.path.dirname(__file__))
-from _client import get_api_config, api_get, extract_data, print_json, truncate
+from _client import get_api_config, api_get, extract_data, print_json, truncate, pad
 
 
-def _fmt_price(p,
-    pad,
-):
+def _fmt_price(p):
     if p is None:
         return "--"
     try:

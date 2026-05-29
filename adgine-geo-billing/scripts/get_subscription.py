@@ -9,12 +9,10 @@ import os
 import argparse
 
 sys.path.insert(0, os.path.dirname(__file__))
-from _client import get_api_config, api_get, extract_data, print_json, truncate
+from _client import get_api_config, api_get, extract_data, print_json, truncate, pad
 
 
-def main(,
-    pad,
-):
+def main():
     parser = argparse.ArgumentParser(description="Get current GEO subscription")
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
     args = parser.parse_args()
