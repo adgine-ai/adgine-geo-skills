@@ -22,6 +22,8 @@ parser.add_argument("--prompt-ids", help="Comma-separated prompt IDs (used with 
 parser.add_argument("--test-id",    help="Citation test ID for a single-test detail lookup")
 parser.add_argument("--aggregate",  action="store_true",
                     help="Aggregate cited URLs across multiple prompts")
+parser.add_argument("--start-date", help="Filter by start date (YYYY-MM-DD), uses analytics endpoint")
+parser.add_argument("--end-date",   help="Filter by end date (YYYY-MM-DD), uses analytics endpoint")
 parser.add_argument("--show-response", action="store_true",
                     help="Print the full AI response text for each test")
 parser.add_argument("--json", action="store_true", help="Output raw JSON")
@@ -87,6 +89,38 @@ if args.test_id:
 if not args.prompt_id:
     print("ERROR: One of --prompt-id, --test-id or (--aggregate + --prompt-ids) is required")
     sys.exit(1)
+
+# If date filters provided, use the analytics execution endpoint (supports date range)
+if args.start_date or args.end_date:
+    params = {}
+    if args.start_date:
+        params["date_from"] = args.start_date
+    if args.end_date:
+        params["date_to"] = args.end_date
+    result = api_get(
+        f"/api/projects/{pid}/analytics/prompts/{args.prompt_id}/executions",
+        key, base, params=params,
+    )
+    data = extract_data(result)
+
+    if args.json:
+        print_json(data)
+        sys.exit(0)
+
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
+    print(f"Citation executions for prompt {args.prompt_id}")
+    if args.start_date or args.end_date:
+        print(f"  Date range: {args.start_date or '...'} → {args.end_date or '...'}")
+    print(f"  Found: {len(items)} execution(s)")
+    print()
+    for e in items:
+        plat = e.get("platform", "?")
+        dt = (e.get("analyzed_at") or e.get("date") or "--")[:10]
+        mentioned = e.get("our_brand_mentioned", False)
+        rank = e.get("our_brand_rank")
+        print(f"  [{plat}] {dt}  Brand: {'Yes' if mentioned else 'No'}"
+              f"{f'  Rank: #{rank}' if rank else ''}")
+    sys.exit(0)
 
 result = api_get(
     f"/api/projects/{pid}/citation-tests/prompts/{args.prompt_id}",

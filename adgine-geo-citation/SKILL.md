@@ -72,6 +72,23 @@ Shows citation test results for a specific prompt, including:
 - Full AI response text
 - List of URLs cited
 
+### Get results with date filtering
+```bash
+python3 scripts/get_results.py --prompt-id <id> --start-date 2025-02-01 --end-date 2025-03-01 [--json]
+```
+When `--start-date` / `--end-date` are provided, uses the analytics endpoint to filter executions by date range. Useful for comparing citation performance across time periods.
+
+### Get project-level citation aggregate
+```bash
+python3 scripts/get_aggregate.py [--start-date 2025-02-22] [--end-date 2025-03-14] [--platform chatgpt,perplexity] [--json]
+```
+Returns project-level citation metrics for a time window (auto-compared with previous equal-length period):
+- **Citation Count**: total times your brand was cited
+- **Citation Share**: your brand's citations as % of all brand citations
+- **Citation Rank**: your brand's ranking among all brands by citation count
+- **By Platform**: per-platform breakdown
+- **Competitor Ranking**: all brands ranked by citations
+
 ### Get aggregated citation URLs
 ```bash
 python3 scripts/get_results.py --aggregate [--project-id <id>] \
@@ -87,6 +104,14 @@ Shows all URLs that were cited across tests for a set of prompts.
 2. Run tests: `python3 scripts/create_tests.py --prompt-ids <id1,id2,...>`
 3. Wait ~5–15 minutes for AI platforms to respond
 4. Review results: `python3 scripts/get_results.py --prompt-id <id>`
+5. Analyze trends: `python3 scripts/get_aggregate.py --start-date <from> --end-date <to>`
+
+### Period Comparison Workflow
+
+To compare citation performance across two time periods (e.g., "early GEO" vs "recent"):
+1. Run `python3 scripts/get_aggregate.py --start-date <early_start> --end-date <early_end> --json` for the early period
+2. Run `python3 scripts/get_aggregate.py --start-date <recent_start> --end-date <recent_end> --json` for the recent period
+3. Compare the `citation_count`, `citation_share`, and `citation_rank` values between the two responses
 
 ## Output Format
 
