@@ -5,7 +5,8 @@ description: Discovers and displays GEO optimization opportunities for a project
   ranked by potential impact (relevance, traffic, competition, urgency, AI citation).
   Use when the user wants to find new content ideas, discover optimization opportunities,
   see what topics they should target, or get prioritized recommendations for improving
-  their AI visibility.
+  their AI visibility. 触发词：查看机会、分析机会、优化机会、发现机会、网站机会、
+  项目机会、机会列表、opportunity discovery、content gaps。
 ---
 
 # GEO Opportunity Discovery
