@@ -1,0 +1,5 @@
+requests>=2.28
+beautifulsoup4>=4.11
+lxml>=4.9
+markdown>=3.6
+reportlab>=4.2

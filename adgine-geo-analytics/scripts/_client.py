@@ -2,6 +2,10 @@
 """Shared HTTP client utilities for geo-skills scripts.
 
 Used by all scripts in this skill. Uses Python stdlib only — no external dependencies.
+
+This file is the canonical source. It must be copied verbatim into every
+adgine-geo-* skill folder's scripts/ directory. The sync linter at
+scripts/sync-skills/sync-skills.sh (in the GEOAgent repo) flags any drift.
 """
 import os
 import sys
@@ -72,6 +76,9 @@ def get_api_config():
         print()
         print("  Get your key at: https://platform.adgine.ai")
         print("  The .env file is gitignored — your key stays local and private.")
+        print()
+        print("  NOTE: adgine-geo-site-audit does NOT require an API key.")
+        print("    Run directly: python3 adgine-geo-site-audit/scripts/geo_collect.py <url>")
         sys.exit(1)
     return key, base
 
@@ -86,12 +93,12 @@ def get_project_id(arg_value=None):
         print("ERROR: Project ID is required but not set.")
         print("  Option 1: export GEO_PROJECT_ID=<project-id>")
         print("  Option 2: pass --project-id <id> to this script")
-        print("  Run list_projects.py to see your available projects.")
+        print("  Run list_projects.py from the adgine-geo-projects skill to see your available projects.")
         sys.exit(1)
     return pid
 
 
-def _do_request(method, url, key, body=None):
+def _do_request(method, url, key, body=None, timeout=30):
     """Execute an HTTP request and return parsed JSON.
 
     Exits with an error message on HTTP errors or network failures.
@@ -105,7 +112,7 @@ def _do_request(method, url, key, body=None):
     }
     request = _req.Request(url, data=data, headers=headers, method=method)
     try:
-        with _req.urlopen(request, timeout=30) as resp:
+        with _req.urlopen(request, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8")
             return json.loads(raw) if raw else {}
     except _uerr.HTTPError as e:
@@ -130,41 +137,95 @@ def _do_request(method, url, key, body=None):
         sys.exit(1)
 
 
-def api_get(path, key, base, params=None):
+def api_get(path, key, base, params=None, timeout=30):
     url = f"{base}{path}"
     if params:
         clean = {k: str(v) for k, v in params.items() if v is not None}
         if clean:
             url += "?" + _up.urlencode(clean)
-    return _do_request("GET", url, key)
+    return _do_request("GET", url, key, timeout=timeout)
 
 
-def api_post(path, key, base, body=None):
-    return _do_request("POST", f"{base}{path}", key, body)
+def api_post(path, key, base, body=None, timeout=30):
+    return _do_request("POST", f"{base}{path}", key, body, timeout=timeout)
 
 
-def api_patch(path, key, base, body=None):
-    return _do_request("PATCH", f"{base}{path}", key, body)
+def api_patch(path, key, base, body=None, timeout=30):
+    return _do_request("PATCH", f"{base}{path}", key, body, timeout=timeout)
 
 
-def api_put(path, key, base, body=None):
-    return _do_request("PUT", f"{base}{path}", key, body)
+def api_put(path, key, base, body=None, timeout=30):
+    return _do_request("PUT", f"{base}{path}", key, body, timeout=timeout)
 
 
-def api_delete(path, key, base):
-    return _do_request("DELETE", f"{base}{path}", key)
+def api_delete(path, key, base, timeout=30):
+    return _do_request("DELETE", f"{base}{path}", key, timeout=timeout)
 
 
-def extract_data(response):
-    """Extract the data payload from a standard ApiResponse wrapper."""
-    if isinstance(response, dict):
-        return response.get("data", response)
-    return response
+def extract_data(result):
+    """Extract the .data field from a standard geo-api envelope response.
+
+    On success the API returns {"code": 0, "data": <payload>, "message": "ok"}.
+    On non-zero code, this prints the message and exits(1).
+    """
+    if not isinstance(result, dict):
+        return result
+    if "code" in result and result.get("code") not in (0, None):
+        msg = result.get("message") or result.get("detail") or "request failed"
+        print(f"ERROR: API returned code={result.get('code')} — {msg}")
+        sys.exit(1)
+    return result.get("data", result)
+
+
+def poll_job(status_path, key, base, interval=3, max_wait=300,
+             terminal=("completed", "failed", "done", "success", "error")):
+    """Poll a job/task endpoint until it reaches a terminal state.
+
+    Prints an inline spinner with the current phase. Returns the final job dict.
+    """
+    elapsed = 0
+    frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    idx = 0
+    last_job = {}
+    while elapsed < max_wait:
+        result = api_get(status_path, key, base)
+        last_job = extract_data(result) or {}
+        status = (last_job.get("status") or "").lower()
+        phase = last_job.get("current_phase") or last_job.get("phase") or status or "pending"
+        print(f"\r  {frames[idx % len(frames)]} {phase}... ({elapsed}s)", end="", flush=True)
+        idx += 1
+        if status in terminal:
+            print()  # newline after spinner
+            return last_job
+        time.sleep(interval)
+        elapsed += interval
+    print()
+    print(f"WARNING: Job is still running after {max_wait}s. Check status manually.")
+    return last_job
 
 
 def print_json(data):
-    """Print data as formatted JSON."""
-    print(json.dumps(data, indent=2, ensure_ascii=False))
+    """Print data as formatted JSON (UTF-8 safe)."""
+    print(json.dumps(data, ensure_ascii=False, indent=2))
+
+
+def fmt_change(value):
+    """Format a numeric change indicator per CONVENTIONS.md §4.
+
+    Returns: '+N' / '-N' / '0' / '--' (None becomes '--').
+    """
+    if value is None:
+        return "--"
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return "--"
+    if n == 0:
+        return "0"
+    sign = "+" if n > 0 else ""
+    if n == int(n):
+        return f"{sign}{int(n):,}"
+    return f"{sign}{n:,.1f}"
 
 
 def truncate(text, n=60, ellipsis="…"):
@@ -175,7 +236,6 @@ def truncate(text, n=60, ellipsis="…"):
     if len(s) <= n:
         return s
     return s[: max(0, n - len(ellipsis))] + ellipsis
-
 
 def display_width(s):
     """Return the display width of a string (CJK chars count as 2 columns)."""
@@ -194,68 +254,3 @@ def pad(s, width, align='left'):
     dw = display_width(s)
     spaces = max(0, width - dw) * ' '
     return spaces + s if align == 'right' else s + spaces
-
-
-def poll_job(path, key, base, interval=5, max_wait=300):
-    """Poll a job/task endpoint until it reaches a terminal state.
-
-    Returns the final job data dict.
-    """
-    elapsed = 0
-    while elapsed < max_wait:
-        result = api_get(path, key, base)
-        data = extract_data(result)
-        status = data.get("status", "")
-        if status in ("completed", "failed", "done", "success", "error"):
-            print()
-            return data
-        print(f"  Status: {status or 'pending'} ({elapsed}s elapsed)...   ", end="\r")
-        time.sleep(interval)
-        elapsed += interval
-    print(f"\nWARNING: Job did not complete within {max_wait}s.")
-    return extract_data(api_get(path, key, base))
-
-
-def api_put(path, key, base, body=None):
-    return _do_request("PUT", f"{base}{path}", key, body)
-
-
-def api_delete(path, key, base):
-    return _do_request("DELETE", f"{base}{path}", key)
-
-
-def extract_data(result):
-    """Extract the .data field from a standard geo-api envelope response."""
-    if isinstance(result, dict):
-        return result.get("data", result)
-    return result
-
-
-def poll_job(status_path, key, base, interval=3, max_wait=300,
-             terminal=("completed", "failed", "done", "success", "error")):
-    """Poll a job endpoint until it reaches a terminal state.
-
-    Prints a spinner with the current phase. Returns the final job dict.
-    """
-    elapsed = 0
-    frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    idx = 0
-    while elapsed < max_wait:
-        result = api_get(status_path, key, base)
-        job = extract_data(result)
-        status = job.get("status", "")
-        phase = job.get("current_phase") or job.get("phase") or status
-        print(f"\r  {frames[idx % len(frames)]} {phase}...", end="", flush=True)
-        idx += 1
-        if status in terminal:
-            print()  # newline after spinner
-            return job
-        time.sleep(interval)
-        elapsed += interval
-    print()
-    print(f"WARNING: Job is still running after {max_wait}s. Check status manually.")
-    return api_get(status_path, key, base).get("data", {})
-
-
-def print_json(data):
-    print(json.dumps(data, ensure_ascii=False, indent=2))
