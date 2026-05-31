@@ -24,13 +24,24 @@ This skill is purely local — it reads bundled documentation files. No `GEO_API
 
 ### When the user asks to view or download the user manual (查看手册 / 下载手册 / 我要手册)
 
-**Directly output the PDF file path for download:**
+**必须使用 `open` 命令打开 PDF 文件，让用户在系统默认 PDF 阅读器中查看：**
 
-```
-<this-skill-directory>/Adgine使用手册-v20260531.pdf
+```bash
+open "<this-skill-directory>/Adgine使用手册-v20260531.pdf"
 ```
 
-> ⚠️ **CRITICAL:** When the user says "查看使用手册", "下载手册", "给我手册", "我要用户手册", "view manual", "download manual" — always output the PDF file absolute path so the user can directly open or download it. Do NOT read the markdown and summarize — the user wants the file itself.
+> ⚠️ **CRITICAL — 必须执行，不可只输出路径：**
+> 当用户说 "查看使用手册", "下载手册", "给我手册", "我要用户手册", "view manual", "download manual", "打开手册" 时：
+> 1. **必须执行** `open` 命令（macOS）打开 PDF 文件，让系统弹出 PDF 阅读器
+> 2. **禁止** 仅输出文件路径文本让用户自己去找文件
+> 3. **禁止** 读取 markdown 内容做摘要/预览 — 用户要的是完整 PDF 文件
+> 4. **禁止** 用 `cat` 或 `read_file` 读取 PDF 内容（二进制文件无法预览）
+>
+> 正确做法（在终端中执行）：
+> ```bash
+> open "/Users/lixingtang/longlu/project/backend/GEO/skills/adgine-geo-skills/adgine-geo-docs/Adgine使用手册-v20260531.pdf"
+> ```
+> 这会在系统默认 PDF 阅读器（如预览.app）中打开文件，用户可以直接阅读和下载/保存。
 
 ### When the user asks a specific question about how to use Adgine
 
@@ -52,13 +63,18 @@ Or read the full file to understand the manual structure and locate the answer.
 
 ### For view/download requests
 
-Output:
+**执行以下命令打开 PDF（不是输出文本）：**
 
-> 📄 **Adgine 使用手册 (v20260531)**
+```bash
+open "/Users/lixingtang/longlu/project/backend/GEO/skills/adgine-geo-skills/adgine-geo-docs/Adgine使用手册-v20260531.pdf"
+```
+
+执行后回复用户：
+
+> 📄 **Adgine 使用手册 (v20260531)** 已在系统 PDF 阅读器中打开。
 >
-> 文件路径：`<absolute-path-to-this-skill>/Adgine使用手册-v20260531.pdf`
->
-> 可直接打开或下载此 PDF 文件查看完整使用手册。
+> 如果没有自动弹出，文件位置：
+> `/Users/lixingtang/longlu/project/backend/GEO/skills/adgine-geo-skills/adgine-geo-docs/Adgine使用手册-v20260531.pdf`
 
 ### For content questions
 
