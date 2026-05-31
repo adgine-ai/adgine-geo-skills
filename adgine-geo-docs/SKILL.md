@@ -22,19 +22,21 @@ This skill is purely local — it reads bundled documentation files. No `GEO_API
 
 ## Usage
 
-### When the user asks about how to use Adgine
+### When the user asks to view or download the user manual (查看手册 / 下载手册 / 我要手册)
 
-1. **Read** `Adgine使用手册-v20260531.md` (in this skill's directory) to find relevant content.
-2. **Answer** the user's question based on the manual content.
-3. **Reference** the PDF file if the user wants a downloadable/printable version.
-
-### When the user asks for the manual file itself
-
-Point the user to the PDF location:
+**Directly output the PDF file path for download:**
 
 ```
 <this-skill-directory>/Adgine使用手册-v20260531.pdf
 ```
+
+> ⚠️ **CRITICAL:** When the user says "查看使用手册", "下载手册", "给我手册", "我要用户手册", "view manual", "download manual" — always output the PDF file absolute path so the user can directly open or download it. Do NOT read the markdown and summarize — the user wants the file itself.
+
+### When the user asks a specific question about how to use Adgine
+
+1. **Read** `Adgine使用手册-v20260531.md` (in this skill's directory) to find relevant content.
+2. **Answer** the user's question based on the manual content.
+3. **Reference** the PDF file if the user wants a formatted/printable version.
 
 ### Finding content in the manual
 
@@ -48,7 +50,17 @@ Or read the full file to understand the manual structure and locate the answer.
 
 ## Output Format
 
-When answering questions from the manual:
+### For view/download requests
+
+Output:
+
+> 📄 **Adgine 使用手册 (v20260531)**
+>
+> 文件路径：`<absolute-path-to-this-skill>/Adgine使用手册-v20260531.pdf`
+>
+> 可直接打开或下载此 PDF 文件查看完整使用手册。
+
+### For content questions
 
 - Provide a clear, concise answer based on the manual content
 - Quote relevant sections when helpful
