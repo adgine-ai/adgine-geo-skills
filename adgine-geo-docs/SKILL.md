@@ -24,24 +24,24 @@ This skill is purely local — it reads bundled documentation files. No `GEO_API
 
 ### When the user asks to view or download the user manual (查看手册 / 下载手册 / 我要手册)
 
-**必须使用 `open` 命令打开 PDF 文件，让用户在系统默认 PDF 阅读器中查看：**
+**必须输出 PDF 文件的 Markdown 链接，让用户看到可点击的下载/预览按钮：**
 
-```bash
-open "<this-skill-directory>/Adgine使用手册-v20260531.pdf"
-```
-
-> ⚠️ **CRITICAL — 必须执行，不可只输出路径：**
+> ⚠️ **CRITICAL — 必须输出可点击的文件链接：**
 > 当用户说 "查看使用手册", "下载手册", "给我手册", "我要用户手册", "view manual", "download manual", "打开手册" 时：
-> 1. **必须执行** `open` 命令（macOS）打开 PDF 文件，让系统弹出 PDF 阅读器
-> 2. **禁止** 仅输出文件路径文本让用户自己去找文件
-> 3. **禁止** 读取 markdown 内容做摘要/预览 — 用户要的是完整 PDF 文件
-> 4. **禁止** 用 `cat` 或 `read_file` 读取 PDF 内容（二进制文件无法预览）
+> 1. **必须** 输出 Markdown 格式的文件链接，让用户可以直接点击下载或预览
+> 2. **禁止** 自动执行 `open` 命令打开文件（用户没有要求自动打开）
+> 3. **禁止** 仅输出纯文本路径让用户复制粘贴
+> 4. **禁止** 读取 markdown 内容做摘要/预览 — 用户要的是完整 PDF 文件
+> 5. **禁止** 用 `cat` 或 `read_file` 读取 PDF 内容（二进制文件无法预览）
 >
-> 正确做法（在终端中执行）：
-> ```bash
-> open "/Users/lixingtang/longlu/project/backend/GEO/skills/adgine-geo-skills/adgine-geo-docs/Adgine使用手册-v20260531.pdf"
+> 正确做法 — 输出以下 Markdown 链接（用户点击即可下载/预览）：
+> ```markdown
+> [📄 Adgine使用手册-v20260531.pdf](adgine-geo-docs/Adgine使用手册-v20260531.pdf)
 > ```
-> 这会在系统默认 PDF 阅读器（如预览.app）中打开文件，用户可以直接阅读和下载/保存。
+> 或使用绝对路径：
+> ```markdown
+> [📄 Adgine使用手册-v20260531.pdf](/Users/lixingtang/longlu/project/backend/GEO/skills/adgine-geo-skills/adgine-geo-docs/Adgine使用手册-v20260531.pdf)
+> ```
 
 ### When the user asks a specific question about how to use Adgine
 
@@ -63,18 +63,13 @@ Or read the full file to understand the manual structure and locate the answer.
 
 ### For view/download requests
 
-**执行以下命令打开 PDF（不是输出文本）：**
+**直接输出以下内容（Markdown 文件链接 + 说明）：**
 
-```bash
-open "/Users/lixingtang/longlu/project/backend/GEO/skills/adgine-geo-skills/adgine-geo-docs/Adgine使用手册-v20260531.pdf"
-```
-
-执行后回复用户：
-
-> 📄 **Adgine 使用手册 (v20260531)** 已在系统 PDF 阅读器中打开。
+> 📄 **Adgine 使用手册 (v20260531)**
 >
-> 如果没有自动弹出，文件位置：
-> `/Users/lixingtang/longlu/project/backend/GEO/skills/adgine-geo-skills/adgine-geo-docs/Adgine使用手册-v20260531.pdf`
+> [点击下载/预览 PDF](adgine-geo-docs/Adgine使用手册-v20260531.pdf)
+>
+> 这是 Adgine 平台的完整使用手册，包含所有功能的详细操作指南。
 
 ### For content questions
 
