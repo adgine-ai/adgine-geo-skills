@@ -34,14 +34,12 @@ This skill is purely local — it reads bundled documentation files. No `GEO_API
 > 4. **禁止** 读取 markdown 内容做摘要/预览 — 用户要的是完整 PDF 文件
 > 5. **禁止** 用 `cat` 或 `read_file` 读取 PDF 内容（二进制文件无法预览）
 >
-> 正确做法 — 输出以下 Markdown 链接（用户点击即可下载/预览）：
+> 正确做法 — 输出 Markdown 文件链接，路径使用本 skill 目录下的相对路径：
 > ```markdown
-> [📄 Adgine使用手册-v20260531.pdf](adgine-geo-docs/Adgine使用手册-v20260531.pdf)
+> [📄 Adgine使用手册-v20260531.pdf](<this-skill-directory>/Adgine使用手册-v20260531.pdf)
 > ```
-> 或使用绝对路径：
-> ```markdown
-> [📄 Adgine使用手册-v20260531.pdf](/Users/lixingtang/longlu/project/backend/GEO/skills/adgine-geo-skills/adgine-geo-docs/Adgine使用手册-v20260531.pdf)
-> ```
+> 其中 `<this-skill-directory>` 是本 SKILL.md 所在目录的实际路径（运行时自动解析）。
+> 不要写死任何绝对路径，PDF 文件就在本 skill 同级目录中。
 
 ### When the user asks a specific question about how to use Adgine
 
@@ -67,9 +65,11 @@ Or read the full file to understand the manual structure and locate the answer.
 
 > 📄 **Adgine 使用手册 (v20260531)**
 >
-> [点击下载/预览 PDF](adgine-geo-docs/Adgine使用手册-v20260531.pdf)
+> [点击下载/预览 PDF](<this-skill-directory>/Adgine使用手册-v20260531.pdf)
 >
 > 这是 Adgine 平台的完整使用手册，包含所有功能的详细操作指南。
+
+注意：`<this-skill-directory>` 是本 SKILL.md 文件所在目录的运行时路径，不要硬编码绝对路径。
 
 ### For content questions
 
