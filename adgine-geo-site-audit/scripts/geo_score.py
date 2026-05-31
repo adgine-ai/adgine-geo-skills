@@ -309,6 +309,9 @@ def _apply_dimension_caps(dimension_id: str, statuses: dict[str, str], score: in
 
 
 def _apply_final_cap(statuses: dict[str, str], score: int) -> tuple[int, dict[str, Any] | None]:
+    # 新增：sitemap 无法访问时总分最高 10 分
+    if statuses.get("1.7") == "FAIL" and score > 10:
+        return 10, _cap_payload("overall", None, 10, ["1.7"], "Sitemap 无法访问，总分最高 10 分。")
     failed = [item_id for item_id in ("1.4", "1.5", "1.6") if statuses.get(item_id) == "FAIL"]
     if len(failed) >= 2 and score > 62:
         return 62, _cap_payload("overall", None, 62, failed, "存在 2 个及以上 P0 技术阻塞，总分最高 62 分。")
