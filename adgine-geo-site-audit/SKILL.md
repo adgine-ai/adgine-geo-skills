@@ -162,7 +162,10 @@ python <SKILL_DIR>/scripts/geo_score.py score <TEMP_DIR>/geo_assessment.json --o
 - AI 可推荐：若“平台适配与搜索意图覆盖 / 主题权威与内容集群建设 / 转化承接页完备度”任一项 `FAIL`，该大项最高 60；两项及以上 `FAIL`，最高 45。
 - 跨维度封顶：若“AI crawler 实际可访问性” `FAIL`，AI 可引用最高 70，AI 可推荐最高 65；若“错误页与模板回退风险” `FAIL`，AI 可理解最高 70，AI 可引用最高 65。
 - 总分护栏：若存在 1 个 P0 技术阻塞（AI crawler 被拦截、核心页误 noindex、核心内容集群 homepage fallback / 大量 soft-404），总分最高 70；若 2 个及以上同时存在，总分最高 62。
-
+封顶规则展示约定：
+- 封顶规则仅保留在内部 JSON 数据（`caps` 数组）中供调试，**报告正文不向客户展示封顶命中信息**（避免向客户解释成本）。
+- 触发总分封顶时，各维度展示分（`display_score`）按比例缩小，确保维度分值与总分一致、不产生违和感。
+- `render_markdown_report()` 使用 `display_score` 而非原始 `score`；原始 `score` 保留在 JSON 供内部分析。
 ### Step 4.5: 可选 AI 引用性/可见性采样测试
 
 仅当用户明确要求“增加引用性测试”“AI 引用性采样”“AI 可见性采样”“测试品牌在 AI 回答中是否出现”等同类意图时执行。普通“审计/检测 URL”默认不执行，不在默认报告中输出空章节、未执行提示或功能提醒。
