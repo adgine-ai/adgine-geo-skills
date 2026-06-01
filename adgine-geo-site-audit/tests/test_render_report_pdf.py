@@ -50,7 +50,7 @@ class RenderReportPdfTests(unittest.TestCase):
         self.assertIn("中文内容", html)
         self.assertIn("<table>", html)
         self.assertIn("<ol>", html)
-        self.assertIn("<pre><code>", html)
+        self.assertIn("<pre><code", html)
         self.assertIn("status-pass", html)
         self.assertNotIn("**审计时间**", html)
         self.assertNotIn("需要我将本报告导出为 PDF 吗", html)

@@ -476,6 +476,7 @@ def _parse_html(html: str, base_url: str = "") -> dict:
         "paragraphs": [], "ol_count": 0, "ul_count": 0, "li_count": 0,
         "time_elements": [], "visible_dates": [], "body_text": "",
         "has_faq_visible": False, "hreflang_count": 0,
+        "html_lang": "",
         "og_tags": {}, "twitter_tags": {}, "image_count": 0,
         "images_missing_alt": 0, "images_weak_alt": 0, "table_count": 0,
     }
@@ -486,6 +487,11 @@ def _parse_html(html: str, base_url: str = "") -> dict:
         soup = BeautifulSoup(html, "lxml")
     except Exception:
         soup = BeautifulSoup(html, "html.parser")
+
+    # Language
+    html_el = soup.find("html")
+    if html_el and html_el.get("lang"):
+        info["html_lang"] = html_el["lang"].strip()
 
     # Title
     if soup.title and soup.title.string:
@@ -1617,6 +1623,10 @@ def _collect_d2(homepage_info: dict, sub_page_infos: list[dict],
         "images_missing_alt": images_missing_alt,
         "images_weak_alt": images_weak_alt,
     }
+    signals["d2_lang"] = {
+        "html_lang": homepage_info.get("html_lang", ""),
+        "hreflang_count": homepage_info.get("hreflang_count", 0),
+    }
 
     return signals, snippets
 
@@ -2046,6 +2056,99 @@ def _collect_d4(homepage_info: dict, sub_page_infos: list[dict],
 
 
 # ============================================================================
+# Signal Collection — D5: Recommendation
+# ============================================================================
+
+# Common URL path patterns for content asset detection
+_BLOG_PATH_PATTERNS = ("/blog", "/articles", "/news", "/posts", "/insights", "/stories")
+_RESOURCE_PATH_PATTERNS = ("/resources", "/guides", "/docs", "/help", "/learn", "/library", "/hub")
+_PRICING_PATH_PATTERNS = ("/pricing", "/plans", "/subscribe", "/prices", "/buy")
+_PRODUCT_PATH_PATTERNS = ("/product", "/features", "/solutions", "/services")
+_CONVERSION_PATH_PATTERNS = ("/signup", "/register", "/demo", "/trial", "/download", "/booking", "/appointment", "/contact")
+_EXTERNAL_PLATFORM_DOMAINS = {
+    "youtube.com": "YouTube", "youtu.be": "YouTube",
+    "linkedin.com": "LinkedIn",
+    "github.com": "GitHub",
+    "reddit.com": "Reddit",
+    "twitter.com": "Twitter", "x.com": "Twitter",
+    "facebook.com": "Facebook",
+    "instagram.com": "Instagram",
+    "producthunt.com": "ProductHunt",
+    "trustpilot.com": "Trustpilot",
+}
+
+
+def _collect_d5(
+    homepage_info: dict, sub_page_infos: list[dict],
+    homepage_result: dict, sub_page_results: list[dict],
+) -> tuple[dict, dict]:
+    """Collect D5 Recommendation signals."""
+    signals: dict[str, Any] = {}
+    snippets: dict[str, str] = {}
+    all_infos = [homepage_info] + sub_page_infos
+
+    # Gather all URLs (from internal links + page URLs)
+    all_urls: list[str] = []
+    for info in all_infos:
+        all_urls.extend(info.get("internal_links", []))
+    for result in sub_page_results:
+        if result.get("ok"):
+            all_urls.append(result.get("final_url", result.get("url", "")))
+    all_urls.append(homepage_result.get("final_url", ""))
+
+    url_text = " ".join(all_urls).lower()
+
+    # Content assets detection
+    blog_detected = any(p in url_text for p in _BLOG_PATH_PATTERNS)
+    resource_hub_detected = any(p in url_text for p in _RESOURCE_PATH_PATTERNS)
+    pricing_detected = any(p in url_text for p in _PRICING_PATH_PATTERNS)
+    product_detected = any(p in url_text for p in _PRODUCT_PATH_PATTERNS)
+
+    # Conversion pages
+    conversion_found: list[str] = []
+    for pattern in _CONVERSION_PATH_PATTERNS:
+        if pattern.lstrip("/") in url_text:
+            conversion_found.append(pattern.lstrip("/"))
+
+    # External platform links
+    external_platforms: dict[str, bool] = {}
+    for info in all_infos:
+        for link in info.get("external_links", []):
+            for domain, name in _EXTERNAL_PLATFORM_DOMAINS.items():
+                if domain in link.lower():
+                    external_platforms[name] = True
+
+    signals["d5_content_assets"] = {
+        "blog_detected": blog_detected,
+        "resource_hub_detected": resource_hub_detected,
+        "pricing_detected": pricing_detected,
+        "product_detected": product_detected,
+        "conversion_pages": sorted(set(conversion_found)),
+        "conversion_count": len(set(conversion_found)),
+        "external_platforms": sorted(external_platforms.keys()),
+        "external_platform_count": len(external_platforms),
+    }
+
+    # Homepage CTA detection
+    homepage_text = homepage_info.get("body_text", "").lower()
+    cta_keywords = ["sign up", "get started", "try free", "free trial", "book a demo",
+                    "contact us", "subscribe", "download", "start free"]
+    cta_found = [kw for kw in cta_keywords if kw in homepage_text]
+    signals["d5_cta"] = {
+        "homepage_cta_keywords": cta_found,
+        "has_clear_cta": len(cta_found) > 0,
+    }
+
+    # Snippet: list conversion URLs and external platforms
+    if conversion_found:
+        snippets["d5_conversion_pages"] = ", ".join(sorted(set(conversion_found)))
+    if external_platforms:
+        snippets["d5_external_platforms"] = ", ".join(sorted(external_platforms.keys()))
+
+    return signals, snippets
+
+
+# ============================================================================
 # Main Orchestrator
 # ============================================================================
 
@@ -2245,6 +2348,13 @@ def collect_signals(
     stage_started = time.perf_counter()
     d4_signals, d4_snippets = _collect_d4(homepage_info, sub_page_infos, llms_result, homepage_result)
     record_timing("d4_signal_collection_seconds", stage_started)
+
+    logger.info("Collecting D5 signals...")
+    stage_started = time.perf_counter()
+    d5_signals, d5_snippets = _collect_d5(
+        homepage_info, sub_page_infos, homepage_result, sub_page_results,
+    )
+    record_timing("d5_signal_collection_seconds", stage_started)
     timings["total_collection_seconds"] = round(time.perf_counter() - started, 3)
 
     # --- Assemble Output ---
@@ -2260,10 +2370,10 @@ def collect_signals(
             "concurrency": concurrency,
             "report_generation_elapsed_seconds": timings["total_collection_seconds"],
             "timings": timings,
-            "version": "1.5.0",
+            "version": "1.6.0",
         },
-        "signals": {**d1_signals, **d2_signals, **d3_signals, **d4_signals},
-        "snippets": {**d1_snippets, **d2_snippets, **d3_snippets, **d4_snippets},
+        "signals": {**d1_signals, **d2_signals, **d3_signals, **d4_signals, **d5_signals},
+        "snippets": {**d1_snippets, **d2_snippets, **d3_snippets, **d4_snippets, **d5_snippets},
         "errors": errors,
     }
 
