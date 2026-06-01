@@ -21,7 +21,7 @@ pip install -r adgine-geo-site-audit/requirements.txt
 或手动安装核心依赖：
 
 ```bash
-pip install requests beautifulsoup4 lxml markdown reportlab
+pip install curl_cffi beautifulsoup4 lxml markdown reportlab
 ```
 
 > 如果脚本运行时报 `ImportError`，说明依赖未安装，请执行上述命令。
@@ -56,7 +56,7 @@ python <SKILL_DIR>/scripts/geo_collect.py <URL> --max-subpages 20 --concurrency 
 若脚本依赖缺失，先安装：
 
 ```bash
-pip install requests beautifulsoup4 lxml markdown
+pip install -r adgine-geo-site-audit/requirements.txt
 ```
 
 **跨平台路径要求**:
@@ -76,28 +76,34 @@ pip install requests beautifulsoup4 lxml markdown
 
 读取 `<TEMP_DIR>/geo_audit_signals.json`，使用：
 - `meta`: URL、domain、brand_query、采集时间、渲染方式、抽样页数、调试用阶段耗时
-- `signals`: 程序化信号
+- `signals`: 程序化信号，按维度分组：
+  - D1: `d1_homepage_access`, `d1_robots`, `d1_sitemap`, `d1_ai_crawlers`, `d1_access_blocker`, `d1_indexability`, `d1_soft_404` 等
+  - D2: `d2_schema_coverage`, `d2_heading_structure`, `d2_information_architecture`, `d2_lang`, `d2_social_metadata` 等
+  - D3: `d3_brand_name`, `d3_trust_entries`, `d3_third_party`, `d3_knowledge_graph` 等
+  - D4: `d4_definition`, `d4_faq`, `d4_direct_answers`, `d4_comparison`, `d4_lists` 等
+  - D5: `d5_content_assets`（blog/资源/pricing/product 检测、转化页、外部平台）, `d5_cta`（首页 CTA 关键词）
 - `snippets`: 用于语义判断的正文片段、标题、schema、FAQ、案例、来源等
 - `errors`: 采集错误
 
 ### Step 2.5: 爬虫失败兜底
 
-当出现以下任一情况时，执行兜底采集：
+**触发条件**（任一即执行）：
 - `signals.d1_access_blocker.detected = true`
-- 首页、robots、sitemap、llms.txt 返回 403/429
-- 标题或正文显示 Vercel Security Checkpoint、Cloudflare challenge、verifying your browser 等安全验证页
-- 首页正文极少且明显不是目标网站真实内容
+- 首页/robots/sitemap/llms.txt 返回 403/429
+- 首页正文为安全验证页（Vercel/Cloudflare challenge 等）
+- 首页正文极少且非目标网站真实内容
 
-兜底方式：
-1. 必须优先尝试可用的外部/agent 搜索能力，包括 WebFetch、浏览器工具、搜索工具或外部索引，搜索目标品牌和站点页面，例如 `site:{domain} {brand}`、`site:{domain} pricing OR course OR faq OR about OR blog`。
-2. 优先使用可访问缓存/摘要、公开第三方平台、品牌社媒、应用商店、监管资料、Wikipedia/Wikidata 等补充语义判断。
-3. 兜底来源必须在报告中标注为“外部兜底信号”，不得伪装成 crawler 直接抓取结果。
-4. 如果运行环境没有外部搜索/浏览器能力，才说明“未执行外部兜底搜索”，并保留直接采集失败证据。
+**兜底方式**：
+1. 必须优先尝试可用的外部/agent 搜索能力（WebFetch/浏览器/搜索引擎），查 `site:{domain} {brand}` 及核心页面
+2. 参考公开第三方平台（社媒、应用商店、监管资料、Wikipedia 等）补充语义判断
+3. 兜底来源标注"外部兜底信号"，不伪装为 crawler 结果
+4. 无外部搜索能力时才说明"未执行"
 
-兜底约束：
-- “AI 可发现”中的直接可达性、WAF/CDN、UA、robots、sitemap、indexability、渲染项仍以直接采集结果为准；外部兜底信号不能把真实 crawler 阻断项改判为直接可达。
-- “AI 可理解 / 可引用 / 可信任 / 可推荐”必须参考可用的外部兜底信号，说明必须写清楚证据来源，避免把可通过公开搜索验证的信息全部记为未知。
-- 如果证据不足，保留 `WARN`、`FAIL` 或 `ERROR`，不要主观给 `PASS`。
+**兜底约束**：
+- D1（可达性/WAF/UA/robots/sitemap/indexability/渲染）以直接采集为准，兜底不更改
+- D2-D5 参考外部兜底，写明证据来源
+- 证据不足保留 WARN/FAIL/ERROR，不主观给 PASS
+- 外部兜底信号不能把真实 crawler 阻断项改判为直接可达
 
 ### Step 3: 逐项判定 30 个压缩检测项
 
@@ -301,19 +307,12 @@ python <SKILL_DIR>/scripts/geo_timing.py artifacts \
 ```
 
 硬性要求：
-- 报告必须完整输出 5 大项、30 个压缩检测项。
-- 默认报告不得输出 AI 可见性采样、AI 引用性测试、空结果、未执行提示或功能提醒；只有用户明确要求增加引用性/可见性测试时，才在“优先改进建议”之前追加可选章节。
-- 可选 AI 引用性/可见性采样章节不得出现在 GEO 总分表中，不得参与 GEO 总分。
-- “Sitemap 质量与污染”项中，没有可用 sitemap 时必须判定 `FAIL`；首页链接兜底只用于补充子页抽样，不得把 sitemap 缺失判成 `WARN` 或 `PASS`。
-- 报告正文不要描述 URL 获取、sitemap 抽样、页面优先级或采集调度逻辑；这些只保留在 skill/README 和调试 JSON 中。报告只展示目标 URL、抽样页数、成功页数、具体问题证据和评分结论。
-- 报告时间不得使用 `CST` 这类有歧义的时区缩写；北京时间写 `Asia/Shanghai (UTC+08:00)`。
-- 报告正文暂不输出报告生成耗时；各阶段耗时只保留在 `meta.timings` 和 timing summary JSON 供调试，不要散落在各模块正文。
-- 404 probe 是“软 404 与错误页识别 / 404 模板索引冲突”的必要证据，不得跳过；其耗时记录为 `meta.timings.notfound_probe_seconds`。
-- 评分、可选 AI 引用性/可见性采样和 PDF 导出也必须保留调试耗时：`geo_score.py` 与 `geo_visibility.py` 写入输出 JSON 的 `timings`，`render_report_pdf.py` 可用 `--timings-output` 写入 PDF 渲染耗时 JSON。
-- 每个 note 必须基于 `signals` / `snippets` / 兜底来源的具体证据。
-- 使用兜底采集时，报告必须列出直接采集失败证据和实际外部兜底来源；不得输出“未使用外部搜索抵消 crawler 阻断”这类内部流程表述。
-- “优先改进建议”按影响力列 Top 5，编号必须连续递增。
-- “报告说明”必须说明本报告仅基于网站公开数据；完整持续监控、竞品对比、内容生成等能力需要注册 [adgine.ai](https://adgine.ai/) 后使用；同时说明 [adgine.ai](https://adgine.ai/) 提供一站式 GEO/AI 可见性代运营服务。
+- 完整输出 5 大项 × 30 项明细表；没有可用 sitemap 时 1.7 必须判定 FAIL
+- 禁止输出：AI 可见性采样章节（除非用户明确要求）、报告生成耗时、采集调度逻辑、`CST` 时区
+- 每个 note 基于 `signals` / `snippets` / 兜底来源的具体证据；兜底采集列出直接失败证据和外部来源
+- 优先改进建议按影响力列 Top 5，编号连续递增
+- 时区必须为 Asia/Shanghai (UTC+08:00)，禁止 CST
+- 调试耗时记录在 meta.timings 中，报告正文不输出
 
 ### 报告说明固定文案
 
