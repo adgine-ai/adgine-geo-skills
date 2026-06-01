@@ -419,7 +419,7 @@ def render_markdown_report(results: dict[str, Any], *, title: str = "GEO 总分"
             "|---|---|---|---|",
         ])
         for item_result in dimension["items"]:
-            note = item_result["note"] or item_result["detail"]
+            note = (item_result["note"] or item_result["detail"]).replace("|", "\\|")
             lines.append(
                 f"| {item_result['id']} | {item_result['name']} | {item_result['badge']} | {note} |"
             )
