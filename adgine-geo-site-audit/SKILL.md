@@ -130,6 +130,53 @@ pip install requests beautifulsoup4 lxml markdown
 - 增强项可按页面平均；确实不适用时用 `N/A`，不要用 `FAIL` 拉低总分。
 - 证据不足时默认 `WARN`；关键证据缺失时不得给高分。
 
+### 特殊判定场景
+
+#### 1.4 AI crawler 实际可访问性 — WAF/CDN 安全挑战阻断
+
+当 `signals.d1_ai_crawlers.all_waf_blocked` 为 `true` 时，表示采集器使用 Bot UA 的探测请求全部被 WAF/CDN 安全挑战拦截（如 Vercel `X-Vercel-Mitigated: challenge`、Cloudflare JS Challenge）。
+
+**关键区分**：`curl_cffi` 探测工具仅模拟了 Bot UA 字符串，**不等于真实 AI 爬虫的行为**。真实的 Googlebot、GPTBot、ClaudeBot 等来自已验证 IP 范围、具备真实 TLS 指纹和行为模式，WAF 可能对其放行。因此探测被拦≠真实 AI 爬虫被拦。
+
+- **判定**：该项判 **WARN**（存在 WAF 阻碍风险，但无证据确认 AI 爬虫不可达）。
+- **note 必须包含**：
+  1. WAF/CDN provider 名称（取自 `signals.d1_access_blocker.provider`）
+  2. 探测结果：几个 Bot UA 被拦、返回什么状态码
+  3. **必须写清**：`curl_cffi` 探测仅模拟了 Bot UA，不等于真实 AI 爬虫的行为结果
+  4. 验证建议：在 Google Search Console / Bing Webmaster Tools 中确认真实爬虫的抓取状态
+  5. 修复建议：将合法 AI 爬虫 UA 加入 WAF 白名单以消除风险
+
+- **禁止**：仅凭探测被拦就直接断定"AI 爬虫完全无法抓取站点内容"或"AI 平台实际可达性为零"。
+- **禁止**：将 1.4 的 WAF 风险扩散到 5.1——5.1 评估的是内容资产适配度而非物理可达性。
+
+当 `waf_blocked_count > 0` 但 `accessible_count > 0` 时（部分爬虫可达），该项通常也判 **WARN**。
+
+当 `all_waf_blocked` 为 `false` 且 `accessible_count` 为 0（非 WAF 原因导致的不可达），才判 **FAIL**。
+
+#### 2.6 Schema 覆盖与实现质量 — @graph 格式 JSON-LD
+
+`geo_collect.py` 已支持解析 `@graph` 包裹格式的 JSON-LD（Yoast SEO / RankMath / Next.js 常见输出）。判定时：
+
+- **以 `signals.d2_schema_coverage.schema_types` 列表为准**，不要仅凭 `schema_type_count` 为 0 就下结论。
+- 若 `schema_type_count > 0` 但关键类型缺失（如缺少 `WebSite`、`Article`/`BlogPosting`、`FAQPage`），按缺失程度判 **WARN**。
+- 若 `schema_type_count == 0`（确认无任何 Schema），才判 **FAIL**。
+- `has_website` 字段按 `"WebSite" in schema_types` 精确匹配；若察觉大小写变体以实际列表为准。
+
+#### 5.1 平台适配与搜索意图覆盖 — 不得因 1.4 WAF 阻断而判 FAIL
+
+5.1 评估的是**站点是否具备适配 AI 平台（Google AI Overviews、ChatGPT、Perplexity 等）的内容资产与页面类型**（定义、比较、决策、操作、问题解决等意图覆盖），**不是物理可达性**。物理可达性已在 1.4 评估并通过跨维度封顶限制 D5。
+
+- **禁止**：仅因 1.4 FAIL（AI crawler 被 WAF 拦截）就将 5.1 判为 FAIL。
+- **正确做法**：基于 `signals.d2_information_architecture`、`signals.d4_*`（definition/comparison/faq/process）、外部兜底搜索等内容资产证据，独立评估内容适配度。若内容形态确实覆盖有限，判 WARN。
+
+#### 5.3 首页导流与站内继续访问路径 — WAF 不影响子页抓取
+
+子页抽样使用 `DEFAULT_UA`（浏览器 UA + chrome impersonate），**不受 Bot UA 的 Vercel/Cloudflare WAF Challenge 影响**。若 `signals.d1_internal_discovery.internal_link_count > 0` 且页脚覆盖核心类别，不得以"WAF 限流未完整获取内链"为由降级。
+
+#### 2.5 多语言表达一致性 — 需要实际信号证据
+
+判定依赖 `signals.d1_sitemap.has_hreflang` 和 `signals.d2_lang`（若可用）。如果采集信号显示 `has_hreflang: false` 且无多语言路径证据，默认判 **N/A**（单一语言站点，不适用）。仅当外部兜底搜索**确切发现**其他语言版本页面且与采集信号一致时，才可判 WARN 并明确标注证据来源。
+
 ### Step 4: 计算 GEO 总分
 
 把每项判定整理为 assessment JSON，格式：

@@ -28,17 +28,20 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import Any, Optional
-from urllib.parse import urljoin, urlparse
+from urllib.parse import quote as _url_quote, urljoin, urlparse
 from xml.etree import ElementTree
 
 try:
-    import requests
+    from curl_cffi import requests
     from bs4 import BeautifulSoup
 except ImportError as _exc:
     print(f"ERROR: Missing dependency — {_exc.name}")
     print("  Fix: pip install -r adgine-geo-site-audit/requirements.txt")
-    print("  Or:  pip install requests beautifulsoup4 lxml")
+    print("  Or:  pip install curl_cffi beautifulsoup4 lxml")
     sys.exit(1)
+
+# Default browser impersonation profile for curl_cffi
+_IMPERSONATE = "chrome"
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -256,8 +259,18 @@ def _get(session: requests.Session, url: str, *, ua: str = DEFAULT_UA,
          timeout: int = DEFAULT_TIMEOUT) -> dict:
     """Fetch a URL and return a dict with status, headers, text, final_url, error."""
     try:
-        r = session.get(url, headers={"User-Agent": ua, "Accept": "*/*"},
-                        timeout=timeout, allow_redirects=True)
+        # When using a custom (bot) UA, skip impersonate to avoid TLS/UA mismatch.
+        # When using the default audit UA, rely on impersonate for full browser mimicry.
+        use_impersonate = (ua == DEFAULT_UA)
+        kwargs: dict[str, Any] = {
+            "timeout": timeout,
+            "allow_redirects": True,
+        }
+        if use_impersonate:
+            kwargs["impersonate"] = _IMPERSONATE
+        else:
+            kwargs["headers"] = {"User-Agent": ua, "Accept": "*/*"}
+        r = session.get(url, **kwargs)
         text = ""
         try:
             content_type = r.headers.get("Content-Type", "").lower()
@@ -281,14 +294,14 @@ def _get(session: requests.Session, url: str, *, ua: str = DEFAULT_UA,
             "headers": dict(r.headers), "text": text,
             "final_url": r.url, "error": "",
         }
-    except requests.RequestException as e:
+    except (requests.RequestsError, OSError) as e:
         return {"url": url, "status": 0, "ok": False, "headers": {},
                 "text": "", "final_url": "", "error": str(e)}
 
 
 def _get_with_new_session(url: str, *, ua: str = DEFAULT_UA,
                           timeout: int = DEFAULT_TIMEOUT) -> dict:
-    """Fetch a URL in a worker thread with an isolated requests session."""
+    """Fetch a URL in a worker thread with an isolated curl_cffi session."""
     with requests.Session() as session:
         return _get(session, url, ua=ua, timeout=timeout)
 
@@ -546,32 +559,29 @@ def _parse_html(html: str, base_url: str = "") -> dict:
         r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b", body_text_raw
     )
 
-    # Body text (stripped of scripts/styles)
-    for tag in soup(["script", "style", "noscript"]):
-        tag.decompose()
-    info["body_text"] = soup.get_text(" ", strip=True)
-    info["word_count"] = len(info["body_text"].split())
-
-    # Links
-    parsed_base = urlparse(base_url)
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        if href.startswith(("javascript:", "mailto:", "tel:", "#")):
-            continue
-        parsed_href = urlparse(urljoin(base_url, href))
-        if parsed_href.netloc == parsed_base.netloc or not parsed_href.netloc:
-            info["internal_links"].append(href)
-        else:
-            info["external_links"].append(href)
-
-    # Schema.org JSON-LD
+    # Schema.org JSON-LD (must be extracted BEFORE scripts are decomposed)
     for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
         try:
             data = json.loads(script.string)
-            blocks = data if isinstance(data, list) else [data]
+            # Handle @graph wrapper (common in Yoast SEO / RankMath / Next.js)
+            if isinstance(data, dict) and "@graph" in data and isinstance(data["@graph"], list):
+                blocks = data["@graph"]
+            else:
+                blocks = data if isinstance(data, list) else [data]
             for block in blocks:
                 if isinstance(block, dict):
                     info["schema_blocks"].append(block)
+                    # Recurse into nested @graph if present (rare but valid)
+                    nested_graph = block.get("@graph", [])
+                    if isinstance(nested_graph, list):
+                        for sub in nested_graph:
+                            if isinstance(sub, dict):
+                                info["schema_blocks"].append(sub)
+                                t = sub.get("@type", "")
+                                if isinstance(t, list):
+                                    info["schema_types"].extend(t)
+                                elif t:
+                                    info["schema_types"].append(t)
                     t = block.get("@type", "")
                     if isinstance(t, list):
                         info["schema_types"].extend(t)
@@ -579,6 +589,14 @@ def _parse_html(html: str, base_url: str = "") -> dict:
                         info["schema_types"].append(t)
         except (json.JSONDecodeError, TypeError):
             pass
+
+    # Body text (stripped of scripts/styles)
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
+    info["body_text"] = soup.get_text(" ", strip=True)
+    info["word_count"] = len(info["body_text"].split())
+
+    # Links
 
     # FAQ detection
     faq_kws = ["faq", "常见问题", "frequently asked", "q&a"]
@@ -1108,21 +1126,44 @@ def _collect_d1(session: requests.Session, url: str, homepage_result: dict,
 
     # D1.2 AI Crawler Access
     crawler_results = {}
+    blocker_provider = signals["d1_access_blocker"].get("provider", "")
+    waf_is_blocking_bots = signals["d1_access_blocker"].get("detected", False) and bool(blocker_provider)
     # Also check robots.txt for per-UA blocks
     for name in CRAWLER_UAS:
         status = ua_probes.get(name, {}).get("status", 0)
         # Check if robots.txt explicitly blocks this UA
         ua_rules = _robots_effective_disallows(robots_rules, name)
         robots_blocked = any(_robots_rule_blocks_root(rule) for rule in ua_rules)
+        # 区分 WAF 安全挑战拦截与 robots.txt 策略拦截
+        waf_blocked = (
+            not robots_blocked
+            and status not in range(200, 400)
+            and waf_is_blocking_bots
+        )
         crawler_results[name] = {
             "status": status,
             "robots_blocked": robots_blocked,
+            "waf_blocked": waf_blocked,
             "accessible": status in range(200, 400) and not robots_blocked,
         }
+
+    accessible_count = sum(1 for v in crawler_results.values() if v["accessible"])
+    blocked_count = sum(1 for v in crawler_results.values() if not v["accessible"])
+    waf_blocked_count = sum(1 for v in crawler_results.values() if v["waf_blocked"])
+    # 当所有探测结果均被 WAF 拦截时，AI 爬虫可达性实质上不可检测
+    all_waf_blocked = waf_blocked_count > 0 and accessible_count == 0
+
     signals["d1_ai_crawlers"] = {
         "results": crawler_results,
-        "accessible_count": sum(1 for v in crawler_results.values() if v["accessible"]),
-        "blocked_count": sum(1 for v in crawler_results.values() if not v["accessible"]),
+        "accessible_count": accessible_count,
+        "blocked_count": blocked_count,
+        "waf_blocked_count": waf_blocked_count,
+        "waf_provider": blocker_provider if waf_blocked_count > 0 else "",
+        "all_waf_blocked": all_waf_blocked,
+        "note": (
+            f"该项无法检测：站点启用了 {blocker_provider} 安全防护，"
+            f"Bot UA 探测请求被拦截，无法判断 AI 爬虫的真实可达性。"
+        ) if all_waf_blocked else "",
     }
 
     # D1.3 Sitemap
@@ -2152,13 +2193,13 @@ def collect_signals(
             (
                 "wikipedia",
                 f"https://en.wikipedia.org/w/api.php?action=query&list=search"
-                f"&srsearch={requests.utils.quote(brand_query)}&format=json&srlimit=3",
+                f"&srsearch={_url_quote(brand_query)}&format=json&srlimit=3",
                 DEFAULT_UA,
             ),
             (
                 "wikidata",
                 f"https://www.wikidata.org/w/api.php?action=wbsearchentities"
-                f"&search={requests.utils.quote(brand_query)}&language=en&format=json&limit=3",
+                f"&search={_url_quote(brand_query)}&language=en&format=json&limit=3",
                 DEFAULT_UA,
             ),
         ],
