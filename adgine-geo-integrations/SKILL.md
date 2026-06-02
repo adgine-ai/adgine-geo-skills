@@ -1,6 +1,16 @@
 ---
 name: adgine/geo-integrations
-description: Manages Google Analytics 4 (GA4) and Cloudflare data integrations for a GEO project — OAuth setup, property/zone selection, scheduled data syncs, traffic overviews, page rankings, channel/source breakdown, AI-referral detail, and Cloudflare Worker deployment for AI crawler tracking. Use when the user wants to connect GA4 (连接 GA4, bind GA4, GA4 OAuth, Google Analytics 集成), connect Cloudflare (连接 Cloudflare, bind CF API token, 接入 CF), sync analytics data (同步 GA4 / 同步 Cloudflare), query traffic overview / pages / sources (流量概览, 来源, top pages), inspect AI-referral analytics (AI 引荐, AI referral traffic), or deploy/check/remove the Cloudflare Worker (部署 Worker, AI 爬虫追踪 Worker, Worker 部署状态). For the WordPress integration, use adgine-geo-wordpress.
+description: Connects, configures, and syncs GA4 and Cloudflare data sources for a
+  GEO project — OAuth setup, property/zone selection, data sync triggers, and
+  Cloudflare Worker deployment for AI crawler tracking. Also queries the
+  integration-specific traffic data (GA4 sessions/sources, CF bot events). Use
+  when the user wants to connect GA4 (连接 GA4 / bind GA4 / GA4 OAuth / Google
+  Analytics 集成), connect Cloudflare (连接 Cloudflare / bind CF API token /
+  接入 CF), sync data (同步 GA4 / 同步 Cloudflare / 拉取数据), or deploy
+  the Cloudflare Worker (部署 Worker / Worker 部署状态).
+  NOT for high-level project traffic summary (no GA4/CF context) — use
+  adgine-geo-analytics. NOT for per-bot crawl drill-downs — use
+  adgine-geo-aiagent. For WordPress — use adgine-geo-wordpress.
 ---
 
 # GEO Integrations
@@ -11,6 +21,20 @@ management for AI traffic tracking.
 
 > WordPress integration lives in the separate **adgine-geo-wordpress** skill
 > (publishing-focused, very different workflow).
+
+## 触发条件
+
+当用户说出以下意图时使用本 skill：
+- 连接/绑定/接入 GA4 或 Cloudflare
+- GA4 OAuth 授权 / 选择 GA4 媒体资源 / 选择 Cloudflare Zone
+- 同步数据 / 拉取数据 / 手动同步
+- 查询 GA4 流量来源 / 查询 Cloudflare bot 事件
+- 部署/检查/删除 Cloudflare Worker
+
+**⛔ 以下意图不属于本 skill：**
+- “流量概览” / “项目流量汇总”（不涉及连接/同步操作）→ **adgine-geo-analytics**
+- “哪些 AI bot 爬了我的网站” / “GPTBot 访问明细” → **adgine-geo-aiagent**
+- “发布到 WordPress” → **adgine-geo-wordpress**
 
 ## Output rules — IDs (apply to every reply)
 

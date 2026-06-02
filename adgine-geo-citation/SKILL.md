@@ -1,14 +1,30 @@
 ---
 name: adgine/geo-citation
-description: Runs AI citation visibility tests to measure how often a brand or website
-  is cited in AI-generated responses across platforms like ChatGPT, Perplexity,
-  Google AI Overviews, and Gemini. Supports submitting prompts for testing, retrieving
-  test results, and viewing citation URLs. Use when the user wants to check their
-  AI visibility, test whether their brand is cited by AI search engines, measure
-  citation rates, review AI platform responses, or audit which URLs are being cited.
+description: Actively submits AI search prompts to live AI platforms (ChatGPT,
+  Perplexity, Google AI Overviews, Gemini) and measures whether your brand/website
+  appears in the real responses — citation rate, cited URLs, full AI reply text.
+  Requires GEO_API_KEY and a platform project with configured prompts. Use when
+  the user wants to run citation tests (运行引用测试 / 跑引用测试), check if AI
+  platforms actually cite their brand (AI 有没有引用我 / 品牌被引用了吗), measure
+  citation rates, review real AI platform responses, or see which URLs AI cited.
+  NOT for website technical/structural GEO audits — use adgine-geo-site-audit.
+  NOT for reading pre-aggregated visibility scores — use adgine-geo-visibility.
 ---
 
 # GEO Citation Tests
+
+## 触发条件
+
+当用户说出以下意图时使用本 skill：
+- “运行引用测试” / “跑引用测试” / “run citation test”
+- “AI 有没有引用我” / “AI 搜索能找到我吗” / “ChatGPT 有没有提到我”
+- “品牌被引用了吗” / “引用率多少” / “查看引用结果”
+- “哪些 URL 被 AI 引用了” / “查看 AI 回复原文”
+
+**⛔ 以下意图不属于本 skill：**
+- “审计网站” / “GEO 评分” / “检测网站结构” → **adgine-geo-site-audit**
+- “我的 Visibility Score” / “声量份额” / “可见性得分” → **adgine-geo-visibility**
+- “创建提示词” / “管理主题” → **adgine-geo-topics**
 
 ## Output rules — IDs (apply to every reply)
 

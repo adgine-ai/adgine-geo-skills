@@ -1,16 +1,29 @@
 ---
 name: adgine/geo-analytics
-description: Queries traffic analytics for GEO projects, including Google Analytics
-  4 traffic data (sessions, active users, source breakdown), AI crawler and bot
-  traffic, and site-wide dashboard overviews with comparison periods. Use when the
-  user asks about website traffic, AI-generated referral traffic, Cloudflare bot
-  data, or any analytics and reporting metrics.
+description: High-level traffic analytics overview for a GEO project — GA4 sessions,
+  active users, source breakdown, and aggregated AI-referral traffic in a single
+  call. Use when the user wants a broad traffic/analytics summary (流量概览,
+  analytics overview, traffic summary, AI 引荐汇总). NOT for deep per-bot crawl
+  breakdowns or per-page traffic logs — use adgine-geo-aiagent for those. NOT for
+  connecting/syncing GA4 or Cloudflare — use adgine-geo-integrations for that.
 ---
 
 # GEO Analytics
 
 Fetches the full dashboard overview for a project — search, traffic, AI impact,
 and infrastructure data in a single call.
+
+## 触发条件
+
+当用户说出以下意图时使用本 skill：
+- “流量概览” / “流量汇总” / “traffic overview” / “analytics summary”
+- “GA4 数据” / “访客数” / “会话数” / “sessions”
+- “AI 引荐流量汇总” / “AI referral traffic”
+
+**⛔ 以下意图不属于本 skill：**
+- “哪些 AI bot 爬了我的网站” / “GPTBot 访问日志” / “某个页面的 AI 爬虫明细” → **adgine-geo-aiagent**
+- “连接 GA4” / “同步数据” / “部署 Worker” → **adgine-geo-integrations**
+- “项目总览” / “Dashboard” → **adgine-geo-dashboard**
 
 ## Output rules — IDs (apply to every reply)
 

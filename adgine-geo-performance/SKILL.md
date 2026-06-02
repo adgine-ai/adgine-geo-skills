@@ -1,16 +1,29 @@
 ---
 name: adgine/geo-performance
-description: Analyzes AI-agent page health for website pages in a GEO project,
-  returning crawlability status, AI optimization scores, indexing issues, and
-  content health checks for mobile or desktop device strategies. Use when the
-  user asks about page crawlability, AI indexing status, page health scores,
-  whether a page is optimized for AI search engines, content issues on a specific
-  page, or any per-page AI visibility metrics.
+description: Checks a specific page's AI-optimization health within a GEO project
+  — crawlability status, AI optimization score, indexing issues, content health
+  for mobile/desktop. Use when the user asks about a page's AI-readiness:
+  page crawlability / AI indexing status / 页面 AI 优化健康度 / 某个页面是否对
+  AI 搜索引擎友好 / content issues on a page / per-page AI health score.
+  NOT for page traffic/visit logs or which bots visited a page — use
+  adgine-geo-aiagent (page_detail) for that.
+  NOT for whole-site GEO structural audit — use adgine-geo-site-audit for that.
 ---
 
 # GEO Performance
 
 Fetches the AI-agent page health report for a specific page path within a project.
+
+## 触发条件
+
+当用户说出以下意图时使用本 skill：
+- “某个页面的 AI 优化健康度” / “页面健康检查” / “page health”
+- “页面可爬取性” / “是否被 AI 索引” / “crawlability”
+- “分析 /pricing 页面” / “检查某个页面对 AI 搜索引擎是否友好”
+
+**⛔ 以下意图不属于本 skill：**
+- “某个页面被哪些 AI 爬虫访问过” / “页面爬虫日志” → **adgine-geo-aiagent**
+- “审计整个网站” / “GEO 评分” → **adgine-geo-site-audit**
 
 ## Output rules — IDs (apply to every reply)
 

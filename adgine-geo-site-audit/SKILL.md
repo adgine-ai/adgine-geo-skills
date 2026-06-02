@@ -1,9 +1,12 @@
 ---
 name: adgine/geo-site-audit
-description: Standalone GEO website audit for arbitrary public URLs. Uses a local
-  crawler, a 5-dimension 30-item compressed strict v3 scoring table, optional AI
-  visibility/citation sampling, and PDF export. Does NOT require GEO_API_KEY — works
-  on any public website without platform authentication.
+description: Standalone GEO technical audit for arbitrary public URLs — crawls the
+  site locally, scores it against a 5-dimension 30-item GEO checklist, and exports
+  a PDF report. Does NOT require GEO_API_KEY. NOT for measuring whether AI platforms
+  actually cite your brand (use adgine-geo-citation for that). NOT for platform
+  project analytics (use adgine-geo-analytics / adgine-geo-visibility). Use when
+  the user wants a one-off structural/technical GEO audit of any public website,
+  GEO 评分, GEO 检测, audit a URL, 网站结构检测, 技术审计, or export a GEO PDF report.
 ---
 
 # Adgine GEO Site Audit
@@ -32,16 +35,20 @@ pip install curl_cffi beautifulsoup4 lxml markdown reportlab
 
 当用户说出以下意图时使用本 skill：
 - “审计 xxx.com” / “检测 xxx.com” / “audit xxx.com”
-- “GEO 检测” / “GEO audit”
-- “检查网站的 AI 可见性”
-- “增加引用性测试” / “AI 引用性采样” / “AI 可见性采样”
-- “分析网站 SEO/GEO 状况”
-- “导出 PDF”
+- “GEO 检测” / “GEO audit” / “GEO 评分”
+- “分析网站 SEO/GEO 状况” / “网站结构检测” / “技术审计”
+- “导出 PDF” / “生成审计报告”
+
+**⛔ 以下意图不属于本 skill，请路由到对应 skill：**
+- “AI 有没有引用我” / “测试 AI 是否引用我的品牌” / “运行引用测试” → **adgine-geo-citation**
+- “我的 AI 可见性得分” / “Visibility Score” / “Share of Voice” → **adgine-geo-visibility**
+- “AI 爬虫来了多少次” / “哪些 AI bot 爬了我的网站” → **adgine-geo-aiagent**
+- “某个页面的健康分” / “某个页面的 AI 优化状态” → **adgine-geo-performance**
 
 **路由边界**:
-- 本 skill 面向任意公开 URL 的一次性站点审计，依赖 `scripts/geo_collect.py` 采集公开网页证据。
-- 平台项目、GA4/Cloudflare 集成、AI traffic、billing、WordPress 发布等 Adgine 产品内数据，应交给 `adgine-geo-skills` 仓库中的平台技能处理。
-- 集成到 `adgine-ai/adgine-geo-skills` 时，建议目录名保留 `adgine-geo-site-audit/`，避免与平台侧 performance / visibility / analytics / citation 技能冲突。
+- 本 skill 面向**任意公开 URL** 的一次性站点技术审计，无需平台账号，依赖 `scripts/geo_collect.py` 本地采集公开网页信号并打分。
+- 本 skill 的「AI 可读性采样」是**结构层面检测**（页面内容是否对 AI 爬虫可读），不等于向 ChatGPT/Perplexity 发送 prompt 测试实际引用结果——后者请用 **adgine-geo-citation**。
+- 平台项目、GA4/Cloudflare 集成、AI traffic、billing、WordPress 发布等 Adgine 产品内数据，应交给对应平台技能处理。
 
 ## 执行流程
 

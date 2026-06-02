@@ -1,6 +1,15 @@
 ---
 name: adgine/geo-aiagent
-description: Tracks how AI bots (AI bot, AI 机器人, AI 爬虫, AI crawler, ChatGPT/Perplexity/Gemini 爬虫, GPTBot, ClaudeBot, GoogleBot, PerplexityBot, Anthropic, OpenAI bot) crawl a website AND how real humans arrive via AI platforms. Covers bot-traffic KPIs (AI citation / index / training / agent), bot type/platform/User-Agent breakdowns; human visits (UTM + referral + GA4 sessions / revenue); site-wide page rankings, 5-metric page tables, AI-platform→page Sankey flows, raw event logs, and per-page deep dives (KPI / logs / platforms / sibling pages / PageSpeed Insights). Use when the user asks about AI 爬虫追踪 / AI bot tracking / 机器人访问 / which AI platforms crawl my site / 哪些 AI 引用我的页面 / AI referral / AI 引荐 / AI 真人访问 / GA4 AI 流量 / 页面健康分 / Core Web Vitals / page detail / page sankey. For brand/topic visibility metrics use adgine-geo-visibility.
+description: Deep drill-down tracking for AI bot crawls and AI-driven human traffic
+  — 27 endpoints covering per-bot/per-platform/per-UA breakdowns, Sankey flows,
+  raw event logs, and per-page deep dives (KPI / logs / platforms / PageSpeed).
+  Use when the user wants detail-level data: AI 爬虫追踪 / which specific AI bots
+  crawl my site / GPTBot ClaudeBot PerplexityBot / 某个页面被哪些 AI 爬虫访问过 /
+  page detail / page sankey / Core Web Vitals / AI 真人访问来源明细.
+  NOT for high-level traffic summary — use adgine-geo-analytics for that.
+  NOT for running citation tests — use adgine-geo-citation.
+  NOT for page AI-optimization health scores — use adgine-geo-performance.
+  For brand/topic visibility metrics use adgine-geo-visibility.
 ---
 
 # GEO AI-Agent Tracking
@@ -12,6 +21,20 @@ Grouped into 4 scripts by user intent:
 - **human_traffic.py** — what real human traffic AI platforms send me
 - **page_analytics.py** — site-wide page rankings, Sankey flow, logs
 - **page_detail.py** — deep-dive analytics for a specific page path
+
+## 触发条件
+
+当用户说出以下意图时使用本 skill：
+- “哪些 AI 爬虫访问了我的网站” / “GPTBot/ClaudeBot/PerplexityBot” / “AI bot tracking”
+- “某个页面被哪些 AI 爬虫访问过” / “页面爬虫日志” / “page detail”
+- “AI 真人访问” / “AI 引荐来源明细” / “AI referral breakdown”
+- “Sankey 图” / “页面流量流向” / “爬虫访问日志”
+
+**⛔ 以下意图不属于本 skill：**
+- “流量概览” / “流量汇总”（不涉及具体 bot 明细）→ **adgine-geo-analytics**
+- “某个页面的 AI 优化健康度” / “页面可爬取性” → **adgine-geo-performance**
+- “运行引用测试” / “品牌被引用了吗” → **adgine-geo-citation**
+- “可见性得分” / “声量份额” → **adgine-geo-visibility**
 
 ## Output rules — IDs (apply to every reply)
 

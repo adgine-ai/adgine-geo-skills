@@ -1,6 +1,12 @@
 ---
 name: adgine/geo-dashboard
-description: Fetches the top-level project dashboard snapshot for a GEO project — aggregate metrics (visibility score, prompts/topics/tests counts, citations, articles, AI referrals), the lightweight 7-day brand visibility trend, and the status of connected third-party data integrations (GA4, Cloudflare). Use when the user asks about project overview, dashboard, 项目总览, Dashboard 概览, 首页指标, visibility snapshot, 可见度得分, 7-day trend, 近七天趋势, integration status, 集成状态, GA4/Cloudflare connection, 数据集成, or wants a quick health/at-a-glance snapshot of a project.
+description: Fetches the top-level project dashboard snapshot — aggregate counts
+  (prompts, topics, tests, citations, articles, AI referrals), a lightweight
+  7-day visibility trend, and integration connection status (GA4/Cloudflare).
+  Use when the user asks for a quick project overview (项目总览 / Dashboard
+  概览 / 首页指标 / at-a-glance / 近七天趋势 / 集成状态).
+  NOT for deep visibility analytics (Score/SoV/matrix/competitor drill-down) —
+  use adgine-geo-visibility. NOT for traffic data — use adgine-geo-analytics.
 ---
 
 # GEO Dashboard
@@ -11,6 +17,18 @@ project right now" question.
 
 For deep visibility analytics (matrix, share-of-voice, topic/prompt drill-down)
 use the **adgine-geo-visibility** skill instead.
+
+## 触发条件
+
+当用户说出以下意图时使用本 skill：
+- “项目总览” / “Dashboard” / “首页” / “项目概况”
+- “近七天趋势” / “7-day trend”
+- “集成状态” / “GA4 连接了吗” / “Cloudflare 接入了吗”
+
+**⛔ 以下意图不属于本 skill：**
+- “我的 Visibility Score 多少” / “声量份额” / “竞品对比” → **adgine-geo-visibility**
+- “流量数据” / “访客来源” → **adgine-geo-analytics**
+- “连接 GA4” / “同步数据” → **adgine-geo-integrations**
 
 ## Output rules — IDs (apply to every reply)
 

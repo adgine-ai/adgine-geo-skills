@@ -1,6 +1,14 @@
 ---
 name: adgine/geo-visibility
-description: Deep AI visibility analytics for a GEO project — query Visibility Score / Share of Voice / Average Position at brand, topic, or prompt level; inspect competitor × AI-platform matrix; drill into a prompt's per-platform breakdown; review historical AI executions including full responses, brand mentions, and citations. Use when the user asks about AI visibility / 可见性得分 / 可见度 / Visibility Score / 声量份额 / Share of Voice / 平均排名 / Average Position / 主题可见度 / 提示词表现 / prompt 可见度 / 竞品对比 / 平台矩阵 / matrix / AI 平台表现 / AI 回答历史 / prompt 历史测试 / AI 具体怎么回复的 / 品牌提及 / brand mentions / 引用链接. For lightweight dashboard summary, use adgine-geo-dashboard instead.
+description: Reads and analyzes already-collected AI visibility data for a GEO
+  project — Visibility Score, Share of Voice, Average Position, competitor matrix,
+  historical AI executions, full AI responses, brand mentions, cited URLs.
+  Use when the user wants to READ analytics results: AI visibility / 可见性得分 /
+  Visibility Score / 声量份额 / Share of Voice / 平均排名 / 竞品对比 / 平台矩阵 /
+  AI 回答历史 / prompt 历史测试 / AI 具体怎么回复的 / 品牌提及 / 引用链接.
+  NOT for running new citation tests (向 AI 平台发请求测试是否引用) — use
+  adgine-geo-citation to actively submit prompts and collect new results.
+  NOT for lightweight dashboard summary — use adgine-geo-dashboard instead.
 ---
 
 # GEO Visibility (Analytics)
@@ -11,6 +19,20 @@ prompt executions.
 
 > Lightweight dashboard summary lives in **adgine-geo-dashboard**.
 > Prompt CRUD / start-analysis actions live in **adgine-geo-topics**.
+
+## 触发条件
+
+当用户说出以下意图时使用本 skill：
+- “可见性得分” / “Visibility Score” / “我的可见度”
+- “声量份额” / “Share of Voice” / “平均排名” / “Average Position”
+- “竞品对比” / “平台矩阵” / “competitor matrix”
+- “AI 回答历史” / “AI 具体怎么回复的” / “prompt 历史测试结果”
+- “品牌提及” / “引用链接”（查看已有数据）
+
+**⛔ 以下意图不属于本 skill：**
+- “跑一次引用测试” / “测试 AI 是否引用”（发起新测试）→ **adgine-geo-citation**
+- “项目总览” / “Dashboard” / “近七天趋势” → **adgine-geo-dashboard**
+- “创建提示词” / “管理主题” → **adgine-geo-topics**
 
 ## Output rules — IDs (apply to every reply)
 
