@@ -4,6 +4,8 @@ Agent Skills are folders of instructions, scripts, and resources that AI agents 
 
 **Works with all mainstream AI agents.** Supports [WorkBuddy](https://workbuddy.ai), [Codex](https://openai.com/codex), [OpenClaw](https://github.com/openclaw/openclaw), and [Hermes](https://github.com/hermes-agent/hermes).
 
+**Current version:** [`VERSION`](VERSION) · [All releases](https://github.com/adgine-ai/adgine-geo-skills/releases)
+
 ---
 
 ## Install
@@ -38,6 +40,62 @@ python3 setup.py
 ```
 
 All scripts auto-load `GEO_API_KEY` from `.env` on import — no `export`, no shell rc edits, no terminal restart needed.
+
+---
+
+## Updates
+
+The installed version is recorded in the [`VERSION`](VERSION) file at the repo root. Releases are published at [github.com/adgine-ai/adgine-geo-skills/releases](https://github.com/adgine-ai/adgine-geo-skills/releases).
+
+### For AI agents — how to check and apply updates
+
+Use the following steps whenever the user asks whether skills are up to date, or to update skills:
+
+**Step 1 — Read the installed version**
+
+```bash
+cat "$(find ~ -name VERSION -path '*/adgine-geo-skills/VERSION' 2>/dev/null | head -1)"
+```
+
+**Step 2 — Fetch the latest release from GitHub**
+
+```bash
+curl -s https://api.github.com/repos/adgine-ai/adgine-geo-skills/releases/latest
+```
+
+Key fields to read from the response:
+- `tag_name` — latest version (e.g. `v1.3.0`)
+- `name` — release title
+- `body` — changelog / release notes
+- `published_at` — release date
+
+Alternatively, fetch just the raw version string (no JSON parsing needed):
+
+```bash
+curl -s https://raw.githubusercontent.com/adgine-ai/adgine-geo-skills/main/VERSION
+```
+
+**Step 3 — Present result to user**
+
+- If versions match: report that skills are up to date and show the current version.
+- If behind: show the current version, the latest version, and the release notes from `body`. Ask the user if they want to update.
+
+**Step 4 — Apply update (if requested)**
+
+```bash
+cd <skills-repo-path>
+git pull
+```
+
+The `.env` file (API key) is gitignored and is never modified by `git pull`. No reconfiguration needed after updating.
+
+### User-facing prompt
+
+Users can trigger a version check or update with natural language:
+
+> *"Are my Adgine skills up to date?"*  
+> *"Check for skill updates."*  
+> *"Update my Adgine skills to the latest version."*
 
 ---
 
