@@ -32,12 +32,20 @@ if args.json:
 status = data.get("status", "empty")
 
 if status == "pending":
-    print("Opportunities are being generated... check back in a few minutes.")
+    print("Opportunities are currently being generated for this project.")
+    print("This usually takes a few minutes — please check back shortly.")
     sys.exit(0)
 
 if status == "empty":
-    print("No opportunities have been generated yet for this project.")
-    print("Opportunities are generated automatically as the system analyzes your project data.")
+    print("No opportunities yet for this project.")
+    print()
+    print("Opportunity discovery requires approximately 1 week of data after your website")
+    print("is added to the platform. The system needs time to build up visibility signals,")
+    print("topic coverage, and competitor comparisons before it can generate meaningful")
+    print("recommendations.")
+    print()
+    print("→ Once your first weekly analysis cycle completes, opportunities will appear here.")
+    print("  Visit https://platform.adgine.ai to check your project status.")
     sys.exit(0)
 
 # status == "ready"

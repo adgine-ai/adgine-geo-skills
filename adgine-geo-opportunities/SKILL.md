@@ -72,8 +72,8 @@ python3 scripts/list_opportunities.py [--project-id <id>] [--json]
 ```
 Returns the latest batch of opportunities for the project. Three possible states:
 - **ready** — opportunities are available, displays ranked list
-- **pending** — opportunities are being generated, check back later
-- **empty** — no opportunities have been generated yet
+- **pending** — opportunities are currently being generated; check back in a few minutes
+- **empty** — no opportunities yet; this is normal for new projects. Opportunity discovery requires approximately **1 week** of the website running in the platform before the first analysis cycle produces results. Relay this context to the user so they understand *why* there is nothing to show, and encourage them to check back after the weekly cycle.
 
 ### Get opportunity detail
 ```bash
