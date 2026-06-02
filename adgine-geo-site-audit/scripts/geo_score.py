@@ -377,6 +377,16 @@ def score_assessment(payload: dict[str, Any]) -> dict[str, Any]:
     if final_cap:
         caps.append(final_cap)
 
+    # When overall cap triggers, scale dimension display scores proportionally
+    # so the report doesn't show high dimension scores contradicting a low total.
+    if final_score < raw_final_score and raw_final_score > 0:
+        ratio = final_score / raw_final_score
+        for dimension in dimensions_result:
+            dimension["display_score"] = _floor_score(dimension["score"] * ratio)
+    else:
+        for dimension in dimensions_result:
+            dimension["display_score"] = dimension["score"]
+
     return {
         "score_table_version": SCORE_TABLE_VERSION,
         "final_score": final_score,
@@ -394,27 +404,22 @@ def render_markdown_report(results: dict[str, Any], *, title: str = "GEO 总分"
         "|---|---:|---:|",
     ]
     for dimension in results["dimensions"]:
+        ds = dimension.get("display_score", dimension["score"])
         lines.append(
-            f"| {dimension['label']} | {dimension['score']}/100 | {dimension['weight'] * 100:g}% |"
+            f"| {dimension['label']} | {ds}/100 | {dimension['weight'] * 100:g}% |"
         )
-    if results.get("caps"):
-        lines.extend(["", "### 封顶规则命中"])
-        for cap in results["caps"]:
-            scope = "总分" if cap["scope"] == "overall" else "维度"
-            lines.append(
-                f"- {scope}封顶：{cap['reason']} 命中项：{', '.join(cap['failed_item_ids'])}；最高 {cap['cap']} 分。"
-            )
 
     for dimension in results["dimensions"]:
+        ds = dimension.get("display_score", dimension["score"])
         lines.extend([
             "",
-            f"## {dimension['label']} ({dimension['score']}/100)",
+            f"## {dimension['label']} ({ds}/100)",
             "",
             "| # | 检测项 | 状态 | 说明 |",
             "|---|---|---|---|",
         ])
         for item_result in dimension["items"]:
-            note = item_result["note"] or item_result["detail"]
+            note = (item_result["note"] or item_result["detail"]).replace("|", "\\|")
             lines.append(
                 f"| {item_result['id']} | {item_result['name']} | {item_result['badge']} | {note} |"
             )
