@@ -596,13 +596,27 @@ def _parse_html(html: str, base_url: str = "") -> dict:
         except (json.JSONDecodeError, TypeError):
             pass
 
+    # Links (extracted before decompose to preserve <a> in <noscript> if any)
+    if base_url:
+        parsed_base = urlparse(base_url)
+        for a in soup.find_all("a", href=True):
+            href = a["href"].strip()
+            if not href or href.startswith(("#", "javascript:", "mailto:", "tel:", "sms:")):
+                continue
+            absolute = urljoin(base_url, href)
+            link_parsed = urlparse(absolute)
+            if link_parsed.scheme not in ("http", "https"):
+                continue
+            if link_parsed.netloc.lower() == parsed_base.netloc.lower():
+                info["internal_links"].append(absolute)
+            else:
+                info["external_links"].append(absolute)
+
     # Body text (stripped of scripts/styles)
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
     info["body_text"] = soup.get_text(" ", strip=True)
     info["word_count"] = len(info["body_text"].split())
-
-    # Links
 
     # FAQ detection
     faq_kws = ["faq", "常见问题", "frequently asked", "q&a"]
@@ -1509,15 +1523,6 @@ def _collect_d2(homepage_info: dict, sub_page_infos: list[dict],
     # Count numeric tokens, percentages, currency
     num_tokens = len(re.findall(r"\b\d+[.,]?\d*%?\b", combined_text))
     year_refs = len(re.findall(r"\b20[12]\d\b", combined_text))
-    tables = sum(
-        info.get("body_text", "").lower().count("<table")
-        for info in all_infos
-    )  # Already stripped — check original HTML
-    # Re-count from raw if available
-    table_count = 0
-    for info in all_infos:
-        # We need original HTML for table detection — use paragraphs as proxy
-        pass
 
     signals["d2_data"] = {
         "numeric_tokens": min(num_tokens, 999),

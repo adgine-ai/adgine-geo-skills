@@ -111,6 +111,7 @@ pip install -r adgine-geo-site-audit/requirements.txt
 - D2-D5 参考外部兜底，写明证据来源
 - 证据不足保留 WARN/FAIL/ERROR，不主观给 PASS
 - 外部兜底信号不能把真实 crawler 阻断项改判为直接可达
+- 不得输出“未使用外部搜索抵消 crawler 阻断”等无实质内容的占位说明
 
 ### Step 3: 逐项判定 30 个压缩检测项
 
@@ -221,14 +222,14 @@ python <SKILL_DIR>/scripts/geo_score.py score <TEMP_DIR>/geo_assessment.json --o
 - AI 可信任：若“品牌主体与联系可验证性 / 合规与安全透明度”任一项 `FAIL`，该大项最高 55；两项同时 `FAIL`，最高 35。
 - AI 可推荐：若“平台适配与搜索意图覆盖 / 主题权威与内容集群建设 / 转化承接页完备度”任一项 `FAIL`，该大项最高 60；两项及以上 `FAIL`，最高 45。
 - 跨维度封顶：若“AI crawler 实际可访问性” `FAIL`，AI 可引用最高 70，AI 可推荐最高 65；若“错误页与模板回退风险” `FAIL`，AI 可理解最高 70，AI 可引用最高 65。
-- 总分护栏：若存在 1 个 P0 技术阻塞（AI crawler 被拦截、核心页误 noindex、核心内容集群 homepage fallback / 大量 soft-404），总分最高 70；若 2 个及以上同时存在，总分最高 62。
+- 总分护栏：若 Sitemap 质量与污染（1.7）判定 `FAIL`（没有可用 sitemap），总分最高 10；若存在 1 个 P0 技术阻塞（AI crawler 被拦截、核心页误 noindex、核心内容集群 homepage fallback / 大量 soft-404），总分最高 70；若 2 个及以上同时存在，总分最高 62。
 封顶规则展示约定：
 - 封顶规则仅保留在内部 JSON 数据（`caps` 数组）中供调试，**报告正文不向客户展示封顶命中信息**（避免向客户解释成本）。
 - 触发总分封顶时，各维度展示分（`display_score`）按比例缩小，确保维度分值与总分一致、不产生违和感。
 - `render_markdown_report()` 使用 `display_score` 而非原始 `score`；原始 `score` 保留在 JSON 供内部分析。
 ### Step 4.5: 可选 AI 引用性/可见性采样测试
 
-仅当用户明确要求“增加引用性测试”“AI 引用性采样”“AI 可见性采样”“测试品牌在 AI 回答中是否出现”等同类意图时执行。普通“审计/检测 URL”默认不执行，不在默认报告中输出空章节、未执行提示或功能提醒。
+仅当用户明确要求"增加引用性测试""AI 引用性采样""AI 可见性采样""测试品牌在 AI 回答中是否出现"等同类意图时执行。普通“审计/检测 URL”默认不执行，不在默认报告中输出空章节、未执行提示或功能提醒。默认报告不得输出 AI 可见性采样、AI 引用性测试相关章节；可选 AI 引用性/可见性采样章节不得出现在 GEO 总分表中。
 
 1. 生成品牌画像和 prompt set：
 
@@ -314,12 +315,14 @@ python <SKILL_DIR>/scripts/geo_timing.py artifacts \
 ```
 
 硬性要求：
-- 完整输出 5 大项 × 30 项明细表；没有可用 sitemap 时 1.7 必须判定 FAIL
+- 完整输出 5 大项 × 30 项明细表；没有可用 sitemap 时必须判定 `FAIL`
 - 禁止输出：AI 可见性采样章节（除非用户明确要求）、报告生成耗时、采集调度逻辑、`CST` 时区
+- 报告正文暂不输出报告生成耗时（调试耗时见 meta.timings）
+- 报告正文不要描述 URL 获取、sitemap 抽样、页面优先级或采集调度逻辑
 - 每个 note 基于 `signals` / `snippets` / 兜底来源的具体证据；兜底采集列出直接失败证据和外部来源
 - 优先改进建议按影响力列 Top 5，编号连续递增
 - 时区必须为 Asia/Shanghai (UTC+08:00)，禁止 CST
-- 调试耗时记录在 meta.timings 中，报告正文不输出
+- 调试耗时记录在 meta.timings 中（含 meta.timings.notfound_probe_seconds 等字段），报告正文不输出
 
 ### 报告说明固定文案
 
@@ -340,7 +343,7 @@ python <SKILL_DIR>/scripts/geo_timing.py artifacts \
    python <SKILL_DIR>/scripts/render_report_pdf.py <TEMP_DIR>/geo_audit_reports/{domain}-{timestamp}.md --output <TEMP_DIR>/geo_audit_reports/{domain}-{timestamp}.pdf --engine reportlab
    ```
 
-4. 脚本默认使用 ReportLab 生成 PDF，不调用 Chrome/Playwright，避免后台 Agent 环境中浏览器启动失败。
+4. 脚本默认使用 ReportLab 生成 PDF，不调用 Chrome/Playwright，避免后台 Agent 环境中浏览器启动失败。`render_report_pdf.py` 可用 `--timings-output` 参数导出 PDF 渲染耗时 JSON。
 5. 只有明确需要浏览器渲染时，才显式使用 `--engine playwright` 或 `--engine chrome`；若需要在当前 Python/pyenv 中安装 Playwright，可加 `--install-playwright`。
 6. PDF 渲染会自动过滤末尾“需要我将本报告导出为 PDF 吗？”交互提示。
 7. 调试 PDF 耗时时，添加 `--timings-output <TEMP_DIR>/geo_audit_pdf_timing.json`，再用 `geo_timing.py artifacts --pdf-timing-json <TEMP_DIR>/geo_audit_pdf_timing.json` 汇总。

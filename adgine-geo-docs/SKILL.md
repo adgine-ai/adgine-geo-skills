@@ -1,22 +1,20 @@
 ---
 name: adgine/geo-docs
-description: Provides the Adgine platform user manual (使用手册). Use when the user asks how to use Adgine, needs help documentation, asks for the user guide, or mentions 使用手册, 帮助文档, 产品说明, user manual, documentation, help guide, how to use, 怎么用, 操作指南, 教程. This skill bundles the official Adgine user manual in both PDF (for reading/download) and Markdown (for agent content lookup) formats. No API key required.
+description: Provides the Adgine platform user manual (使用手册). Use when the user asks how to use Adgine, needs help documentation, asks for the user guide, or mentions 使用手册, 帮助文档, 产品说明, user manual, documentation, help guide, how to use, 怎么用, 操作指南, 教程. This skill points to the official Adgine user manual hosted online (PDF). No API key required.
 ---
 
 # GEO Docs — Adgine 使用手册
 
-This skill provides access to the official Adgine platform user manual.
+This skill provides access to the official Adgine platform user manual, hosted online.
 
 ## No authentication required
 
-This skill is purely local — it reads bundled documentation files. No `GEO_API_KEY` or network access is needed.
+This skill needs no `GEO_API_KEY`. The manual is hosted at a public URL — the agent
+simply outputs the link (and may fetch the URL when answering specific content questions).
 
-## Files included
+## Manual location
 
-| File | Purpose |
-|---|---|
-| `Adgine使用手册-v20260531.pdf` | Formatted PDF manual for user viewing/download |
-| `Adgine使用手册-v20260531.md` | Markdown version — agent can read this to answer content questions |
+**Online manual (PDF):** https://docs.adgine.ai/files/Adgine使用手册-v20260531.pdf
 
 **Current version:** v20260531 (2025-05-31)
 
@@ -24,56 +22,39 @@ This skill is purely local — it reads bundled documentation files. No `GEO_API
 
 ### When the user asks to view or download the user manual (查看手册 / 下载手册 / 我要手册)
 
-**必须输出 PDF 文件的 Markdown 链接，让用户看到可点击的下载/预览按钮：**
+**必须输出 PDF 的 Markdown 链接，让用户看到可点击的下载/预览按钮：**
 
-> ⚠️ **CRITICAL — 必须输出可点击的文件链接：**
+> ⚠️ **CRITICAL — 必须输出可点击的链接：**
 > 当用户说 "查看使用手册", "下载手册", "给我手册", "我要用户手册", "view manual", "download manual", "打开手册" 时：
-> 1. **必须** 输出 Markdown 格式的文件链接，让用户可以直接点击下载或预览
-> 2. **禁止** 自动执行 `open` 命令打开文件（用户没有要求自动打开）
-> 3. **禁止** 仅输出纯文本路径让用户复制粘贴
-> 4. **禁止** 读取 markdown 内容做摘要/预览 — 用户要的是完整 PDF 文件
-> 5. **禁止** 用 `cat` 或 `read_file` 读取 PDF 内容（二进制文件无法预览）
+> 1. **必须** 输出 Markdown 格式的链接，让用户可以直接点击下载或预览
+> 2. **禁止** 仅输出纯文本 URL 让用户复制粘贴
 >
-> 正确做法 — 输出 Markdown 文件链接，路径使用本 skill 目录下的相对路径：
+> 正确做法 — 输出指向在线手册的 Markdown 链接：
 > ```markdown
-> [📄 Adgine使用手册-v20260531.pdf](<this-skill-directory>/Adgine使用手册-v20260531.pdf)
+> [📄 Adgine使用手册-v20260531.pdf](https://docs.adgine.ai/files/Adgine使用手册-v20260531.pdf)
 > ```
-> 其中 `<this-skill-directory>` 是本 SKILL.md 所在目录的实际路径（运行时自动解析）。
-> 不要写死任何绝对路径，PDF 文件就在本 skill 同级目录中。
 
 ### When the user asks a specific question about how to use Adgine
 
-1. **Read** `Adgine使用手册-v20260531.md` (in this skill's directory) to find relevant content.
+1. **Fetch** the online manual at `https://docs.adgine.ai/files/Adgine使用手册-v20260531.pdf` to find relevant content.
 2. **Answer** the user's question based on the manual content.
-3. **Reference** the PDF file if the user wants a formatted/printable version.
-
-### Finding content in the manual
-
-To answer specific questions, read the `.md` file and search for relevant sections:
-
-```bash
-grep -i "<keyword>" "Adgine使用手册-v20260531.md"
-```
-
-Or read the full file to understand the manual structure and locate the answer.
+3. **Reference** the PDF link so the user can view the full formatted manual.
 
 ## Output Format
 
 ### For view/download requests
 
-**直接输出以下内容（Markdown 文件链接 + 说明）：**
+**直接输出以下内容（Markdown 链接 + 说明）：**
 
 > 📄 **Adgine 使用手册 (v20260531)**
 >
-> [点击下载/预览 PDF](<this-skill-directory>/Adgine使用手册-v20260531.pdf)
+> [点击下载/预览 PDF](https://docs.adgine.ai/files/Adgine使用手册-v20260531.pdf)
 >
 > 这是 Adgine 平台的完整使用手册，包含所有功能的详细操作指南。
-
-注意：`<this-skill-directory>` 是本 SKILL.md 文件所在目录的运行时路径，不要硬编码绝对路径。
 
 ### For content questions
 
 - Provide a clear, concise answer based on the manual content
 - Quote relevant sections when helpful
 - Mention that this comes from the official Adgine 使用手册 (v20260531)
-- If the user wants more detail, suggest they review the full PDF manual
+- If the user wants more detail, suggest they review the full PDF manual at the link above

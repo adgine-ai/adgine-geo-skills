@@ -75,6 +75,31 @@ class ParseHtmlTests(unittest.TestCase):
         # body_text should NOT contain JSON-LD content
         self.assertNotIn("Organization", info["body_text"])
 
+    def test_extracts_internal_and_external_links(self):
+        """Link extraction classifies by netloc."""
+        html = '''<html><head><title>T</title></head><body>
+<a href="/about">About</a>
+<a href="https://example.com/pricing">Pricing</a>
+<a href="https://other.com/ref">External</a>
+<a href="mailto:a@b.com">Mail</a>
+<a href="#section">Fragment</a>
+<a href="javascript:void(0)">JS</a>
+</body></html>'''
+        info = geo_collect._parse_html(html, "https://example.com")
+        self.assertIn("https://example.com/about", info["internal_links"])
+        self.assertIn("https://example.com/pricing", info["internal_links"])
+        self.assertIn("https://other.com/ref", info["external_links"])
+        # mailto, fragment, javascript should be excluded
+        all_links = info["internal_links"] + info["external_links"]
+        self.assertTrue(all("mailto:" not in l for l in all_links))
+        self.assertTrue(all(l.startswith("http") for l in all_links))
+
+    def test_links_empty_without_base_url(self):
+        html = '<html><body><a href="/x">X</a></body></html>'
+        info = geo_collect._parse_html(html, "")
+        self.assertEqual(info["internal_links"], [])
+        self.assertEqual(info["external_links"], [])
+
 
 class CollectD5Tests(unittest.TestCase):
     """Tests for _collect_d5 signal generation."""
