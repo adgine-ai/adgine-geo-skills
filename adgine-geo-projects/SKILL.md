@@ -239,18 +239,20 @@ python3 <skills-root>/adgine-geo-dashboard/scripts/get_overview.py [--project-id
 
 Read these indicators and suggest the earliest missing step in the GEO pipeline:
 
-| Dashboard indicator | If zero / missing → Suggest |
+| Dashboard indicator | → use skill (agent-internal) |
 |---|---|
-| Topics count = 0 | `adgine-geo-topics` — 创建主题和提示词 |
-| Prompts count = 0 | `adgine-geo-topics` — 批量生成 AI 搜索提示词 |
-| Tests count = 0 | `adgine-geo-citation` — 运行引用测试 |
-| Articles count = 0 | `adgine-geo-content` — 生成 GEO 优化文章 |
-| GA4 not connected | `adgine-geo-integrations` — 连接 GA4 获取流量数据 |
-| Cloudflare not connected | `adgine-geo-integrations` — 接入 Cloudflare 追踪 AI 爬虫 |
-| Brand not generated | `adgine-geo-brand` — 生成品牌画像 |
+| Topics count = 0 | 创建主题和提示词 *(→ adgine-geo-topics)*|
+| Prompts count = 0 | 批量生成 AI 搜索提示词 *(→ adgine-geo-topics)*|
+| Tests count = 0 | 运行引用测试 *(→ adgine-geo-citation)*|
+| Articles count = 0 | 生成 GEO 优化文章 *(→ adgine-geo-content)*|
+| GA4 not connected | 连接 GA4 获取流量数据 *(→ adgine-geo-integrations)*|
+| Cloudflare not connected | 接入 Cloudflare 追踪 AI 爬虫 *(→ adgine-geo-integrations)*|
+| Brand not generated | 生成品牌画像 *(→ adgine-geo-brand)*|
 
 Always present suggestions as:
 
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
+
 > 💡 **建议下一步：**
-> 1. **[action description]** → `skill-name`
-> 2. **[action description]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

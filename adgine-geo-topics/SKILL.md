@@ -215,16 +215,18 @@ Truncate prompts to ~36 chars with `...`.
 
 After managing topics or prompts, suggest the natural next step in the GEO pipeline:
 
-| You just… | Suggest next |
+| You just… | → use skill (agent-internal) |
 |---|---|
-| Created topics / prompts | `adgine-geo-citation` — 运行引用测试，检测 AI 是否引用你的品牌 |
-| Created topics / prompts | `adgine-geo-content` — 基于提示词生成 GEO 优化文章 |
-| Generated prompts with AI | `adgine-geo-citation` — 对刚生成的提示词运行引用测试 |
-| Listed/managed prompts | `adgine-geo-content` — 选择合适的提示词生成内容 |
+| Created topics / prompts | 运行引用测试，检测 AI 是否引用你的品牌 *(→ adgine-geo-citation)*|
+| Created topics / prompts | 基于提示词生成 GEO 优化文章 *(→ adgine-geo-content)*|
+| Generated prompts with AI | 对刚生成的提示词运行引用测试 *(→ adgine-geo-citation)*|
+| Listed/managed prompts | 选择合适的提示词生成内容 *(→ adgine-geo-content)*|
 
-If the project has no brand profile yet, also suggest: `adgine-geo-brand` — 生成品牌画像（提升 AI 引用质量）。
+If the project has no brand profile yet, also suggest: 生成品牌画像（提升 AI 引用质量）。 *(→ adgine-geo-brand)*
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
 

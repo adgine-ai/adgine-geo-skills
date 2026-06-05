@@ -370,15 +370,17 @@ python -m unittest discover -s tests -p 'test_*.py'
 
 After a site audit, suggest next steps based on the audit findings:
 
-| Audit result | Suggest |
+| Audit result | → use skill (agent-internal) |
 |---|---|
-| Low GEO score (< 50) | Fix critical issues first, then `adgine-geo-site-audit` — 修复后重新审计 |
-| Crawlability issues found | `adgine-geo-integrations` — 配置 Cloudflare Worker 追踪 AI 爬虫 |
-| Content gaps identified | `adgine-geo-content` — 针对缺失的内容类型生成 GEO 文章 |
-| Schema / structure issues | Fix on site, then `adgine-geo-performance` — 逐页检查 AI 优化健康度 |
-| Audit completed (strong score) | `adgine-geo-projects` — 将网站注册到 GEO 平台，开始持续监控 |
-| Audit completed (any score) | `adgine-geo-citation` — 运行引用测试，验证 AI 平台实际引用情况 |
+| Low GEO score (< 50) | Fix critical issues first, then 修复后重新审计 *(→ adgine-geo-site-audit)*|
+| Crawlability issues found | 配置 Cloudflare Worker 追踪 AI 爬虫 *(→ adgine-geo-integrations)*|
+| Content gaps identified | 针对缺失的内容类型生成 GEO 文章 *(→ adgine-geo-content)*|
+| Schema / structure issues | Fix on site, then 逐页检查 AI 优化健康度 *(→ adgine-geo-performance)*|
+| Audit completed (strong score) | 将网站注册到 GEO 平台，开始持续监控 *(→ adgine-geo-projects)*|
+| Audit completed (any score) | 运行引用测试，验证 AI 平台实际引用情况 *(→ adgine-geo-citation)*|
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

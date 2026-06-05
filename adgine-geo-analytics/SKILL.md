@@ -175,15 +175,17 @@ When presenting analytics results, follow this structure exactly.
 
 After reviewing analytics, suggest deeper or follow-up actions:
 
-| What you saw | Suggest |
+| What you saw | → use skill (agent-internal) |
 |---|---|
-| Traffic overview | `adgine-geo-aiagent` — 深入分析 AI 爬虫和 AI 引荐流量明细 |
-| GA4 data present | `adgine-geo-aiagent` — 查看 AI 驱动的真人访问来源 |
-| Cloudflare data present | `adgine-geo-aiagent` — 查看各 AI 平台的爬虫行为 |
-| AI referral sessions growing | `adgine-geo-citation` — 运行引用测试，量化 AI 可见性 |
-| Integration missing (null sections) | `adgine-geo-integrations` — 连接 GA4 或 Cloudflare 获取完整数据 |
-| Low traffic overall | `adgine-geo-content` — 生成更多 GEO 优化内容吸引 AI 引荐流量 |
+| Traffic overview | 深入分析 AI 爬虫和 AI 引荐流量明细 *(→ adgine-geo-aiagent)*|
+| GA4 data present | 查看 AI 驱动的真人访问来源 *(→ adgine-geo-aiagent)*|
+| Cloudflare data present | 查看各 AI 平台的爬虫行为 *(→ adgine-geo-aiagent)*|
+| AI referral sessions growing | 运行引用测试，量化 AI 可见性 *(→ adgine-geo-citation)*|
+| Integration missing (null sections) | 连接 GA4 或 Cloudflare 获取完整数据 *(→ adgine-geo-integrations)*|
+| Low traffic overall | 生成更多 GEO 优化内容吸引 AI 引荐流量 *(→ adgine-geo-content)*|
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

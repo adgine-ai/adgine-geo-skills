@@ -173,14 +173,16 @@ ASCII tables only inside fenced code blocks. Status vocabulary:
 
 After connecting or syncing integrations, suggest the logical next step:
 
-| You just… | Suggest next |
+| You just… | → use skill (agent-internal) |
 |---|---|
-| Connected GA4 / Cloudflare | `adgine-geo-analytics` — 查看流量概览，确认数据已流入 |
-| Synced data | `adgine-geo-aiagent` — 查看 AI 爬虫追踪数据 |
-| Deployed Cloudflare Worker | `adgine-geo-aiagent` — 检查 AI bot traffic 是否开始上报 |
-| Checked integration status | `adgine-geo-dashboard` — 查看项目总览，确认所有集成健康 |
-| Disconnected a service | `adgine-geo-integrations` — 重新连接以恢复数据流 |
+| Connected GA4 / Cloudflare | 查看流量概览，确认数据已流入 *(→ adgine-geo-analytics)*|
+| Synced data | 查看 AI 爬虫追踪数据 *(→ adgine-geo-aiagent)*|
+| Deployed Cloudflare Worker | 检查 AI bot traffic 是否开始上报 *(→ adgine-geo-aiagent)*|
+| Checked integration status | 查看项目总览，确认所有集成健康 *(→ adgine-geo-dashboard)*|
+| Disconnected a service | 重新连接以恢复数据流 *(→ adgine-geo-integrations)*|
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

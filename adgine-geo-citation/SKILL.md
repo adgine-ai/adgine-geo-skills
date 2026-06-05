@@ -204,15 +204,17 @@ Then list as clickable links below the table:
 
 After reviewing citation results, suggest contextual next actions:
 
-| What you saw | Suggest |
+| What you saw | → use skill (agent-internal) |
 |---|---|
-| Citation tests completed | `adgine-geo-visibility` — 查看可见性趋势和竞品对比 |
-| Low citation rate (< 30%) | `adgine-geo-content` — 生成针对性的 GEO 优化文章 |
-| Low citation rate (< 30%) | `adgine-geo-performance` — 检查被引用页面的 AI 优化健康度 |
-| Specific URLs cited | `adgine-geo-aiagent` — 查看这些页面的 AI 爬虫访问明细 |
-| High citation rate | `adgine-geo-content` — 扩大内容覆盖，生成更多 GEO 文章 |
-| Aggregate results reviewed | `adgine-geo-wordpress` — 发布表现最好的内容到 WordPress |
+| Citation tests completed | 查看可见性趋势和竞品对比 *(→ adgine-geo-visibility)*|
+| Low citation rate (< 30%) | 生成针对性的 GEO 优化文章 *(→ adgine-geo-content)*|
+| Low citation rate (< 30%) | 检查被引用页面的 AI 优化健康度 *(→ adgine-geo-performance)*|
+| Specific URLs cited | 查看这些页面的 AI 爬虫访问明细 *(→ adgine-geo-aiagent)*|
+| High citation rate | 扩大内容覆盖，生成更多 GEO 文章 *(→ adgine-geo-content)*|
+| Aggregate results reviewed | 发布表现最好的内容到 WordPress *(→ adgine-geo-wordpress)*|
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

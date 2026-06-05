@@ -184,15 +184,17 @@ counts with thousands separator; "%" suffix only on percentage metrics;
 
 After AI traffic analysis, suggest next analytical or action steps:
 
-| What you analyzed | Suggest |
+| What you analyzed | → use skill (agent-internal) |
 |---|---|
-| Bot traffic overview | `adgine-geo-aiagent` — 深入查看具体 bot 详情或 page detail |
-| Specific page traffic | `adgine-geo-performance` — 检查该页面的 AI 优化健康度 |
-| Human referral traffic | `adgine-geo-analytics` — 查看 GA4 流量总览 |
-| Sankey / platform flow | `adgine-geo-content` — 针对高流量入口页生成优化内容 |
-| PageSpeed / Core Web Vitals | `adgine-geo-site-audit` — 对整个网站做全面 GEO 审计 |
-| Low AI bot activity | `adgine-geo-integrations` — 检查 Cloudflare Worker 是否正常部署 |
+| Bot traffic overview | 深入查看具体 bot 详情或 page detail *(→ adgine-geo-aiagent)*|
+| Specific page traffic | 检查该页面的 AI 优化健康度 *(→ adgine-geo-performance)*|
+| Human referral traffic | 查看 GA4 流量总览 *(→ adgine-geo-analytics)*|
+| Sankey / platform flow | 针对高流量入口页生成优化内容 *(→ adgine-geo-content)*|
+| PageSpeed / Core Web Vitals | 对整个网站做全面 GEO 审计 *(→ adgine-geo-site-audit)*|
+| Low AI bot activity | 检查 Cloudflare Worker 是否正常部署 *(→ adgine-geo-integrations)*|
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

@@ -166,14 +166,16 @@ Use the dashboard data you just displayed to identify what's missing:
 
 | What you saw | If zero / missing → Suggest |
 |---|---|
-| Topics count = 0 | `adgine-geo-topics` — 创建主题，组织内容分类 |
-| Prompts count = 0 | `adgine-geo-topics` — 生成 AI 搜索提示词 |
-| Tests / Citations count = 0 | `adgine-geo-citation` — 运行引用测试，检测 AI 是否引用品牌 |
-| Articles count = 0 | `adgine-geo-content` — 生成 GEO 优化的文章 |
-| Brand not generated | `adgine-geo-brand` — 生成 AI 品牌画像 |
-| GA4 / Cloudflare disconnected | `adgine-geo-integrations` — 连接数据源获取完整分析 |
-| All indicators have data | `adgine-geo-visibility` — 深入分析可见性 / `adgine-geo-wordpress` — 发布文章 |
+| Topics count = 0 | 创建主题，组织内容分类 *(→ adgine-geo-topics)*|
+| Prompts count = 0 | 生成 AI 搜索提示词 *(→ adgine-geo-topics)*|
+| Tests / Citations count = 0 | 运行引用测试，检测 AI 是否引用品牌 *(→ adgine-geo-citation)*|
+| Articles count = 0 | 生成 GEO 优化的文章 *(→ adgine-geo-content)*|
+| Brand not generated | 生成 AI 品牌画像 *(→ adgine-geo-brand)*|
+| GA4 / Cloudflare disconnected | 连接数据源获取完整分析 *(→ adgine-geo-integrations)*|
+| All indicators have data | 深入分析可见性趋势 *(→ adgine-geo-visibility)* / 将已生成文章发布到 WordPress *(→ adgine-geo-wordpress)* |
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

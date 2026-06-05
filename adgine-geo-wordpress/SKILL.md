@@ -135,15 +135,17 @@ ASCII tables only. Status vocabulary: `Connected` / `Disconnected` /
 
 After WordPress operations, suggest the next content or analysis step:
 
-| You just… | Suggest next |
+| You just… | → use skill (agent-internal) |
 |---|---|
-| Connected WordPress | `adgine-geo-content` — 生成 GEO 文章（现在可以直接发布） |
-| Published an article | `adgine-geo-performance` — 检查已发布页面的 AI 优化健康度 |
-| Updated a published post | `adgine-geo-citation` — 运行引用测试，验证更新后 AI 引用是否提升 |
-| Listed publishable content | `adgine-geo-wordpress` — 选择一篇发布到 WordPress |
-| Checked publish history | `adgine-geo-content` — 生成更多文章扩展内容库 |
-| Disconnected WordPress | `adgine-geo-integrations` — 管理其他集成（GA4 / Cloudflare） |
+| Connected WordPress | 生成 GEO 文章（现在可以直接发布） *(→ adgine-geo-content)*|
+| Published an article | 检查已发布页面的 AI 优化健康度 *(→ adgine-geo-performance)*|
+| Updated a published post | 运行引用测试，验证更新后 AI 引用是否提升 *(→ adgine-geo-citation)*|
+| Listed publishable content | 选择一篇发布到 WordPress *(→ adgine-geo-wordpress)*|
+| Checked publish history | 生成更多文章扩展内容库 *(→ adgine-geo-content)*|
+| Disconnected WordPress | 管理其他集成（GA4 / Cloudflare） *(→ adgine-geo-integrations)*|
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

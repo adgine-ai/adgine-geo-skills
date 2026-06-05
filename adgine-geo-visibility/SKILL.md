@@ -152,15 +152,17 @@ decimals depending on metric scale; "%" suffix for percentage metrics;
 
 After visibility analysis, suggest actions to improve or act on the results:
 
-| What you saw | Suggest |
+| What you saw | → use skill (agent-internal) |
 |---|---|
-| Low Visibility Score | `adgine-geo-citation` — 运行新引用测试，诊断哪些平台未引用 |
-| Low Share of Voice | `adgine-geo-content` — 针对弱项话题生成更多 GEO 内容 |
-| Competitor outperforming | `adgine-geo-brand` — 优化品牌画像，强化差异化定位 |
-| Specific prompt performing well | `adgine-geo-content` — 基于该 prompt 生成扩展文章 |
-| Specific prompt performing poorly | `adgine-geo-topics` — 优化或替换该 prompt |
-| Execution history reviewed | `adgine-geo-aiagent` — 查看对应页面的 AI 爬虫访问数据 |
+| Low Visibility Score | 运行新引用测试，诊断哪些平台未引用 *(→ adgine-geo-citation)*|
+| Low Share of Voice | 针对弱项话题生成更多 GEO 内容 *(→ adgine-geo-content)*|
+| Competitor outperforming | 优化品牌画像，强化差异化定位 *(→ adgine-geo-brand)*|
+| Specific prompt performing well | 基于该 prompt 生成扩展文章 *(→ adgine-geo-content)*|
+| Specific prompt performing poorly | 优化或替换该 prompt *(→ adgine-geo-topics)*|
+| Execution history reviewed | 查看对应页面的 AI 爬虫访问数据 *(→ adgine-geo-aiagent)*|
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

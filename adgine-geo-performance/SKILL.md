@@ -162,14 +162,16 @@ If all checks pass: > 🎉 **All checks pass.** No action needed.
 
 After page health analysis, suggest appropriate follow-up actions:
 
-| What you saw | Suggest |
+| What you saw | → use skill (agent-internal) |
 |---|---|
-| Crawlability issues (Fail) | `adgine-geo-integrations` — 检查 robots.txt / 部署 Cloudflare Worker 追踪 AI 爬虫 |
-| Content health warnings | `adgine-geo-content` — 生成或更新该页面的 GEO 优化内容 |
-| AI optimization gaps | `adgine-geo-site-audit` — 对整个网站做全面 GEO 技术审计 |
-| Specific page analyzed | `adgine-geo-aiagent` — 查看该页面的 AI 爬虫访问日志 |
-| All checks pass | `adgine-geo-visibility` — 检查该页面在 AI 平台的实际引用表现 |
+| Crawlability issues (Fail) | 检查 robots.txt / 部署 Cloudflare Worker 追踪 AI 爬虫 *(→ adgine-geo-integrations)*|
+| Content health warnings | 生成或更新该页面的 GEO 优化内容 *(→ adgine-geo-content)*|
+| AI optimization gaps | 对整个网站做全面 GEO 技术审计 *(→ adgine-geo-site-audit)*|
+| Specific page analyzed | 查看该页面的 AI 爬虫访问日志 *(→ adgine-geo-aiagent)*|
+| All checks pass | 检查该页面在 AI 平台的实际引用表现 *(→ adgine-geo-visibility)*|
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*

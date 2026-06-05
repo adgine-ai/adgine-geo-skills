@@ -129,14 +129,16 @@ When `status` is `Completed` **and** the response includes `wp_username` / `wp_p
 
 After SaaS website deployment, guide the user to set up their GEO workflow:
 
-| Scenario | Suggest |
+| Scenario | → use skill (agent-internal) |
 |---|---|
-| Deployment completed | `adgine-geo-projects` — 确认项目已创建，设置 `GEO_PROJECT_ID` |
-| Site is live | `adgine-geo-brand` — 为新网站生成品牌画像 |
-| Site is live | `adgine-geo-topics` — 创建主题和 AI 搜索提示词 |
-| Deployment failed | `adgine-geo-saas` — 检查错误信息，修正后重试 |
-| WordPress credentials received | Save credentials, then use `adgine-geo-wordpress` to connect |
+| Deployment completed | 确认项目已创建，设置 `GEO_PROJECT_ID` *(→ adgine-geo-projects)*|
+| Site is live | 为新网站生成品牌画像 *(→ adgine-geo-brand)*|
+| Site is live | 创建主题和 AI 搜索提示词 *(→ adgine-geo-topics)*|
+| Deployment failed | 检查错误信息，修正后重试 *(→ adgine-geo-saas)*|
+| WordPress credentials received | 保存凭证后连接 WordPress 站点 *(→ adgine-geo-wordpress)* |
+
+**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
 
 > 💡 **建议下一步：**
-> 1. **[action]** → `skill-name`
-> 2. **[action]** → `skill-name`
+> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
