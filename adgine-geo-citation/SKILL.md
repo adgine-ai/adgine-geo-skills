@@ -197,3 +197,22 @@ Then list as clickable links below the table:
 - [example.com/about](https://example.com/about) — 5×
 
 > 📊 **N unique URLs** cited across **M prompts**.
+
+---
+
+## Post-task recommendations
+
+After reviewing citation results, suggest contextual next actions:
+
+| What you saw | Suggest |
+|---|---|
+| Citation tests completed | `adgine-geo-visibility` — 查看可见性趋势和竞品对比 |
+| Low citation rate (< 30%) | `adgine-geo-content` — 生成针对性的 GEO 优化文章 |
+| Low citation rate (< 30%) | `adgine-geo-performance` — 检查被引用页面的 AI 优化健康度 |
+| Specific URLs cited | `adgine-geo-aiagent` — 查看这些页面的 AI 爬虫访问明细 |
+| High citation rate | `adgine-geo-content` — 扩大内容覆盖，生成更多 GEO 文章 |
+| Aggregate results reviewed | `adgine-geo-wordpress` — 发布表现最好的内容到 WordPress |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

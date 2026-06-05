@@ -225,3 +225,32 @@ If any integration is `---`: > 🔌 Connect integrations at [platform.adgine.ai]
 On failure:
 
 > ❌ **Authentication failed.** Check `GEO_API_KEY` — get a key at [platform.adgine.ai](https://platform.adgine.ai)
+
+---
+
+## Post-task recommendations
+
+After completing project operations, always end with 2–3 actionable next steps
+based on what the project still needs. To check current state, run:
+
+```bash
+python3 <skills-root>/adgine-geo-dashboard/scripts/get_overview.py [--project-id <id>]
+```
+
+Read these indicators and suggest the earliest missing step in the GEO pipeline:
+
+| Dashboard indicator | If zero / missing → Suggest |
+|---|---|
+| Topics count = 0 | `adgine-geo-topics` — 创建主题和提示词 |
+| Prompts count = 0 | `adgine-geo-topics` — 批量生成 AI 搜索提示词 |
+| Tests count = 0 | `adgine-geo-citation` — 运行引用测试 |
+| Articles count = 0 | `adgine-geo-content` — 生成 GEO 优化文章 |
+| GA4 not connected | `adgine-geo-integrations` — 连接 GA4 获取流量数据 |
+| Cloudflare not connected | `adgine-geo-integrations` — 接入 Cloudflare 追踪 AI 爬虫 |
+| Brand not generated | `adgine-geo-brand` — 生成品牌画像 |
+
+Always present suggestions as:
+
+> 💡 **建议下一步：**
+> 1. **[action description]** → `skill-name`
+> 2. **[action description]** → `skill-name`

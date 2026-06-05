@@ -145,3 +145,22 @@ decimals depending on metric scale; "%" suffix for percentage metrics;
 | GET | `/api/projects/{id}/analytics/prompts/{prompt_id}/overview` |
 | GET | `/api/projects/{id}/analytics/prompts/{prompt_id}/executions` |
 | GET | `/api/projects/{id}/analytics/prompts/{prompt_id}/executions/{execution_id}` |
+
+---
+
+## Post-task recommendations
+
+After visibility analysis, suggest actions to improve or act on the results:
+
+| What you saw | Suggest |
+|---|---|
+| Low Visibility Score | `adgine-geo-citation` — 运行新引用测试，诊断哪些平台未引用 |
+| Low Share of Voice | `adgine-geo-content` — 针对弱项话题生成更多 GEO 内容 |
+| Competitor outperforming | `adgine-geo-brand` — 优化品牌画像，强化差异化定位 |
+| Specific prompt performing well | `adgine-geo-content` — 基于该 prompt 生成扩展文章 |
+| Specific prompt performing poorly | `adgine-geo-topics` — 优化或替换该 prompt |
+| Execution history reviewed | `adgine-geo-aiagent` — 查看对应页面的 AI 爬虫访问数据 |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

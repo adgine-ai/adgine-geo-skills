@@ -166,3 +166,21 @@ ASCII tables only inside fenced code blocks. Status vocabulary:
 | GET    | `/api/projects/{id}/integrations/cloudflare/worker/deploy-status` |
 | GET    | `/api/projects/{id}/integrations/cloudflare/worker/overview` |
 | GET    | `/api/projects/{id}/integrations/cloudflare/worker/pages` |
+
+---
+
+## Post-task recommendations
+
+After connecting or syncing integrations, suggest the logical next step:
+
+| You just… | Suggest next |
+|---|---|
+| Connected GA4 / Cloudflare | `adgine-geo-analytics` — 查看流量概览，确认数据已流入 |
+| Synced data | `adgine-geo-aiagent` — 查看 AI 爬虫追踪数据 |
+| Deployed Cloudflare Worker | `adgine-geo-aiagent` — 检查 AI bot traffic 是否开始上报 |
+| Checked integration status | `adgine-geo-dashboard` — 查看项目总览，确认所有集成健康 |
+| Disconnected a service | `adgine-geo-integrations` — 重新连接以恢复数据流 |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

@@ -207,5 +207,24 @@ Truncate prompts to ~36 chars with `...`.
 └────┴──────────────────────────────────────────────────────┘
 ```
 
-> **Next:** run citation tests:
-> `python3 adgine-geo-citation/scripts/create_tests.py --prompt-ids <id1,id2,...>`
+> **Next:** choose an action below.
+
+---
+
+## Post-task recommendations
+
+After managing topics or prompts, suggest the natural next step in the GEO pipeline:
+
+| You just… | Suggest next |
+|---|---|
+| Created topics / prompts | `adgine-geo-citation` — 运行引用测试，检测 AI 是否引用你的品牌 |
+| Created topics / prompts | `adgine-geo-content` — 基于提示词生成 GEO 优化文章 |
+| Generated prompts with AI | `adgine-geo-citation` — 对刚生成的提示词运行引用测试 |
+| Listed/managed prompts | `adgine-geo-content` — 选择合适的提示词生成内容 |
+
+If the project has no brand profile yet, also suggest: `adgine-geo-brand` — 生成品牌画像（提升 AI 引用质量）。
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`
+

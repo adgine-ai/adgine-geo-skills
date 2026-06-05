@@ -172,3 +172,20 @@ Status values in cell: `Completed` / `Generating` / `Not set` / `Failed`
 └────────────┴──────────────────────────────────────┘
 ```
 Then show the full new value below the table if it was truncated.
+
+---
+
+## Post-task recommendations
+
+After brand operations, suggest 2–3 next steps based on brand status:
+
+| Scenario | Suggest |
+|---|---|
+| Brand just generated / completed | `adgine-geo-topics` — 基于品牌画像创建主题和提示词 |
+| Brand exists (any state) | `adgine-geo-citation` — 运行引用测试，验证 AI 是否识别品牌 |
+| Brand fields updated | `adgine-geo-content` — 生成 GEO 文章（会使用更新后的品牌画像） |
+| No brand generated yet | `adgine-geo-brand` — 先生成品牌画像，这是所有 GEO 操作的基础 |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

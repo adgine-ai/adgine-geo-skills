@@ -177,3 +177,22 @@ counts with thousands separator; "%" suffix only on percentage metrics;
 | GET    | `/api/projects/{id}/ai-agent/pages/by-path/related` |
 | GET    | `/api/projects/{id}/ai-agent/platforms` |
 | GET    | `/api/projects/{id}/ai-agent/referral-traffic` |
+
+---
+
+## Post-task recommendations
+
+After AI traffic analysis, suggest next analytical or action steps:
+
+| What you analyzed | Suggest |
+|---|---|
+| Bot traffic overview | `adgine-geo-aiagent` — 深入查看具体 bot 详情或 page detail |
+| Specific page traffic | `adgine-geo-performance` — 检查该页面的 AI 优化健康度 |
+| Human referral traffic | `adgine-geo-analytics` — 查看 GA4 流量总览 |
+| Sankey / platform flow | `adgine-geo-content` — 针对高流量入口页生成优化内容 |
+| PageSpeed / Core Web Vitals | `adgine-geo-site-audit` — 对整个网站做全面 GEO 审计 |
+| Low AI bot activity | `adgine-geo-integrations` — 检查 Cloudflare Worker 是否正常部署 |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

@@ -155,3 +155,21 @@ For each `Fail` or `Warn` row, add a note line below the table:
 Priority assignment: `Fail` → `High` · crawlability/indexing `Warn` → `High` · other `Warn` → `Medium`
 
 If all checks pass: > 🎉 **All checks pass.** No action needed.
+
+---
+
+## Post-task recommendations
+
+After page health analysis, suggest appropriate follow-up actions:
+
+| What you saw | Suggest |
+|---|---|
+| Crawlability issues (Fail) | `adgine-geo-integrations` — 检查 robots.txt / 部署 Cloudflare Worker 追踪 AI 爬虫 |
+| Content health warnings | `adgine-geo-content` — 生成或更新该页面的 GEO 优化内容 |
+| AI optimization gaps | `adgine-geo-site-audit` — 对整个网站做全面 GEO 技术审计 |
+| Specific page analyzed | `adgine-geo-aiagent` — 查看该页面的 AI 爬虫访问日志 |
+| All checks pass | `adgine-geo-visibility` — 检查该页面在 AI 平台的实际引用表现 |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

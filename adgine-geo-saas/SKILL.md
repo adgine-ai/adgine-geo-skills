@@ -122,3 +122,21 @@ When `status` is `Completed` **and** the response includes `wp_username` / `wp_p
 | GET | `/api/saas/domain/check` |
 | POST | `/api/saas/websites` |
 | GET | `/api/saas/task/{task_id}` |
+
+---
+
+## Post-task recommendations
+
+After SaaS website deployment, guide the user to set up their GEO workflow:
+
+| Scenario | Suggest |
+|---|---|
+| Deployment completed | `adgine-geo-projects` — 确认项目已创建，设置 `GEO_PROJECT_ID` |
+| Site is live | `adgine-geo-brand` — 为新网站生成品牌画像 |
+| Site is live | `adgine-geo-topics` — 创建主题和 AI 搜索提示词 |
+| Deployment failed | `adgine-geo-saas` — 检查错误信息，修正后重试 |
+| WordPress credentials received | Save credentials, then use `adgine-geo-wordpress` to connect |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

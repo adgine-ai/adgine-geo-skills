@@ -168,3 +168,22 @@ When presenting analytics results, follow this structure exactly.
 - If a section is null/not connected: skip its table, show one line `🔌 **<Service>** — not connected. [Connect](https://platform.adgine.ai)`
 - Keep total table width under ~60 chars (fits Telegram mobile without scroll)
 - Each table in its own separate ` ``` ` fence
+
+---
+
+## Post-task recommendations
+
+After reviewing analytics, suggest deeper or follow-up actions:
+
+| What you saw | Suggest |
+|---|---|
+| Traffic overview | `adgine-geo-aiagent` — 深入分析 AI 爬虫和 AI 引荐流量明细 |
+| GA4 data present | `adgine-geo-aiagent` — 查看 AI 驱动的真人访问来源 |
+| Cloudflare data present | `adgine-geo-aiagent` — 查看各 AI 平台的爬虫行为 |
+| AI referral sessions growing | `adgine-geo-citation` — 运行引用测试，量化 AI 可见性 |
+| Integration missing (null sections) | `adgine-geo-integrations` — 连接 GA4 或 Cloudflare 获取完整数据 |
+| Low traffic overall | `adgine-geo-content` — 生成更多 GEO 优化内容吸引 AI 引荐流量 |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

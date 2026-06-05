@@ -128,3 +128,22 @@ ASCII tables only. Status vocabulary: `Connected` / `Disconnected` /
 | POST   | `/api/projects/{id}/integrations/wordpress/publish` |
 | GET    | `/api/projects/{id}/integrations/wordpress/publishes` |
 | PUT    | `/api/projects/{id}/integrations/wordpress/publishes/{record_id}` |
+
+---
+
+## Post-task recommendations
+
+After WordPress operations, suggest the next content or analysis step:
+
+| You just… | Suggest next |
+|---|---|
+| Connected WordPress | `adgine-geo-content` — 生成 GEO 文章（现在可以直接发布） |
+| Published an article | `adgine-geo-performance` — 检查已发布页面的 AI 优化健康度 |
+| Updated a published post | `adgine-geo-citation` — 运行引用测试，验证更新后 AI 引用是否提升 |
+| Listed publishable content | `adgine-geo-wordpress` — 选择一篇发布到 WordPress |
+| Checked publish history | `adgine-geo-content` — 生成更多文章扩展内容库 |
+| Disconnected WordPress | `adgine-geo-integrations` — 管理其他集成（GA4 / Cloudflare） |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

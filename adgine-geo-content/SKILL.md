@@ -193,3 +193,22 @@ Truncate long titles to ~36 chars with `...`.
 ```
 
 Then the **full article text** with `##`/`###` headings and bullet lists — never wrap article body in a code fence.
+
+---
+
+## Post-task recommendations
+
+After content operations, guide the user to the next stage:
+
+| You just… | Suggest next |
+|---|---|
+| Generated an outline | Review outline, then `adgine-geo-content` — 生成完整文章 |
+| Generated a full article | `adgine-geo-wordpress` — 发布文章到 WordPress |
+| Listed content items | `adgine-geo-content` — 选择一篇生成 outline 或 article |
+| Checked job status / retried | `adgine-geo-content` — 继续管理内容管线 |
+| Article published-ready | `adgine-geo-performance` — 检查文章页面的 AI 优化健康度 |
+| Multiple articles ready | `adgine-geo-citation` — 对文章主题运行引用测试，验证效果 |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`

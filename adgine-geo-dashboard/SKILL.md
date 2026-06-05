@@ -156,3 +156,24 @@ python3 scripts/check_integrations.py disconnect --service ga4 --yes    # DESTRU
 | GET | `/api/projects/{id}/integrations` |
 | GET | `/api/projects/{id}/integrations/{service}/status` |
 | DELETE | `/api/projects/{id}/integrations/{service}` |
+
+---
+
+## Post-task recommendations
+
+After presenting the dashboard snapshot, always suggest 2–3 next actions.
+Use the dashboard data you just displayed to identify what's missing:
+
+| What you saw | If zero / missing → Suggest |
+|---|---|
+| Topics count = 0 | `adgine-geo-topics` — 创建主题，组织内容分类 |
+| Prompts count = 0 | `adgine-geo-topics` — 生成 AI 搜索提示词 |
+| Tests / Citations count = 0 | `adgine-geo-citation` — 运行引用测试，检测 AI 是否引用品牌 |
+| Articles count = 0 | `adgine-geo-content` — 生成 GEO 优化的文章 |
+| Brand not generated | `adgine-geo-brand` — 生成 AI 品牌画像 |
+| GA4 / Cloudflare disconnected | `adgine-geo-integrations` — 连接数据源获取完整分析 |
+| All indicators have data | `adgine-geo-visibility` — 深入分析可见性 / `adgine-geo-wordpress` — 发布文章 |
+
+> 💡 **建议下一步：**
+> 1. **[action]** → `skill-name`
+> 2. **[action]** → `skill-name`
