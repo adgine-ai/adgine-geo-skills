@@ -4,7 +4,7 @@ Agent Skills are folders of instructions, scripts, and resources that AI agents 
 
 **Works with all mainstream AI agents.** Supports [WorkBuddy](https://workbuddy.ai), [Codex](https://openai.com/codex), [OpenClaw](https://github.com/openclaw/openclaw), and [Hermes](https://github.com/hermes-agent/hermes).
 
-**Current version:** [`VERSION`](VERSION) · [All releases](https://github.com/adgine-ai/adgine-geo-skills/releases)
+**Current version:** [`v1.0.2`](VERSION) · [All releases](https://github.com/adgine-ai/adgine-geo-skills/releases)
 
 ---
 
@@ -109,20 +109,23 @@ Users can trigger a version check or update with natural language:
 
 | Skill | What it does |
 |---|---|
-| [`adgine-geo-projects`](adgine-geo-projects/) | List, create, update, delete projects; manage competitors; verify auth |
-| [`adgine-geo-dashboard`](adgine-geo-dashboard/) | Project snapshot — visibility score, 7-day trend, integration health |
-| [`adgine-geo-analytics`](adgine-geo-analytics/) | Traffic overview — GA4 sessions, AI referrals, crawler data |
-| [`adgine-geo-aiagent`](adgine-geo-aiagent/) | AI bot & human traffic — crawler KPIs, platform breakdowns, Sankey flows, per-page deep dives |
-| [`adgine-geo-visibility`](adgine-geo-visibility/) | Deep AI visibility — Visibility Score, Share of Voice, Average Position, competitor matrix, prompt history |
-| [`adgine-geo-citation`](adgine-geo-citation/) | Citation tests across ChatGPT / Perplexity / Google AIO / Gemini; brand mention rates and cited URLs |
-| [`adgine-geo-brand`](adgine-geo-brand/) | Generate and manage AI-facing brand profiles (intro, ICP, competitor analysis, voice & tone) |
-| [`adgine-geo-topics`](adgine-geo-topics/) | Create topics and AI search prompts; batch-generate prompts with AI |
-| [`adgine-geo-content`](adgine-geo-content/) | Generate GEO-optimized titles, outlines, and full articles; manage the content pipeline |
-| [`adgine-geo-performance`](adgine-geo-performance/) | Per-page AI crawlability, optimization scores, and content health checks |
-| [`adgine-geo-integrations`](adgine-geo-integrations/) | Connect GA4 (OAuth) and Cloudflare; deploy AI crawler tracking Worker; sync traffic data |
-| [`adgine-geo-wordpress`](adgine-geo-wordpress/) | Publish GEO articles to WordPress; manage credentials; update existing posts |
+| [`adgine-geo-projects`](adgine-geo-projects/) | List, create, update, delete projects; manage competitors; verify auth; configure API key |
+| [`adgine-geo-dashboard`](adgine-geo-dashboard/) | Project snapshot — visibility score, aggregate metrics, 7-day trend, integration health |
+| [`adgine-geo-analytics`](adgine-geo-analytics/) | Traffic overview — GA4 sessions, active users, source breakdown, AI referral summary |
+| [`adgine-geo-aiagent`](adgine-geo-aiagent/) | AI bot & human traffic deep drill-down — 27 endpoints: per-bot KPIs, platform rankings, Sankey flows, raw event logs, per-page deep dives (KPI / logs / platforms / PageSpeed) |
+| [`adgine-geo-visibility`](adgine-geo-visibility/) | Deep AI visibility analytics — Visibility Score, Share of Voice, Average Position, competitor matrix, topic/prompt-level metrics, historical AI execution details & full responses |
+| [`adgine-geo-citation`](adgine-geo-citation/) | Citation tests across ChatGPT / Perplexity / Google AIO / Gemini; brand mention rates, cited URLs, full AI reply text |
+| [`adgine-geo-brand`](adgine-geo-brand/) | Generate and manage AI-facing brand profiles — intro, ICP, competitor analysis, author persona, voice & tone, writing rules; list/inspect/retry brand generation jobs |
+| [`adgine-geo-topics`](adgine-geo-topics/) | Create and manage topics & AI search prompts; batch-generate prompts with AI; cross-topic prompt listing |
+| [`adgine-geo-content`](adgine-geo-content/) | Full content pipeline — generate titles, outlines, and full GEO-optimized articles; manage content library; inspect and retry background jobs |
+| [`adgine-geo-performance`](adgine-geo-performance/) | Per-page AI crawlability, optimization scores, and content health checks (mobile/desktop) |
+| [`adgine-geo-opportunities`](adgine-geo-opportunities/) | AI-discovered content gaps and optimization opportunities ranked by impact — relevance, traffic, competition, urgency, AI citation scores |
+| [`adgine-geo-integrations`](adgine-geo-integrations/) | Connect GA4 (OAuth) and Cloudflare; deploy AI crawler tracking Worker; sync traffic data; query integration-specific data |
+| [`adgine-geo-wordpress`](adgine-geo-wordpress/) | Publish GEO articles to WordPress; manage credentials & categories; track publish history; update existing posts |
 | [`adgine-geo-saas`](adgine-geo-saas/) | Check subdomain availability; create and track SaaS-hosted website deployments |
-| [`adgine-geo-billing`](adgine-geo-billing/) | View plan, status, renewal date, and remaining credits |
+| [`adgine-geo-billing`](adgine-geo-billing/) | View plan, status, renewal date, remaining credits, and credits pricing |
+| [`adgine-geo-docs`](adgine-geo-docs/) | Adgine platform user manual (使用手册) — hosted PDF, no API key required |
+| [`adgine-geo-site-audit`](adgine-geo-site-audit/) | **Standalone** GEO technical audit for any public URL — 5-dimension 30-item checklist, local crawl, PDF report export. No API key required |
 
 Each skill is self-contained in its own folder with a `SKILL.md` file containing the instructions and metadata that agents use for tool routing and intent matching.
 
@@ -132,13 +135,22 @@ Each skill is self-contained in its own folder with a `SKILL.md` file containing
 
 ```
 adgine-geo-skills/
+├── VERSION                        # Current release version
+├── setup.py                       # API key configuration helper
+├── .env.example                   # Environment variable template
 ├── adgine-geo-<domain>/
-│   ├── SKILL.md          # Agent skill definition — YAML frontmatter (name, description) + usage instructions
-│   ├── WORKFLOW.md       # (some skills) End-to-end workflow guide
+│   ├── SKILL.md                   # Agent skill definition — YAML frontmatter (name, description) + usage instructions
+│   ├── WORKFLOW.md                # (some skills) End-to-end workflow guide
 │   └── scripts/
-│       ├── _client.py    # Shared API client for the domain
-│       └── *.py          # One script per operation
-└── .env.example          # Environment variable template
+│       ├── _client.py             # Shared API client for the domain
+│       └── *.py                   # One script per operation
+├── adgine-geo-site-audit/
+│   ├── SKILL.md
+│   ├── README.md                  # Site audit-specific docs
+│   ├── requirements.txt           # Standalone dependencies (curl_cffi, bs4, reportlab, etc.)
+│   ├── scripts/                   # geo_collect, geo_score, geo_visibility, render_report_pdf, etc.
+│   └── tests/                     # Unit tests for site audit modules
+└── ref/                           # Reference documentation (Chinese)
 ```
 
 ---
@@ -181,15 +193,30 @@ Once the skills are loaded, use natural language:
 > *"What's my AI visibility score this week?"*  
 > *"Generate a brand profile for my project."*  
 > *"Which AI platforms are crawling my site the most?"*  
-> *"Publish article 123 to my WordPress site."*
+> *"Publish article 123 to my WordPress site."*  
+> *"Audit example.com for GEO score and export a PDF."*  
+> *"What optimization opportunities does my project have?"*
 
 Or run scripts directly:
 
 ```bash
+# Dashboard snapshot
 python3 adgine-geo-dashboard/scripts/get_overview.py
+
+# AI visibility score
 python3 adgine-geo-visibility/scripts/get_visibility.py score
+
+# AI bot traffic platform ranking
 python3 adgine-geo-aiagent/scripts/bot_traffic.py platforms
+
+# Generate article outline
 python3 adgine-geo-content/scripts/generate_outline.py --topic-id <id> --prompt-ids <id1,id2>
+
+# Standalone site audit (no API key needed)
+python3 adgine-geo-site-audit/scripts/geo_collect.py https://example.com --max-subpages 20
+
+# Check credits balance
+python3 adgine-geo-billing/scripts/get_credits.py
 ```
 
 ---
@@ -204,7 +231,8 @@ All scripts read from the `GEO_API_KEY` environment variable. Never hardcode you
 
 - Python 3.9+
 - `requests` (`pip install requests`)
-- An [Adgine GEO](https://platform.adgine.ai) account with an active API key
+- An [Adgine GEO](https://platform.adgine.ai) account with an active API key (not required for `adgine-geo-site-audit` and `adgine-geo-docs`)
+- **Site audit only:** additional packages — run `pip install -r adgine-geo-site-audit/requirements.txt`
 
 ---
 
