@@ -42,12 +42,13 @@ if args.action == "get":
         sys.exit(0)
     print(f"Content {args.content_id}")
     print()
-    print(f"  Title       : {item.get('article_title') or item.get('title') or '(untitled)'}")
-    print(f"  Status      : {item.get('status', '--')}")
-    print(f"  Words       : {item.get('word_count', 0)}")
-    print(f"  Topic ID    : {item.get('topic_id', '--')}")
-    print(f"  Created     : {item.get('created_at', '--')}")
-    print(f"  Updated     : {item.get('updated_at', '--')}")
+    print(f"  Title         : {item.get('article_title') or item.get('title') or '(untitled)'}")
+    print(f"  Status        : {item.get('status', '--')}")
+    print(f"  Publish status: {item.get('publish_status') or '—'}")
+    print(f"  Words         : {item.get('word_count', 0)}")
+    print(f"  Topic ID      : {item.get('topic_id', '--')}")
+    print(f"  Created       : {item.get('created_at', '--')}")
+    print(f"  Updated       : {item.get('updated_at', '--')}")
     body = item.get("article_body") or item.get("body") or ""
     if body:
         preview = body[:600]

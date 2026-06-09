@@ -81,14 +81,15 @@ content_id_out = output.get("content_id") or args.content_id
 final_content_result = api_get(f"/api/projects/{pid}/content/{content_id_out}", key, base)
 article = extract_data(final_content_result)
 
-print(f"\nArticle generation completed!")
-print(f"  Content ID  : {article.get('id')}")
-print(f"  Title       : {article.get('article_title') or '(untitled)'}")
-print(f"  Status      : {article.get('status')}")
-print(f"  Word count  : {article.get('word_count', 0)}")
-print(f"  Meta title  : {(article.get('meta_title') or '—')[:80]}")
-print(f"  Meta desc   : {(article.get('meta_description') or '—')[:120]}")
-print(f"  Slug        : {article.get('meta_slug') or '—'}")
+    print(f"\nArticle generation completed!")
+    print(f"  Content ID     : {article.get('id')}")
+    print(f"  Title          : {article.get('article_title') or '(untitled)'}")
+    print(f"  Status         : {article.get('status')}")
+    print(f"  Publish status : {article.get('publish_status') or '—'}")
+    print(f"  Word count     : {article.get('word_count', 0)}")
+    print(f"  Meta title     : {(article.get('meta_title') or '—')[:80]}")
+    print(f"  Meta desc      : {(article.get('meta_description') or '—')[:120]}")
+    print(f"  Slug           : {article.get('meta_slug') or '—'}")
 
 if article.get("faq_section"):
     print(f"\n[FAQ Section — first 500 chars]")

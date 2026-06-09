@@ -1,6 +1,6 @@
 ---
 name: adgine/geo-content
-description: Generates AI-optimized article outlines and full articles for GEO content strategy, manages the content library, and inspects/retries the underlying outline and article generation jobs. Supports generating title suggestions, producing a keyword-optimized outline (async), writing a complete article from an approved outline (async), listing/editing/deleting content items, and managing the workflow / outline / article job lists with detail inspection and retry. Use when the user wants to create an article (写文章 / generate article), generate an outline (生成大纲 / outline), write GEO-optimized content, check content status, review generated articles, manage their content pipeline, check job progress (任务进度 / job status), or retry a failed content job (重试失败任务 / retry job). Intent synonyms: article generation, outline generation, content jobs, content workflow, retry failed job, 内容生成任务.
+description: Generates AI-optimized article outlines and full articles for GEO content strategy, manages the content library, and inspects/retries the underlying outline and article generation jobs. Supports generating title suggestions, producing a keyword-optimized outline (async), writing a complete article from an approved outline (async), listing/editing/deleting content items (with optional publish-status filter), and managing the workflow / outline / article job lists with detail inspection and retry. Use when the user wants to create an article (写文章 / generate article), generate an outline (生成大纲 / outline), write GEO-optimized content, check content status, review generated articles, filter by publish status (已发布/未发布, published/unpublished), manage their content pipeline, check job progress (任务进度 / job status), or retry a failed content job (重试失败任务 / retry job). Intent synonyms: article generation, outline generation, content jobs, content workflow, retry failed job, 内容生成任务, 已发布文章, 未发布文章.
 ---
 
 # GEO Content
@@ -45,10 +45,13 @@ export GEO_PROJECT_ID=<project-id>   # session shortcut — resets when terminal
 ## Content lifecycle
 
 ```
-Prompts selected → generate-titles → generate-outline (async) → approve outline → generate-article (async) → article ready
+Prompts selected → generate-titles → generate-outline (async) → approve outline → generate-article (async) → article ready → publish to WordPress
 ```
 
-Content items progress through statuses: `draft` → `outline` → `article`
+Content items progress through statuses: `draft` → `outline` → `article`.
+Each item also has a `publish_status`:
+- `unpublished` — article not yet pushed to WordPress (default after generation)
+- `published`   — article successfully published to WordPress
 
 ---
 
@@ -57,7 +60,7 @@ Content items progress through statuses: `draft` → `outline` → `article`
 ### List content items
 ```bash
 python3 scripts/list_content.py [--project-id <id>] [--status draft|outline|article] \
-  [--topic-id <id>] [--page 1] [--limit 20] [--json]
+  [--publish-status unpublished|published] [--topic-id <id>] [--page 1] [--limit 20] [--json]
 ```
 
 ### Suggest article titles (quick, sync)
@@ -131,15 +134,19 @@ See `WORKFLOW.md` for the detailed step-by-step content creation flow.
 
 📚 Items
 ```
-┌────┬─────────┬───────────────────────────────┐
-│  # │ Status  │ Title                                │
-├────┼─────────┼───────────────────────────────┤
-│  1 │ Draft   │ How to Improve Your SEO in 2025      │
-│  2 │ Outline │ Top 10 GEO Strategies for SaaS       │
-│  3 │ Article │ What is Generative Engine Optimi...  │
-└────┴─────────┴───────────────────────────────┘
+┌────┬──────────┬───────┬────────────┬──────────────────────────────────────┐
+│  # │ Status   │ Words │ Pub.Status │ Title                                │
+├────┼──────────┼───────┼────────────┼──────────────────────────────────────┤
+│  1 │ Draft    │    —  │ Unpub      │ How to Improve Your SEO in 2025      │
+│  2 │ Outline  │    —  │ Unpub      │ Top 10 GEO Strategies for SaaS       │
+│  3 │ Article  │ 1,200 │ Published  │ What is Generative Engine Optimi...  │
+│  4 │ Article  │   850 │ Unpub      │ AI Search Trends for Marketers       │
+└────┴──────────┴───────┴────────────┴──────────────────────────────────────┘
 ```
-Truncate long titles to ~36 chars with `...`.
+- `Status`: content generation stage (`Draft` / `Outline` / `Article`)
+- `Words`: word count (`—` if not available)
+- `Pub.Status`: WordPress publish status (`Unpub` / `Published` / `—` if unknown)
+- Truncate long titles to ~36 chars with `...`.
 
 ---
 
@@ -184,12 +191,13 @@ Truncate long titles to ~36 chars with `...`.
 
 ✅ Article Complete
 ```
-┌────────────┬────────────────────────────────────┐
-│ Title      │ <title>                            │
-│ Content ID │ <id>                               │
-│ Word Count │ ~1,200                             │
-│ Status     │ Article                            │
-└────────────┴────────────────────────────────────┘
+┌────────────────┬────────────────────────────────────┐
+│ Title          │ <title>                            │
+│ Content ID     │ <id>                               │
+│ Word Count     │ ~1,200                             │
+│ Status         │ Article                            │
+│ Publish Status │ Unpub                              │
+└────────────────┴────────────────────────────────────┘
 ```
 
 Then the **full article text** with `##`/`###` headings and bullet lists — never wrap article body in a code fence.

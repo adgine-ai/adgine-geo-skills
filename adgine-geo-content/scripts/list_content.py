@@ -3,6 +3,7 @@
 
 Usage:
   python3 scripts/list_content.py [--project-id <id>] [--status draft|outline|article]
+                                 [--publish-status unpublished|published]
                                  [--topic-id <id>] [--page 1] [--limit 20] [--json]
 """
 import sys
@@ -16,6 +17,8 @@ parser = argparse.ArgumentParser(description="List GEO content items")
 parser.add_argument("--project-id", help="Project ID (or set GEO_PROJECT_ID env var)")
 parser.add_argument("--status",   choices=["draft", "outline", "article"],
                     help="Filter by content status")
+parser.add_argument("--publish-status", choices=["unpublished", "published"],
+                    help="Filter by WordPress publish status")
 parser.add_argument("--topic-id", help="Filter by topic ID")
 parser.add_argument("--page",  type=int, default=1,  help="Page number (default: 1)")
 parser.add_argument("--limit", type=int, default=20, help="Results per page (default: 20)")
@@ -28,6 +31,8 @@ pid = get_project_id(args.project_id)
 params = {"page": args.page, "limit": args.limit}
 if args.status:
     params["status"] = args.status
+if args.publish_status:
+    params["publish_status"] = args.publish_status
 if args.topic_id:
     params["topic_id"] = args.topic_id
 
@@ -41,6 +46,7 @@ if args.json:
 
 total = data.get("total", len(items)) if isinstance(data, dict) else len(items)
 filter_desc = f"  status={args.status}" if args.status else ""
+filter_desc += f"  publish_status={args.publish_status}" if args.publish_status else ""
 print(f"Content items ({len(items)} of {total}){filter_desc}  |  project: {pid}")
 print()
 
@@ -48,11 +54,12 @@ if not items:
     print("  No content found. Generate an outline with: python3 scripts/generate_outline.py")
     sys.exit(0)
 
-print(f"  {'ID':<38}  {'Status':<10}  {'Words':>5}  Title")
-print(f"  {'-'*38}  {'-'*10}  {'-'*5}  {'-'*50}")
+print(f"  {'ID':<38}  {'Status':<10}  {'Words':>5}  {'Pub.Status':<10}  Title")
+print(f"  {'-'*38}  {'-'*10}  {'-'*5}  {'-'*10}  {'-'*50}")
 for item in items:
     cid    = item.get("id", "")[:36]
     status = item.get("status", "draft")
     words  = item.get("word_count", 0) or 0
+    pub_st = item.get("publish_status") or "—"
     title  = (item.get("article_title") or "(untitled)")[:60]
-    print(f"  {cid:<38}  {status:<10}  {words:>5}  {title}")
+    print(f"  {cid:<38}  {status:<10}  {words:>5}  {pub_st:<10}  {title}")
