@@ -92,29 +92,82 @@ pricing, DNS configuration status, and any error messages.
 
 ---
 
-## Output Format
+## Agent Output Format
 
-### search_domains.py
+> ⚠️ **CRITICAL**: When presenting domain search results to the user, the agent MUST
+> use the structured format below. Always run `search_domains.py <keyword> --json` to
+> get raw data, then format it according to these rules.
 
-> 🔍 搜索: **mybrand**
+### Registration Link
+
+Every recommended domain gets a clickable "现在注册 →" link using:
 
 ```
-┌────┬──────────────────┬──────────┬──────────┬──────────────┬──────────────┐
-│ #  │ Domain           │ Status   │ Price    │ Renewal      │              │
-├────┼──────────────────┼──────────┼──────────┼──────────────┼──────────────┤
-│ 1  │ mybrand.com      │ ✅ 可注册 │ $12.99   │ $15.99/yr    │ 马上注册 →   │
-│ 2  │ mybrand.net      │ ✅ 可注册 │ $11.50   │ $14.50/yr    │ 马上注册 →   │
-│ 3  │ mybrand.org      │ ❌ 已注册 │ --       │ --           │              │
-│ 4  │ mybrand.ai       │ ⚠️ 不支持 │ --       │ --           │              │
-└────┴──────────────────┴──────────┴──────────┴──────────────┴──────────────┘
+[现在注册 →](https://platform.adgine.ai/domains/contact?domain={domain_name})
 ```
 
-The "马上注册 →" in the last column is a clickable Markdown link:
-`[马上注册 →](https://platform.adgine.ai/domains/contact?domain=mybrand.com)`
+### Full Output Template
 
-> 💡 找到想注册的域名？点击「马上注册 →」链接跳转到网页填写注册信息。
+When the user asks to search domains, present results in this exact structure:
 
-### list_domains.py
+**Section 1: 推荐首选** — ONE best available domain, the .com variant. Show a compact
+info card. If .com is not available, pick .net or .org.
+
+```
+> 🏆 **推荐首选**
+
+| 域名 | 年费 | 续费 | |
+|------|------|------|---|
+| **mybrand.com** | $11.51 USD | $11.51 USD/yr | [现在注册 →](https://platform.adgine.ai/domains/contact?domain=mybrand.com) |
+```
+
+**Section 2: 其他可注册域名** — All remaining available domains in a table. Each row
+includes a "现在注册 →" link.
+
+```
+> 📋 **其他可注册域名**
+>
+> | # | 域名 | 年费 | 续费 | |
+> |---|------|------|------|---|
+> | 2 | mybrand.net | $13.05 USD | $13.05 USD/yr | [现在注册 →](https://platform.adgine.ai/domains/contact?domain=mybrand.net) |
+> | 3 | mybrand.org | $9.35 USD | $12.32 USD/yr | [现在注册 →](https://platform.adgine.ai/domains/contact?domain=mybrand.org) |
+> | 4 | mybrand.info | $23.32 USD | $23.32 USD/yr | [现在注册 →](https://platform.adgine.ai/domains/contact?domain=mybrand.info) |
+```
+
+**Section 3: 已注册域名** — Taken domains (informational only, no registration link).
+
+```
+> ⚠️ **已注册域名**
+>
+> | # | 域名 | |
+> |---|------|---|
+> | 5 | mybrand.ai | ❌ 已注册 |
+```
+
+**Section 4: 建议** — Final summary with one-line registration links for each available
+domain. This is the convenience section — only list available domains here.
+
+```
+> 💡 **建议**: 推荐优先注册 `.com`，若预算有限可选择 `.org`。以下为注册链接：
+>
+> - [注册 mybrand.com](https://platform.adgine.ai/domains/contact?domain=mybrand.com)
+> - [注册 mybrand.net](https://platform.adgine.ai/domains/contact?domain=mybrand.net)
+> - [注册 mybrand.org](https://platform.adgine.ai/domains/contact?domain=mybrand.org)
+```
+
+### Registration Link Placement Rules
+
+| Section | Has "现在注册" link? | Rationale |
+|---------|:--:|-----------|
+| 推荐首选 (Top Pick) | ✅ Yes | User's most likely choice — make it easy |
+| 其他可注册域名 (Other Available) | ✅ Yes, each row | Only ~3-5 rows, not cluttered |
+| 已注册域名 (Taken) | ❌ No | Can't register |
+| 不支持的域名 (Unsupported) | ❌ No | Can't register |
+| 建议 (Suggestions) | ✅ Yes, each domain | Convenience recap |
+
+> Principle: **Every recommended (available) domain should have a clickable registration
+> link nearby**, but avoid repetitive copy-paste across sections — use different styles
+> (table link vs. list link) to keep it clean.
 
 > 🌐 **我的域名**
 

@@ -9,16 +9,10 @@ import os
 import argparse
 
 sys.path.insert(0, os.path.dirname(__file__))
-from _client import get_api_config, api_get, extract_data, print_json, pad
+from _client import get_api_config, api_get, extract_data, print_json
 
 
 REGISTER_URL = "https://platform.adgine.ai/domains/contact?domain={domain}"
-
-STATUS_MAP = {
-    "available": "✅ 可注册",
-    "taken": "❌ 已注册",
-    "unsupported": "⚠️ 不支持",
-}
 
 
 def format_price(value, currency="USD"):
@@ -55,43 +49,84 @@ def main():
         print(f'No domains found for "{args.keyword}".')
         return
 
+    # Split domains by status
+    available = [d for d in domains if d.get("status") == "available"]
+    taken = [d for d in domains if d.get("status") == "taken"]
+    unsupported = [d for d in domains if d.get("status") == "unsupported"]
+
+    # Sort available: .com first, then alphabetically
+    available.sort(key=lambda d: ("" if d.get("name", "").endswith(".com") else d.get("name", "")))
+
     print(f'\n🔍 搜索: **{args.keyword}**\n')
-    print("```")
-    # Table header
-    C1, C2, C3, C4, C5 = 4, 20, 10, 22, 14
-    sep = f"┌{'─' * C1}┬{'─' * C2}┬{'─' * C3}┬{'─' * C4}┬{'─' * C5}┐"
-    print(sep)
-    print(f"│ {'#':<2} │ {pad('Domain', C2)} │ {pad('Status', C3)} │ {pad('Price / Renewal', C4)} │ {pad('', C5)} │")
-    mid = f"├{'─' * C1}┼{'─' * C2}┼{'─' * C3}┼{'─' * C4}┼{'─' * C5}┤"
-    print(mid)
 
-    available_domains = []
-    for i, d in enumerate(domains, 1):
-        name = d.get("name", "--")
-        status_label = STATUS_MAP.get(d.get("status"), d.get("status", "--"))
-        price = format_price(d.get("price"), d.get("currency"))
-        renewal = format_price(d.get("renewal_price"), d.get("currency"))
+    # ===== Section 1: 推荐首选 (.com or first available) =====
+    top_pick = None
+    remaining = list(available)
+    for d in available:
+        if d.get("name", "").endswith(".com"):
+            top_pick = d
+            remaining.remove(d)
+            break
+    if top_pick is None and available:
+        top_pick = available[0]
+        remaining = available[1:]
+
+    if top_pick:
+        name = top_pick.get("name", "--")
+        price = format_price(top_pick.get("price"), top_pick.get("currency"))
+        renewal = format_price(top_pick.get("renewal_price"), top_pick.get("currency"))
         renewal_str = f"{renewal}/yr" if renewal != "--" else "--"
-        price_col = f"{price} / {renewal_str}"
-        action = "" if d.get("status") != "available" else "马上注册 →"
+        reg_url = REGISTER_URL.format(domain=name)
 
-        print(f"│ {i:<2} │ {pad(name, C2)} │ {pad(status_label, C3)} │ {pad(price_col, C4)} │ {pad(action, C5)} │")
-
-        if d.get("status") == "available":
-            available_domains.append(name)
-
-    bot = f"└{'─' * C1}┴{'─' * C2}┴{'─' * C3}┴{'─' * C4}┴{'─' * C5}┘"
-    print(bot)
-    print("```")
-
-    # Print clickable registration links below the table
-    if available_domains:
-        print()
-        print("> 💡 找到想注册的域名？点击下方链接跳转到网页填写注册信息：")
+        print("> 🏆 **推荐首选**\n>")
+        print(f"> | 域名 | 年费 | 续费 | |")
+        print(f"> |------|------|------|---|")
+        print(f"> | **{name}** | {price} | {renewal_str} | [现在注册 →]({reg_url}) |")
         print(">")
-        for domain in available_domains:
-            url = REGISTER_URL.format(domain=domain)
-            print(f"> - [注册 **{domain}**]({url})")
+
+    # ===== Section 2: 其他可注册域名 =====
+    if remaining:
+        print("> 📋 **其他可注册域名**\n>")
+        print(f"> | # | 域名 | 年费 | 续费 | |")
+        print(f"> |---|------|------|------|---|")
+        for i, d in enumerate(remaining, 2):
+            name = d.get("name", "--")
+            price = format_price(d.get("price"), d.get("currency"))
+            renewal = format_price(d.get("renewal_price"), d.get("currency"))
+            renewal_str = f"{renewal}/yr" if renewal != "--" else "--"
+            reg_url = REGISTER_URL.format(domain=name)
+            print(f"> | {i} | {name} | {price} | {renewal_str} | [现在注册 →]({reg_url}) |")
+        print(">")
+
+    # ===== Section 3: 已注册域名 =====
+    if taken:
+        print("> ⚠️ **已注册域名**\n>")
+        print(f"> | # | 域名 | 状态 |")
+        print(f"> |---|------|------|")
+        for i, d in enumerate(taken, 1):
+            name = d.get("name", "--")
+            print(f"> | {i} | {name} | ❌ 已注册 |")
+        print(">")
+
+    # ===== Section 4: 不支持的域名 =====
+    if unsupported:
+        print("> ⚠️ **不支持的域名**\n>")
+        print(f"> | # | 域名 | 状态 |")
+        print(f"> |---|------|------|")
+        for i, d in enumerate(unsupported, 1):
+            name = d.get("name", "--")
+            reason = d.get("reason") or "不支持注册"
+            print(f"> | {i} | {name} | ⚠️ {reason} |")
+        print(">")
+
+    # ===== Section 5: 建议 =====
+    all_available = [d for d in domains if d.get("status") == "available"]
+    if all_available:
+        print("> 💡 **建议**: 推荐优先注册 `.com`，若预算有限可选择 `.org`。以下为注册链接：\n>")
+        for d in all_available:
+            name = d.get("name", "--")
+            reg_url = REGISTER_URL.format(domain=name)
+            print(f"> - [注册 **{name}**]({reg_url})")
         print()
 
 
