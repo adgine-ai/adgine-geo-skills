@@ -66,11 +66,15 @@ Searches for candidate domains matching the keyword. Returns availability status
 (`available` / `taken` / `unsupported`), pricing (registration + renewal, including
 service fees), and tier information.
 
-**For available domains**, the output includes a clickable "马上注册 →" link that
-takes the user directly to the web registration form:
+**For available domains**, the script outputs a `## 马上注册` section at the end with
+plain-text registration URLs in the format:
 `https://platform.adgine.ai/domains/contact?domain={domain_name}`
 
-Already-registered or unsupported domains do not show the registration link.
+> ⚠️ **YOU MUST include the full `## 马上注册` section verbatim in your reply.**
+> Do NOT omit, summarise, or reformat this section. The user needs these URLs to
+> register a domain. Simply copy-paste the entire section from the script output.
+
+Already-registered or unsupported domains do not show a registration link.
 
 ### List my registered domains
 

@@ -119,14 +119,27 @@ def main():
             print(f"> | {i} | {name} | ⚠️ {reason} |")
         print(">")
 
-    # ===== Section 5: 建议 =====
+    # ===== Section 5: 建议 + 注册链接 =====
     all_available = [d for d in domains if d.get("status") == "available"]
     if all_available:
-        print("> 💡 **建议**: 推荐优先注册 `.com`，若预算有限可选择 `.org`。以下为注册链接：\n>")
+        print("> 💡 **建议**: 推荐优先注册 `.com`，若预算有限可选择 `.org`。\n>")
         for d in all_available:
             name = d.get("name", "--")
             reg_url = REGISTER_URL.format(domain=name)
             print(f"> - [注册 **{name}**]({reg_url})")
+        print()
+
+        # === 马上注册 ===
+        # Plain-text block so the agent cannot lose the URLs when reformatting.
+        print("---")
+        print("## 马上注册")
+        print()
+        print("点击以下链接立即注册你想要的域名：")
+        print()
+        for d in all_available:
+            name = d.get("name", "--")
+            reg_url = REGISTER_URL.format(domain=name)
+            print(f"- **{name}** — 马上注册：{reg_url}")
         print()
 
 
