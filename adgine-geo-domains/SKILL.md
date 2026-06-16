@@ -94,9 +94,11 @@ pricing, DNS configuration status, and any error messages.
 
 ## Agent Output Format
 
-> ⚠️ **CRITICAL**: When presenting domain search results to the user, the agent MUST
-> use the structured format below. Always run `search_domains.py <keyword> --json` to
-> get raw data, then format it according to these rules.
+> ⚠️ **CRITICAL**: Run `search_domains.py <keyword>` **without** `--json`. The script
+> already produces fully-formatted Markdown output (tables with "现在注册 →" links).
+> **Print its stdout verbatim** — do NOT reformat, summarise, or omit any part of the
+> output, especially the registration link columns. The template below is for reference
+> only; the script output takes precedence.
 
 ### Registration Link
 
