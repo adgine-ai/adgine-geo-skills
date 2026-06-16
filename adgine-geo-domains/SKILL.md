@@ -98,82 +98,76 @@ pricing, DNS configuration status, and any error messages.
 
 ## Agent Output Format
 
-> ⚠️ **CRITICAL**: Run `search_domains.py <keyword>` **without** `--json`. The script
-> already produces fully-formatted Markdown output (tables with "现在注册 →" links).
-> **Print its stdout verbatim** — do NOT reformat, summarise, or omit any part of the
-> output, especially the registration link columns. The template below is for reference
-> only; the script output takes precedence.
+Run `search_domains.py <keyword>` (no `--json`). The script output uses a structured
+plain-text format with labelled fields — parse it and render the results as described
+below.
 
-### Registration Link
-
-Every recommended domain gets a clickable "现在注册 →" link using:
+### Script output format
 
 ```
-[现在注册 →](https://platform.adgine.ai/domains/contact?domain={domain_name})
+DOMAIN_SEARCH_RESULTS keyword=<kw>
+
+TAKEN_DOMAINS count=N
+  TAKEN <name>
+  ...
+
+AVAILABLE_DOMAINS count=N
+  AVAILABLE name=<name> price=<price> renewal=<renewal> register_url=<url>
+  ...
+
+UNSUPPORTED_DOMAINS count=N
+  UNSUPPORTED <name>
+  ...
 ```
 
-### Full Output Template
+### How to render the results
 
-When the user asks to search domains, present results in this exact structure:
+**⚠️ MANDATORY RULE: every `AVAILABLE` domain MUST be rendered with a clickable
+"[马上注册](register_url)" link. No exceptions. If a domain is available and you do
+not show its registration link, the user cannot register it.**
 
-**Section 1: 推荐首选** — ONE best available domain, the .com variant. Show a compact
-info card. If .com is not available, pick .net or .org.
+Use this exact structure:
 
-```
-> 🏆 **推荐首选**
+---
+
+**❌ 已注册域名**
+
+| 域名 | 状态 |
+|------|------|
+| mybrand.com | ❌ 已注册 |
+
+---
+
+**🏆 推荐首选** — pick the `.com` from the AVAILABLE list (or the first available if no `.com`)
 
 | 域名 | 年费 | 续费 | |
 |------|------|------|---|
-| **mybrand.com** | $11.51 USD | $11.51 USD/yr | [现在注册 →](https://platform.adgine.ai/domains/contact?domain=mybrand.com) |
-```
+| **mybrand.com** | $11.51 | $11.51/yr | [马上注册](https://platform.adgine.ai/domains/contact?domain=mybrand.com) |
 
-**Section 2: 其他可注册域名** — All remaining available domains in a table. Each row
-includes a "现在注册 →" link.
+---
 
-```
-> 📋 **其他可注册域名**
->
-> | # | 域名 | 年费 | 续费 | |
-> |---|------|------|------|---|
-> | 2 | mybrand.net | $13.05 USD | $13.05 USD/yr | [现在注册 →](https://platform.adgine.ai/domains/contact?domain=mybrand.net) |
-> | 3 | mybrand.org | $9.35 USD | $12.32 USD/yr | [现在注册 →](https://platform.adgine.ai/domains/contact?domain=mybrand.org) |
-> | 4 | mybrand.info | $23.32 USD | $23.32 USD/yr | [现在注册 →](https://platform.adgine.ai/domains/contact?domain=mybrand.info) |
-```
+**📋 其他可注册域名**
 
-**Section 3: 已注册域名** — Taken domains (informational only, no registration link).
+| # | 域名 | 年费 | 续费 | |
+|---|------|------|------|---|
+| 2 | mybrand.net | $13.05 | $13.05/yr | [马上注册](https://platform.adgine.ai/domains/contact?domain=mybrand.net) |
+| 3 | mybrand.org | $9.35 | $12.32/yr | [马上注册](https://platform.adgine.ai/domains/contact?domain=mybrand.org) |
 
-```
-> ⚠️ **已注册域名**
->
-> | # | 域名 | |
-> |---|------|---|
-> | 5 | mybrand.ai | ❌ 已注册 |
-```
+---
 
-**Section 4: 建议** — Final summary with one-line registration links for each available
-domain. This is the convenience section — only list available domains here.
+**💡 建议**
 
-```
-> 💡 **建议**: 推荐优先注册 `.com`，若预算有限可选择 `.org`。以下为注册链接：
->
-> - [注册 mybrand.com](https://platform.adgine.ai/domains/contact?domain=mybrand.com)
-> - [注册 mybrand.net](https://platform.adgine.ai/domains/contact?domain=mybrand.net)
-> - [注册 mybrand.org](https://platform.adgine.ai/domains/contact?domain=mybrand.org)
-```
+推荐优先注册 `.com`。所有可注册域名：
 
-### Registration Link Placement Rules
+- [马上注册 mybrand.com](https://platform.adgine.ai/domains/contact?domain=mybrand.com)
+- [马上注册 mybrand.net](https://platform.adgine.ai/domains/contact?domain=mybrand.net)
+- [马上注册 mybrand.org](https://platform.adgine.ai/domains/contact?domain=mybrand.org)
 
-| Section | Has "现在注册" link? | Rationale |
-|---------|:--:|-----------|
-| 推荐首选 (Top Pick) | ✅ Yes | User's most likely choice — make it easy |
-| 其他可注册域名 (Other Available) | ✅ Yes, each row | Only ~3-5 rows, not cluttered |
-| 已注册域名 (Taken) | ❌ No | Can't register |
-| 不支持的域名 (Unsupported) | ❌ No | Can't register |
-| 建议 (Suggestions) | ✅ Yes, each domain | Convenience recap |
+---
 
-> Principle: **Every recommended (available) domain should have a clickable registration
-> link nearby**, but avoid repetitive copy-paste across sections — use different styles
-> (table link vs. list link) to keep it clean.
+The `register_url` value from the script output is the exact URL to use in the
+`[马上注册](URL)` links. Do not construct it yourself — copy it directly from the
+`register_url=` field in the script output.
 
 > 🌐 **我的域名**
 
