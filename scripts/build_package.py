@@ -13,8 +13,9 @@ import argparse
 import zipfile
 from pathlib import Path
 
-EXCLUDE_DIRS = {".git", "dist", "__pycache__", ".github", ".idea", ".vscode"}
+EXCLUDE_DIRS = {".git", "dist", "__pycache__", ".github", ".idea", ".vscode", "ref"}
 EXCLUDE_SUFFIXES = {".pyc", ".pyo"}
+EXCLUDE_FILES = {".gitignore", "scripts/build_package.py"}
 
 
 def build_archive(output_path: Path, root: Path) -> None:
@@ -27,6 +28,8 @@ def build_archive(output_path: Path, root: Path) -> None:
             if any(p in EXCLUDE_DIRS for p in parts):
                 continue
             if item.suffix in EXCLUDE_SUFFIXES:
+                continue
+            if str(rel) in EXCLUDE_FILES:
                 continue
             zf.write(item, rel)
 
