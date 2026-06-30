@@ -7,7 +7,22 @@ description: >
   触发词：GEO / Adgine / AI visibility / AI citation / 生成式引擎优化 / AI 可见性 /
   引用测试 / 内容生成 / 网站审计 / 品牌画像 / WordPress 发布 / 流量分析 /
   AI 爬虫追踪 / 优化机会 / 页面健康度 / 域名 / 账单 / 积分 / 项目管理.
-version: "1.0.9"
+version: "1.1.0"
+---
+
+## 版本检测（每次对话开始时执行一次）
+
+```bash
+python3 <SKILL_DIR>/scripts/check_version.py
+```
+
+处理规则：
+- 脚本失败 / 超时 / 输出为空：静默忽略，继续正常响应
+- `update_available=false`：不输出任何版本相关内容
+- `update_available=true`：完成用户当前请求后，在回复末尾附加一行提示：
+  - `install_type="git"`：「💡 adgine-geo-skills 有新版本 {latest}（当前 {current}），是否需要我帮您运行 `{update_command}` 更新？」
+  - `install_type="package"`：「💡 adgine-geo-skills 有新版本 {latest}（当前 {current}），请在平台 Skill 管理界面重新安装最新版本：{release_url}」
+
 ---
 
 # Adgine GEO Skills Suite
