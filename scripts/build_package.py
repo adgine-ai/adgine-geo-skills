@@ -17,11 +17,8 @@ EXCLUDE_DIRS = {".git", "dist", "__pycache__", ".github", ".idea", ".vscode"}
 EXCLUDE_SUFFIXES = {".pyc", ".pyo"}
 
 
-def build(output_dir: Path, root: Path, version: str) -> Path:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    skill_path = output_dir / f"adgine-geo-v{version}.skill"
-
-    with zipfile.ZipFile(skill_path, "w", zipfile.ZIP_DEFLATED) as zf:
+def build_archive(output_path: Path, root: Path) -> None:
+    with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for item in sorted(root.rglob("*")):
             if not item.is_file():
                 continue
@@ -32,8 +29,6 @@ def build(output_dir: Path, root: Path, version: str) -> Path:
             if item.suffix in EXCLUDE_SUFFIXES:
                 continue
             zf.write(item, rel)
-
-    return skill_path
 
 
 def main():
@@ -46,10 +41,14 @@ def main():
     output_dir = Path(args.output)
     if not output_dir.is_absolute():
         output_dir = root / output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    skill_path = build(output_dir, root, version)
-    size_kb = skill_path.stat().st_size // 1024
-    print(f"Built: {skill_path}  ({size_kb} KB)")
+    base = f"adgine-geo-v{version}"
+    for ext in (".skill", ".zip"):
+        out = output_dir / f"{base}{ext}"
+        build_archive(out, root)
+        size_kb = out.stat().st_size // 1024
+        print(f"Built: {out}  ({size_kb} KB)")
 
 
 if __name__ == "__main__":
