@@ -297,6 +297,68 @@ python <SKILL_DIR>/scripts/geo_timing.py artifacts \
 | 维度四：AI 可信任 | {score}/100 | 20% |
 | 维度五：AI 可推荐 | {score}/100 | 15% |
 
+## 快速一图看懂
+
+**必须调用 `show_widget` 工具输出此节，禁止用 Markdown 表格或纯文本代替。**
+
+调用 `show_widget`，参数如下：
+- `title`: `geo_scorecard_{domain}`
+- `loading_messages`: `["生成 GEO 雷达图..."]`
+- `widget_code`: 输出下方 HTML，将占位符替换为实际数值：
+
+```html
+<div style="font-family:system-ui,sans-serif;padding:16px;max-width:560px">
+  <h3 style="margin:0 0 12px;font-size:15px;color:var(--text-primary,#111)">快速一图看懂 — {domain}</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead>
+      <tr style="background:var(--surface-2,#f5f5f5)">
+        <th style="text-align:left;padding:6px 8px">维度</th>
+        <th style="text-align:center;padding:6px 8px">得分</th>
+        <th style="text-align:left;padding:6px 8px">亮点</th>
+        <th style="text-align:left;padding:6px 8px">短板</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-top:1px solid var(--border,#e0e0e0)">
+        <td style="padding:6px 8px">🔍 AI 可发现</td>
+        <td style="text-align:center;padding:6px 8px;font-weight:bold">{d1_score}</td>
+        <td style="padding:6px 8px;color:#555">{d1_highlight}</td>
+        <td style="padding:6px 8px;color:#e05">{d1_gap}</td>
+      </tr>
+      <tr style="border-top:1px solid var(--border,#e0e0e0)">
+        <td style="padding:6px 8px">🧠 AI 可理解</td>
+        <td style="text-align:center;padding:6px 8px;font-weight:bold">{d2_score}</td>
+        <td style="padding:6px 8px;color:#555">{d2_highlight}</td>
+        <td style="padding:6px 8px;color:#e05">{d2_gap}</td>
+      </tr>
+      <tr style="border-top:1px solid var(--border,#e0e0e0)">
+        <td style="padding:6px 8px">✏️ AI 可引用</td>
+        <td style="text-align:center;padding:6px 8px;font-weight:bold">{d3_score}</td>
+        <td style="padding:6px 8px;color:#555">{d3_highlight}</td>
+        <td style="padding:6px 8px;color:#e05">{d3_gap}</td>
+      </tr>
+      <tr style="border-top:1px solid var(--border,#e0e0e0)">
+        <td style="padding:6px 8px">🛡 AI 可信任</td>
+        <td style="text-align:center;padding:6px 8px;font-weight:bold">{d4_score}</td>
+        <td style="padding:6px 8px;color:#555">{d4_highlight}</td>
+        <td style="padding:6px 8px;color:#e05">{d4_gap}</td>
+      </tr>
+      <tr style="border-top:1px solid var(--border,#e0e0e0)">
+        <td style="padding:6px 8px">🚀 AI 可推荐</td>
+        <td style="text-align:center;padding:6px 8px;font-weight:bold">{d5_score}</td>
+        <td style="padding:6px 8px;color:#555">{d5_highlight}</td>
+        <td style="padding:6px 8px;color:#e05">{d5_gap}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="margin-top:12px;padding:10px;background:var(--surface-2,#f9f9f9);border-radius:6px;font-size:13px">
+    <strong>一句话总结：</strong>{one_sentence_summary}
+  </div>
+</div>
+```
+
+此 widget 中的所有 `{占位符}` 必须替换为本次审计的真实数据，不得保留原始占位符文本。
+
 ## 关键结论
 
 ## 维度一：AI 可发现 ({score}/100)
@@ -316,6 +378,7 @@ python <SKILL_DIR>/scripts/geo_timing.py artifacts \
 
 硬性要求：
 - 完整输出 5 大项 × 30 项明细表；没有可用 sitemap 时必须判定 `FAIL`
+- **"快速一图看懂"节必须通过 `show_widget` 工具渲染 HTML widget，严禁用 Markdown 表格或纯文本输出该节**
 - 禁止输出：AI 可见性采样章节（除非用户明确要求）、报告生成耗时、采集调度逻辑、`CST` 时区
 - 报告正文暂不输出报告生成耗时（调试耗时见 meta.timings）
 - 报告正文不要描述 URL 获取、sitemap 抽样、页面优先级或采集调度逻辑
