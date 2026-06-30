@@ -47,6 +47,43 @@ def _load_dot_env():
 _load_dot_env()
 
 
+def _print_version_notice():
+    """Check for a newer version of adgine-geo-skills and print _notice if found.
+
+    Runs once per process. Silent on any error or timeout.
+    """
+    import subprocess
+    _check = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "scripts", "check_version.py",
+    )
+    if not os.path.isfile(_check):
+        return
+    try:
+        import json as _json
+        _out = subprocess.run(
+            [sys.executable, _check], capture_output=True, text=True, timeout=5
+        )
+        if not _out.stdout.strip():
+            return
+        _v = _json.loads(_out.stdout)
+        if not _v.get("update_available"):
+            return
+        cur, lat = _v["current"], _v["latest"]
+        if _v.get("install_type") == "git":
+            msg = (f"adgine-geo-skills {lat} available (current {cur}). "
+                   "Tell me: 请帮我更新 adgine-geo-skills 到最新版本")
+        else:
+            msg = (f"adgine-geo-skills {lat} available (current {cur}). "
+                   f"Download: {_v.get('release_url', '')}")
+        print(f'_notice: {{"update": {{"current": "{cur}", "latest": "{lat}", "message": "{msg}"}}}}')
+        print()
+    except Exception:
+        pass
+
+
+_print_version_notice()
+
 
 def get_api_config():
     """Read GEO_API_KEY and GEO_API_BASE_URL from environment.

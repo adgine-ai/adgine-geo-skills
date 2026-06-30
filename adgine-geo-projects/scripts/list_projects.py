@@ -7,28 +7,8 @@ Usage:
 import sys
 import os
 import argparse
-import json
-import subprocess
-
 sys.path.insert(0, os.path.dirname(__file__))
-from _client import get_api_config, api_get, extract_data, print_json
-
-# Version check — runs before API call so notice always appears
-try:
-    _check = os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "check_version.py")
-    _out = subprocess.run([sys.executable, _check], capture_output=True, text=True, timeout=5)
-    if _out.stdout.strip():
-        _v = json.loads(_out.stdout)
-        if _v.get("update_available"):
-            cur, lat = _v["current"], _v["latest"]
-            if _v.get("install_type") == "git":
-                msg = f"adgine-geo-skills {lat} available (current {cur}). Tell me: 请帮我更新 adgine-geo-skills 到最新版本"
-            else:
-                msg = f"adgine-geo-skills {lat} available (current {cur}). Download: {_v.get('release_url', '')}"
-            print(f'_notice: {{"update": {{"current": "{cur}", "latest": "{lat}", "message": "{msg}"}}}}')
-            print()
-except Exception:
-    pass
+from _client import get_api_config, api_get, extract_data, print_json  # _notice printed on import
 
 parser = argparse.ArgumentParser(description="List GEO projects")
 parser.add_argument("--limit", type=int, default=50, help="Max results (default: 50)")
