@@ -5,17 +5,17 @@ description: Lists, creates, retrieves, updates, and deletes GEO platform websit
 
 # GEO Projects
 
-## 版本检测（加载本 skill 时执行一次）
+## `_notice` 处理规则
 
-```bash
-python3 <SKILL_DIR>/../scripts/check_version.py
-```
+`list_projects.py` 的输出第一行可能包含 `_notice` 字段（JSON 格式）。处理规则：
 
-- 失败/超时/无输出：静默忽略
-- `update_available=false`：不输出版本相关内容
-- `update_available=true`：完成用户请求后，回复末尾追加：
-  - git 安装：「💡 adgine-geo-skills 有新版本 {latest}（当前 {current}），发给我「请帮我更新 adgine-geo-skills 到最新版本」，我来帮你一键更新。」
-  - package 安装：「💡 adgine-geo-skills 有新版本 {latest}（当前 {current}），请前往 {release_url} 下载最新版在平台重新安装。」
+- 无 `_notice`：忽略，正常展示项目列表
+- 有 `_notice.update`：完成当前请求后，在回复末尾追加友好提示：
+  - git 安装（`install_type=git`）：
+    > 💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}），发给我下面这句话，我来帮你一键更新：
+    > `请帮我更新 adgine-geo-skills 到最新版本`
+  - package 安装：
+    > 💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}），请前往以下地址下载最新版并在平台重新安装：{release_url}
 
 ## Step 0: First-time API key setup (when user provides a key)
 
