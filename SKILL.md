@@ -10,16 +10,18 @@ description: >
 version: "1.1.0"
 ---
 
-## 版本检测（每次对话开始时执行一次）
+## 版本检测（路由到任何子技能之前的第一步，必须执行）
+
+在将用户请求路由到任何子技能之前，**先**运行版本检测：
 
 ```bash
 python3 <SKILL_DIR>/scripts/check_version.py
 ```
 
 处理规则：
-- 脚本失败 / 超时 / 输出为空：静默忽略，继续正常响应
-- `update_available=false`：不输出任何版本相关内容
-- `update_available=true`：完成用户当前请求后，在回复末尾追加如下更新提示（根据 install_type 选择对应版本）：
+- 脚本失败 / 超时 / 输出为空：静默忽略，继续路由和响应
+- `update_available=false`：不输出任何版本相关内容，继续正常路由
+- `update_available=true`：继续完成用户当前请求，然后在回复末尾追加如下更新提示（根据 install_type 选择对应版本）：
 
 **install_type="git" 时的提示模板：**
 

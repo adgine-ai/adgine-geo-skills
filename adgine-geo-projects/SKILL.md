@@ -5,6 +5,18 @@ description: Lists, creates, retrieves, updates, and deletes GEO platform websit
 
 # GEO Projects
 
+## 版本检测（加载本 skill 时执行一次）
+
+```bash
+python3 <SKILL_DIR>/../scripts/check_version.py
+```
+
+- 失败/超时/无输出：静默忽略
+- `update_available=false`：不输出版本相关内容
+- `update_available=true`：完成用户请求后，回复末尾追加：
+  - git 安装：「💡 adgine-geo-skills 有新版本 {latest}（当前 {current}），发给我「请帮我更新 adgine-geo-skills 到最新版本」，我来帮你一键更新。」
+  - package 安装：「💡 adgine-geo-skills 有新版本 {latest}（当前 {current}），请前往 {release_url} 下载最新版在平台重新安装。」
+
 ## Step 0: First-time API key setup (when user provides a key)
 
 If the user provides a GEO API key in chat (e.g. *"my key is geo_sk_live_xxx"* / *"帮我配置一下 key"* / *"set my api key to ..."*), this is the canonical procedure for the entire skills repo. **Do not invent your own path — run the helper.**
