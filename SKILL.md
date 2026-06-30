@@ -19,9 +19,34 @@ python3 <SKILL_DIR>/scripts/check_version.py
 处理规则：
 - 脚本失败 / 超时 / 输出为空：静默忽略，继续正常响应
 - `update_available=false`：不输出任何版本相关内容
-- `update_available=true`：完成用户当前请求后，在回复末尾附加一行提示：
-  - `install_type="git"`：「💡 adgine-geo-skills 有新版本 {latest}（当前 {current}），是否需要我帮您运行 `{update_command}` 更新？」
-  - `install_type="package"`：「💡 adgine-geo-skills 有新版本 {latest}（当前 {current}），请在平台 Skill 管理界面重新安装最新版本：{release_url}」
+- `update_available=true`：完成用户当前请求后，在回复末尾追加如下更新提示（根据 install_type 选择对应版本）：
+
+**install_type="git" 时的提示模板：**
+
+---
+💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}）
+
+发给我下面这句话，我来帮你一键更新：
+> 请帮我更新 adgine-geo-skills 到最新版本
+---
+
+**install_type="package" 时的提示模板：**
+
+---
+💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}）
+
+请前往以下地址下载最新版本，然后在平台 Skill 管理界面重新安装：
+{release_url}
+---
+
+## 更新处理（当用户说"请帮我更新 adgine-geo-skills"时触发）
+
+执行：
+```bash
+{update_command}
+```
+成功后回复：「✅ 已更新到最新版本，当前版本已是 {latest}，重新开始对话即可使用新版功能。」
+失败则输出错误信息供用户排查。
 
 ---
 
