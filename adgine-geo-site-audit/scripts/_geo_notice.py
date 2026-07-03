@@ -34,9 +34,8 @@ def _load_check_version_module():
 def _print_footer():
     try:
         mod = _load_check_version_module()
-        if mod is None:
-            return
-        mod.emit_footer()
+        if mod is not None:
+            mod.emit_footer()
     except Exception:
         pass
 
@@ -47,6 +46,7 @@ def emit():
     if mod is None:
         return
     try:
+        mod.emit_human()
         mod.emit_notice()
     except Exception:
         pass

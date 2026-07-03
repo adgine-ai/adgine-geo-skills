@@ -13,6 +13,7 @@ Two output modes:
               at startup so the AI agent sees it in the tool output and prompts
               the user to update.
   --footer    Print a human-readable `---` / ⚠️ footer IF an update is available.
+  --human     Print a one-line Chinese update hint for agents (WorkBuddy). Empty if up to date.
 
 Exits 0 always — any error (network, parse, etc.) is silently suppressed so the
 calling skill's main flow is never blocked.
@@ -109,8 +110,11 @@ def _fetch_remote_version():
         pass
 
     req = urllib.request.Request(
-        REMOTE_VERSION_URL,
-        headers={"User-Agent": "adgine-geo-skills-version-check/1.0"},
+        f"{REMOTE_VERSION_URL}?t={int(time.time())}",
+        headers={
+            "User-Agent": "adgine-geo-skills-version-check/1.0",
+            "Cache-Control": "no-cache",
+        },
     )
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
         latest = resp.read().decode().strip()
@@ -184,6 +188,36 @@ def format_user_footer(state):
     return f"---\n{body}"
 
 
+def format_user_inline(state):
+    """One-line update hint (matches Hermes-style phrasing for WorkBuddy)."""
+    if not state or not state.get("update_available"):
+        return ""
+    cur, lat = state["current"], state["latest"]
+    if state.get("install_type") == "git":
+        return (
+            f"另外 adgine-geo-skills 又有新版本 v{lat}（当前 v{cur}），需要更新吗？"
+            "跟我说「请帮我更新 adgine-geo-skills 到最新版本」即可升级。"
+        )
+    url = state.get("release_url", "")
+    return (
+        f"另外 adgine-geo-skills 又有新版本 v{lat}（当前 v{cur}），需要更新吗？"
+        f"请前往 {url} 下载最新版并重新安装。"
+    )
+
+
+def emit_human(stream=None):
+    """Print a single-line human hint; empty when up to date."""
+    stream = stream or sys.stdout
+    line = format_user_inline(get_state())
+    if not line:
+        return
+    try:
+        stream.write(line + "\n")
+        stream.flush()
+    except Exception:
+        pass
+
+
 def emit_footer(stream=None):
     """Print the human-readable footer if an update is available."""
     stream = stream or sys.stdout
@@ -232,6 +266,9 @@ def main():
         sys.exit(0)
     if "--footer" in sys.argv:
         emit_footer()
+        sys.exit(0)
+    if "--human" in sys.argv:
+        emit_human()
         sys.exit(0)
     state = get_state()
     if state is not None:

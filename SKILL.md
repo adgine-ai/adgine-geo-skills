@@ -12,18 +12,21 @@ version: "1.2.4"
 
 ## 版本检测（路由到任何子技能之前的第一步，必须执行）
 
-在将用户请求路由到任何子技能之前，**先**运行版本检测：
+在将用户请求路由到任何子技能之前，**先单独运行**版本检测（必须是本轮第一个 bash 命令）：
 
 ```bash
-python3 <skills-root>/scripts/check_version.py
+python3 <skills-root>/scripts/check_version.py --human
 ```
 
 `<skills-root>` 是本仓库根目录（含 `VERSION`、`setup.py` 及所有 `adgine-geo-*` 文件夹）。
 
+**WorkBuddy 特别注意：** WorkBuddy 会改写业务脚本的终端输出，可能丢掉嵌入的 `_notice` 或页脚。
+因此 **必须** 用上面的 `--human` 命令做独立检测；若输出不为空，**在用户回复的最后一段原文包含该句**，禁止只展示业务结果而省略版本信息。
+
 处理规则：
 - 脚本失败 / 超时 / 输出为空：静默忽略，继续路由和响应
-- `update_available=false`：不输出任何版本相关内容
-- `update_available=true`：继续完成用户当前请求，然后在回复末尾追加更新提示（见下方模板）。同一轮对话只提示一次。
+- `update_available=false`（`--human` 无输出）：不输出任何版本相关内容
+- 有更新（`--human` 有输出）或 JSON 模式 `update_available=true`：完成用户当前请求后，在回复末尾追加更新提示（见下方模板）。同一轮对话只提示一次。
 
 ## 版本更新提示（脚本自动 + 必须处理）
 

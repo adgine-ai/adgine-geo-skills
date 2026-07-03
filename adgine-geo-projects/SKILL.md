@@ -7,14 +7,14 @@ description: Lists, creates, retrieves, updates, and deletes GEO platform websit
 
 ## 版本检测（加载本 skill 时执行）
 
-作为最常用的入口技能，加载本 skill 处理 GEO 相关请求时，**先**运行：
+作为最常用的入口技能，加载本 skill 处理 GEO 相关请求时，**先单独运行**（本轮第一个 bash 命令）：
 
 ```bash
-python3 <skills-root>/scripts/check_version.py
+python3 <skills-root>/scripts/check_version.py --human
 ```
 
 `<skills-root>` 是本仓库根目录（本文件向上两级）。规则见根目录 `SKILL.md`
-「版本检测」一节：`update_available=true` 时在回复末尾追加更新提示。
+「版本检测」一节：有输出则在回复末尾追加该句（WorkBuddy 不得省略）。
 
 ## `_notice` 处理规则
 

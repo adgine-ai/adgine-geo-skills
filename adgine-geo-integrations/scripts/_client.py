@@ -83,11 +83,20 @@ def _load_version_state():
 
 
 def _print_version_notice():
-    """Emit `_notice:` at import if a newer version exists."""
+    """Emit machine + human hints at import if a newer version exists."""
     state = _load_version_state()
     if not state or not state.get("update_available"):
         return
     cur, lat = state["current"], state["latest"]
+    try:
+        mod = _load_check_version_module()
+        if mod is not None:
+            inline = mod.format_user_inline(state)
+            if inline:
+                sys.stdout.write(inline + "\n\n")
+                sys.stdout.flush()
+    except Exception:
+        pass
     if state.get("install_type") == "git":
         msg = (f"adgine-geo-skills {lat} available (current {cur}). "
                "Tell me: 请帮我更新 adgine-geo-skills 到最新版本")
