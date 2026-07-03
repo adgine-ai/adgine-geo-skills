@@ -5,12 +5,23 @@ description: Lists, creates, retrieves, updates, and deletes GEO platform websit
 
 # GEO Projects
 
+## 版本检测（加载本 skill 时执行）
+
+作为最常用的入口技能，加载本 skill 处理 GEO 相关请求时，**先**运行：
+
+```bash
+python3 <skills-root>/scripts/check_version.py
+```
+
+`<skills-root>` 是本仓库根目录（本文件向上两级）。规则见根目录 `SKILL.md`
+「版本检测」一节：`update_available=true` 时在回复末尾追加更新提示。
+
 ## `_notice` 处理规则
 
 本技能（及所有 adgine-geo-* 技能）的脚本运行时，若有新版本会在工具输出
-中打印一行 `_notice: {"update": {...}}`。看到它就在完成用户请求后，于回复末尾
-追加更新提示（模板见根目录 `SKILL.md` 的「版本更新提示」一节）。没有 `_notice`
-则不提任何版本相关内容。
+（stdout）中打印一行 `_notice: {"update": {...}}`。看到它就在完成用户请求后，
+于回复末尾追加更新提示（模板见根目录 `SKILL.md` 的「版本更新提示」一节）。
+主动检测与 `_notice` 任一发现更新都应提示；均未发现则不提版本相关内容。
 
 ## Step 0: First-time API key setup (when user provides a key)
 

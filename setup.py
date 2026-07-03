@@ -31,6 +31,25 @@ ENV_EXAMPLE_PATH = os.path.join(REPO_ROOT, ".env.example")
 PLACEHOLDER_VALUES = {"", "geo_sk_live_YOUR_KEY_HERE", "geo_sk...HERE"}
 
 
+def _emit_version_notice():
+    """Print `_notice:` to stdout if a newer version exists (same as skill scripts)."""
+    import subprocess
+    check = os.path.join(REPO_ROOT, "scripts", "check_version.py")
+    if not os.path.isfile(check):
+        return
+    try:
+        out = subprocess.run(
+            [sys.executable, check, "--notice"],
+            capture_output=True, text=True, timeout=8,
+        )
+        notice = (out.stdout or "") + (out.stderr or "")
+        if notice.strip():
+            sys.stdout.write(notice if notice.endswith("\n") else notice + "\n")
+            sys.stdout.flush()
+    except Exception:
+        pass
+
+
 def read_env_key():
     """Return the current GEO_API_KEY from .env, or None if unset/placeholder."""
     if not os.path.isfile(ENV_PATH):
@@ -187,6 +206,7 @@ def run_interactive():
 
 
 def main():
+    _emit_version_notice()
     parser = argparse.ArgumentParser(
         description="Configure GEO_API_KEY for adgine-geo-skills.",
         add_help=True,

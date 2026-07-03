@@ -67,11 +67,11 @@ def _print_version_notice():
         )
         _notice = (_out.stdout or "") + (_out.stderr or "")
         if _notice.strip():
-            # Forward to stdout so every harness surfaces it — EXCEPT when this
-            # invocation emits pure JSON on stdout (--json), where we use stderr
-            # to keep the JSON parseable.
-            _dest = sys.stderr if "--json" in sys.argv else sys.stdout
-            _dest.write(_notice if _notice.endswith("\n") else _notice + "\n")
+            # Always stdout — _notice uses a distinct prefix so agents parse it
+            # before JSON on the same stream (WorkBuddy/Hermes often only feed
+            # stdout to the model).
+            sys.stdout.write(_notice if _notice.endswith("\n") else _notice + "\n")
+            sys.stdout.flush()
     except Exception:
         pass
 

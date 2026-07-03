@@ -26,14 +26,8 @@ def emit():
         )
         notice = (out.stdout or "") + (out.stderr or "")
         if notice.strip():
-            # Forward to stdout so every harness surfaces it — EXCEPT the one
-            # case that emits pure JSON on stdout: geo_collect without --output.
-            script = os.path.basename(sys.argv[0]) if sys.argv else ""
-            json_to_stdout = (
-                script.startswith("geo_collect")
-                and not ({"--output", "-o"} & set(sys.argv))
-            )
-            dest = sys.stderr if json_to_stdout else sys.stdout
-            dest.write(notice if notice.endswith("\n") else notice + "\n")
+            # Always stdout — distinct _notice: prefix before JSON (see _client.py).
+            sys.stdout.write(notice if notice.endswith("\n") else notice + "\n")
+            sys.stdout.flush()
     except Exception:
         pass

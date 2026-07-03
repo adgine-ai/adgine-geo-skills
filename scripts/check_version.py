@@ -16,6 +16,10 @@ Two output modes:
 Exits 0 always — any error (network, parse, etc.) is silently suppressed so the
 calling skill's main flow is never blocked.
 
+Debug (opt-in, does not change exit code):
+  GEO_VERSION_CHECK_DEBUG=1   Log failures to stderr.
+  --verbose                 Same, with default or --notice mode.
+
 JSON schema (default mode):
   {
     "current": "1.1.0",
@@ -48,6 +52,15 @@ TIMEOUT = 5
 CACHE_TTL = 120  # 2 minutes — dedupes a burst of scripts in one turn while
 # still surfacing a freshly-pushed version within ~2 min.
 CACHE_FILE = os.path.join(tempfile.gettempdir(), "adgine_geo_skills_version.json")
+
+
+def _debug_enabled():
+    return os.environ.get("GEO_VERSION_CHECK_DEBUG") == "1" or "--verbose" in sys.argv
+
+
+def _debug(msg):
+    if _debug_enabled():
+        print(f"[check_version] {msg}", file=sys.stderr)
 
 
 def _read_local_version():
@@ -114,7 +127,8 @@ def get_state():
             "update_command": f"git -C {REPO_ROOT} pull" if is_git else "",
             "release_url": RELEASE_URL,
         }
-    except Exception:
+    except Exception as exc:
+        _debug(f"check failed: {exc}")
         return None
 
 
@@ -122,8 +136,8 @@ def emit_notice(stream=None):
     """Print a single `_notice:` line to `stream` if an update is available.
 
     Writes to STDOUT by default so the agent harness reliably surfaces it in the
-    tool result (some harnesses only feed stdout to the model). Callers that emit
-    pure JSON on stdout pass stream=sys.stderr to avoid corrupting it.
+    tool result (some harnesses only feed stdout to the model). The `_notice:`
+    prefix lets agents parse it before JSON on the same stream.
 
     Silent when up to date or on any error. Safe to call at the top of any
     skill script — never raises, never blocks.
@@ -154,6 +168,8 @@ def main():
     state = get_state()
     if state is not None:
         print(json.dumps(state, ensure_ascii=False))
+    elif _debug_enabled():
+        _debug("no state returned (see errors above)")
     sys.exit(0)
 
 
