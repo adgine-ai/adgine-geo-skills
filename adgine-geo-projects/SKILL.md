@@ -7,7 +7,7 @@ description: Lists, creates, retrieves, updates, and deletes GEO platform websit
 
 ## `_notice` 处理规则
 
-本技能（及所有 adgine-geo-* 技能）的脚本运行时，若有新版本会在输出（stderr）
+本技能（及所有 adgine-geo-* 技能）的脚本运行时，若有新版本会在工具输出
 中打印一行 `_notice: {"update": {...}}`。看到它就在完成用户请求后，于回复末尾
 追加更新提示（模板见根目录 `SKILL.md` 的「版本更新提示」一节）。没有 `_notice`
 则不提任何版本相关内容。

@@ -7,13 +7,13 @@ description: >
   触发词：GEO / Adgine / AI visibility / AI citation / 生成式引擎优化 / AI 可见性 /
   引用测试 / 内容生成 / 网站审计 / 品牌画像 / WordPress 发布 / 流量分析 /
   AI 爬虫追踪 / 优化机会 / 页面健康度 / 域名 / 账单 / 积分 / 项目管理.
-version: "1.1.6"
+version: "1.1.8"
 ---
 
 ## 版本更新提示（自动，必须处理）
 
 本套件的**每个脚本**在运行时都会自动做版本检查（对比 GitHub 上的
-`VERSION`）。如果有新版本，脚本会在**输出（stderr）中打印一行 `_notice`**，
+`VERSION`）。如果有新版本，脚本会在**工具输出中打印一行 `_notice`**，
 格式为：
 
 ```

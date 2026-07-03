@@ -45,7 +45,8 @@ TIMEOUT = 5
 # Cache the remote version lookup so a conversation that runs several scripts
 # in one turn does not hammer GitHub. A fresh conversation later still re-checks
 # once the cache expires.
-CACHE_TTL = 1800  # 30 minutes
+CACHE_TTL = 120  # 2 minutes — dedupes a burst of scripts in one turn while
+# still surfacing a freshly-pushed version within ~2 min.
 CACHE_FILE = os.path.join(tempfile.gettempdir(), "adgine_geo_skills_version.json")
 
 
@@ -120,14 +121,14 @@ def get_state():
 def emit_notice(stream=None):
     """Print a single `_notice:` line to `stream` if an update is available.
 
-    Writes to STDERR by default so it never corrupts a script's stdout (which
-    may be pure JSON). Agent harnesses surface stderr in the tool result, so the
-    model still sees the notice and prompts the user.
+    Writes to STDOUT by default so the agent harness reliably surfaces it in the
+    tool result (some harnesses only feed stdout to the model). Callers that emit
+    pure JSON on stdout pass stream=sys.stderr to avoid corrupting it.
 
     Silent when up to date or on any error. Safe to call at the top of any
     skill script — never raises, never blocks.
     """
-    stream = stream or sys.stderr
+    stream = stream or sys.stdout
     state = get_state()
     if not state or not state.get("update_available"):
         return

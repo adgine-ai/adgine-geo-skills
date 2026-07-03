@@ -24,8 +24,16 @@ def emit():
             [sys.executable, check, "--notice"],
             capture_output=True, text=True, timeout=8,
         )
-        # notice is emitted on stderr to keep stdout clean (may be pure JSON)
-        if out.stderr.strip():
-            sys.stderr.write(out.stderr)
+        notice = (out.stdout or "") + (out.stderr or "")
+        if notice.strip():
+            # Forward to stdout so every harness surfaces it — EXCEPT the one
+            # case that emits pure JSON on stdout: geo_collect without --output.
+            script = os.path.basename(sys.argv[0]) if sys.argv else ""
+            json_to_stdout = (
+                script.startswith("geo_collect")
+                and not ({"--output", "-o"} & set(sys.argv))
+            )
+            dest = sys.stderr if json_to_stdout else sys.stdout
+            dest.write(notice if notice.endswith("\n") else notice + "\n")
     except Exception:
         pass

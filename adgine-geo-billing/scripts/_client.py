@@ -65,10 +65,13 @@ def _print_version_notice():
             [sys.executable, _check, "--notice"],
             capture_output=True, text=True, timeout=8,
         )
-        # check_version.py --notice writes the notice to stderr; forward it to
-        # our stderr so stdout stays clean (may be pure JSON).
-        if _out.stderr.strip():
-            sys.stderr.write(_out.stderr)
+        _notice = (_out.stdout or "") + (_out.stderr or "")
+        if _notice.strip():
+            # Forward to stdout so every harness surfaces it — EXCEPT when this
+            # invocation emits pure JSON on stdout (--json), where we use stderr
+            # to keep the JSON parseable.
+            _dest = sys.stderr if "--json" in sys.argv else sys.stdout
+            _dest.write(_notice if _notice.endswith("\n") else _notice + "\n")
     except Exception:
         pass
 
