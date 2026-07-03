@@ -7,47 +7,40 @@ description: >
   触发词：GEO / Adgine / AI visibility / AI citation / 生成式引擎优化 / AI 可见性 /
   引用测试 / 内容生成 / 网站审计 / 品牌画像 / WordPress 发布 / 流量分析 /
   AI 爬虫追踪 / 优化机会 / 页面健康度 / 域名 / 账单 / 积分 / 项目管理.
-version: "1.1.0"
+version: "1.1.6"
 ---
 
-## 版本检测（路由到任何子技能之前的第一步，必须执行）
+## 版本更新提示（自动，必须处理）
 
-在将用户请求路由到任何子技能之前，**先**运行版本检测：
+本套件的**每个脚本**在运行时都会自动做版本检查（对比 GitHub 上的
+`VERSION`）。如果有新版本，脚本会在**输出（stderr）中打印一行 `_notice`**，
+格式为：
 
-```bash
-python3 <SKILL_DIR>/scripts/check_version.py
+```
+_notice: {"update": {"current": "1.1.5", "latest": "1.2.0", "message": "..."}}
 ```
 
-处理规则：
-- 脚本失败 / 超时 / 输出为空：静默忽略，继续路由和响应
-- `update_available=false`：不输出任何版本相关内容，继续正常路由
-- `update_available=true`：继续完成用户当前请求，然后在回复末尾追加如下更新提示（根据 install_type 选择对应版本）：
+**处理规则（每次对话都适用）：**
+- 任何一次工具调用的输出里出现 `_notice` → 先正常完成用户当前请求，
+  然后在回复末尾追加一条更新提示（见下方模板）。同一轮对话只提示一次。
+- 输出里没有 `_notice` → 不输出任何版本相关内容。
 
-**install_type="git" 时的提示模板：**
+**更新提示模板（`message` 里含「Tell me:」= git 安装）：**
 
----
-💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}）
+> 💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}）
+> 发给我下面这句话，我来帮你一键更新：
+> `请帮我更新 adgine-geo-skills 到最新版本`
 
-发给我下面这句话，我来帮你一键更新：
-> 请帮我更新 adgine-geo-skills 到最新版本
----
+**更新提示模板（`message` 里含「Download:」= 打包安装）：**
 
-**install_type="package" 时的提示模板：**
-
----
-💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}）
-
-请前往以下地址下载最新版本，然后在平台 Skill 管理界面重新安装：
-{release_url}
----
+> 💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}）
+> 请前往 {下载地址} 下载最新版本，在平台 Skill 管理界面重新安装。
 
 ## 更新处理（当用户说"请帮我更新 adgine-geo-skills"时触发）
 
-执行：
-```bash
-{update_command}
-```
-成功后回复：「✅ 已更新到最新版本，当前版本已是 {latest}，重新开始对话即可使用新版功能。」
+运行 `python3 <SKILL_DIR>/scripts/check_version.py` 拿到 `update_command`，
+然后执行它（git 安装形如 `git -C <repo_root> pull`）。
+成功后回复：「✅ 已更新到最新版本 {latest}，重新开始对话即可使用新版功能。」
 失败则输出错误信息供用户排查。
 
 ---

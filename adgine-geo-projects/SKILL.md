@@ -7,15 +7,10 @@ description: Lists, creates, retrieves, updates, and deletes GEO platform websit
 
 ## `_notice` 处理规则
 
-`list_projects.py` 的输出第一行可能包含 `_notice` 字段（JSON 格式）。处理规则：
-
-- 无 `_notice`：忽略，正常展示项目列表
-- 有 `_notice.update`：完成当前请求后，在回复末尾追加友好提示：
-  - git 安装（`install_type=git`）：
-    > 💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}），发给我下面这句话，我来帮你一键更新：
-    > `请帮我更新 adgine-geo-skills 到最新版本`
-  - package 安装：
-    > 💡 **adgine-geo-skills 有新版本 {latest}**（当前 {current}），请前往以下地址下载最新版并在平台重新安装：{release_url}
+本技能（及所有 adgine-geo-* 技能）的脚本运行时，若有新版本会在输出（stderr）
+中打印一行 `_notice: {"update": {...}}`。看到它就在完成用户请求后，于回复末尾
+追加更新提示（模板见根目录 `SKILL.md` 的「版本更新提示」一节）。没有 `_notice`
+则不提任何版本相关内容。
 
 ## Step 0: First-time API key setup (when user provides a key)
 

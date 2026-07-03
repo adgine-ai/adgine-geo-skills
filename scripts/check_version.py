@@ -2,10 +2,21 @@
 """
 Check whether a newer version of adgine-geo-skills is available on GitHub.
 
-Outputs JSON to stdout. Exits 0 always — errors are silently suppressed
-so the calling agent's main flow is never blocked.
+The canonical VERSION source of truth is:
+  https://github.com/adgine-ai/adgine-geo-skills/blob/main/VERSION
+fetched via the raw endpoint.
 
-Output schema:
+Two output modes:
+  (default)   Print a JSON object describing the version state.
+  --notice    Print a single `_notice: {...}` line IF (and only if) an update
+              is available. Prints nothing otherwise. This is what scripts emit
+              at startup so the AI agent sees it in the tool output and prompts
+              the user to update.
+
+Exits 0 always — any error (network, parse, etc.) is silently suppressed so the
+calling skill's main flow is never blocked.
+
+JSON schema (default mode):
   {
     "current": "1.1.0",
     "latest": "1.2.0",
@@ -14,16 +25,15 @@ Output schema:
     "update_command": "git -C /path/to/dir pull",   // git only
     "release_url": "https://github.com/..."
   }
-
-On any error (network, parse, etc.): exits 0 with no output.
 """
 
 import json
 import os
 import subprocess
 import sys
+import tempfile
+import time
 import urllib.request
-import urllib.error
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VERSION_FILE = os.path.join(REPO_ROOT, "VERSION")
@@ -32,6 +42,11 @@ REMOTE_VERSION_URL = (
 )
 RELEASE_URL = "https://github.com/adgine-ai/adgine-geo-skills/releases/latest"
 TIMEOUT = 5
+# Cache the remote version lookup so a conversation that runs several scripts
+# in one turn does not hammer GitHub. A fresh conversation later still re-checks
+# once the cache expires.
+CACHE_TTL = 1800  # 30 minutes
+CACHE_FILE = os.path.join(tempfile.gettempdir(), "adgine_geo_skills_version.json")
 
 
 def _read_local_version():
@@ -40,17 +55,34 @@ def _read_local_version():
 
 
 def _fetch_remote_version():
+    """Return the latest version string from GitHub, using a short-lived cache."""
+    # Serve from cache if fresh
+    try:
+        with open(CACHE_FILE) as f:
+            cached = json.load(f)
+        if time.time() - cached.get("ts", 0) < CACHE_TTL and cached.get("latest"):
+            return cached["latest"]
+    except Exception:
+        pass
+
     req = urllib.request.Request(
         REMOTE_VERSION_URL,
         headers={"User-Agent": "adgine-geo-skills-version-check/1.0"},
     )
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return resp.read().decode().strip()
+        latest = resp.read().decode().strip()
+
+    try:
+        with open(CACHE_FILE, "w") as f:
+            json.dump({"ts": time.time(), "latest": latest}, f)
+    except Exception:
+        pass
+    return latest
 
 
 def _parse_version(v):
-    """Return tuple of ints for semver comparison, e.g. '1.2.3' → (1, 2, 3)."""
-    return tuple(int(x) for x in v.lstrip("v").split("."))
+    """Return tuple of ints for semver comparison, e.g. 'v1.2.3' → (1, 2, 3)."""
+    return tuple(int(x) for x in v.strip().lstrip("v").split("."))
 
 
 def _is_git_repo(path):
@@ -66,27 +98,62 @@ def _is_git_repo(path):
         return False
 
 
-def main():
+def get_state():
+    """Return the full version-state dict, or None on any error."""
     try:
         current = _read_local_version()
         latest = _fetch_remote_version()
         update_available = _parse_version(latest) > _parse_version(current)
-
         is_git = _is_git_repo(REPO_ROOT)
-        install_type = "git" if is_git else "package"
-        update_command = f"git -C {REPO_ROOT} pull" if is_git else ""
-
-        print(json.dumps({
+        return {
             "current": current,
             "latest": latest,
             "update_available": update_available,
-            "install_type": install_type,
-            "update_command": update_command,
+            "install_type": "git" if is_git else "package",
+            "update_command": f"git -C {REPO_ROOT} pull" if is_git else "",
             "release_url": RELEASE_URL,
-        }, ensure_ascii=False))
+        }
     except Exception:
-        # Silent failure — never block the agent's main task
+        return None
+
+
+def emit_notice(stream=None):
+    """Print a single `_notice:` line to `stream` if an update is available.
+
+    Writes to STDERR by default so it never corrupts a script's stdout (which
+    may be pure JSON). Agent harnesses surface stderr in the tool result, so the
+    model still sees the notice and prompts the user.
+
+    Silent when up to date or on any error. Safe to call at the top of any
+    skill script — never raises, never blocks.
+    """
+    stream = stream or sys.stderr
+    state = get_state()
+    if not state or not state.get("update_available"):
+        return
+    cur, lat = state["current"], state["latest"]
+    if state.get("install_type") == "git":
+        msg = (f"adgine-geo-skills {lat} available (current {cur}). "
+               "Tell me: 请帮我更新 adgine-geo-skills 到最新版本")
+    else:
+        msg = (f"adgine-geo-skills {lat} available (current {cur}). "
+               f"Download: {state.get('release_url', '')}")
+    notice = {"update": {"current": cur, "latest": lat, "message": msg}}
+    try:
+        stream.write(f"_notice: {json.dumps(notice, ensure_ascii=False)}\n\n")
+        stream.flush()
+    except Exception:
+        pass
+
+
+def main():
+    if "--notice" in sys.argv:
+        emit_notice()
         sys.exit(0)
+    state = get_state()
+    if state is not None:
+        print(json.dumps(state, ensure_ascii=False))
+    sys.exit(0)
 
 
 if __name__ == "__main__":

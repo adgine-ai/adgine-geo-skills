@@ -2435,4 +2435,9 @@ def main():
 
 
 if __name__ == "__main__":
+    try:
+        import _geo_notice
+        _geo_notice.emit()
+    except Exception:
+        pass
     main()

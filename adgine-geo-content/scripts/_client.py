@@ -48,9 +48,10 @@ _load_dot_env()
 
 
 def _print_version_notice():
-    """Check for a newer version of adgine-geo-skills and print _notice if found.
+    """Emit a `_notice:` line if a newer adgine-geo-skills version exists.
 
-    Runs once per process. Silent on any error or timeout.
+    Delegates to the single source of truth: <repo_root>/scripts/check_version.py
+    (run with --notice). Runs once per process. Silent on any error or timeout.
     """
     import subprocess
     _check = os.path.join(
@@ -60,24 +61,14 @@ def _print_version_notice():
     if not os.path.isfile(_check):
         return
     try:
-        import json as _json
         _out = subprocess.run(
-            [sys.executable, _check], capture_output=True, text=True, timeout=5
+            [sys.executable, _check, "--notice"],
+            capture_output=True, text=True, timeout=8,
         )
-        if not _out.stdout.strip():
-            return
-        _v = _json.loads(_out.stdout)
-        if not _v.get("update_available"):
-            return
-        cur, lat = _v["current"], _v["latest"]
-        if _v.get("install_type") == "git":
-            msg = (f"adgine-geo-skills {lat} available (current {cur}). "
-                   "Tell me: 请帮我更新 adgine-geo-skills 到最新版本")
-        else:
-            msg = (f"adgine-geo-skills {lat} available (current {cur}). "
-                   f"Download: {_v.get('release_url', '')}")
-        print(f'_notice: {{"update": {{"current": "{cur}", "latest": "{lat}", "message": "{msg}"}}}}')
-        print()
+        # check_version.py --notice writes the notice to stderr; forward it to
+        # our stderr so stdout stays clean (may be pure JSON).
+        if _out.stderr.strip():
+            sys.stderr.write(_out.stderr)
     except Exception:
         pass
 

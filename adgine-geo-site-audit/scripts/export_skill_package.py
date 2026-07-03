@@ -189,4 +189,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    try:
+        import _geo_notice
+        _geo_notice.emit()
+    except Exception:
+        pass
     raise SystemExit(main())
