@@ -23,6 +23,9 @@ python3 <skills-root>/scripts/check_version.py
 于回复末尾追加更新提示（模板见根目录 `SKILL.md` 的「版本更新提示」一节）。
 主动检测与 `_notice` 任一发现更新都应提示；均未发现则不提版本相关内容。
 
+工具输出末尾若出现 `---` + `⚠️ adgine-geo-skills v... 已发布` 页脚，**必须原样**
+展示给用户（WorkBuddy 等改写表格时也不得省略此段）。
+
 ## Step 0: First-time API key setup (when user provides a key)
 
 If the user provides a GEO API key in chat (e.g. *"my key is geo_sk_live_xxx"* / *"帮我配置一下 key"* / *"set my api key to ..."*), this is the canonical procedure for the entire skills repo. **Do not invent your own path — run the helper.**

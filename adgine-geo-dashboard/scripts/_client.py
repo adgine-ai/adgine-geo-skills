@@ -11,6 +11,7 @@ import os
 import sys
 import json
 import time
+import atexit
 import unicodedata
 import urllib.request as _req
 import urllib.error as _uerr
@@ -46,37 +47,81 @@ def _load_dot_env():
 
 _load_dot_env()
 
+_VERSION_UNCHECKED = object()
+_version_state = _VERSION_UNCHECKED
+
+
+def _repo_root():
+    return os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+
+
+def _load_check_version_module():
+    import importlib.util
+    path = os.path.join(_repo_root(), "scripts", "check_version.py")
+    if not os.path.isfile(path):
+        return None
+    spec = importlib.util.spec_from_file_location("geo_check_version", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _load_version_state():
+    global _version_state
+    if _version_state is not _VERSION_UNCHECKED:
+        return _version_state
+    _version_state = None
+    try:
+        mod = _load_check_version_module()
+        if mod is not None:
+            _version_state = mod.get_state()
+    except Exception:
+        pass
+    return _version_state
+
 
 def _print_version_notice():
-    """Emit a `_notice:` line if a newer adgine-geo-skills version exists.
+    """Emit `_notice:` at import if a newer version exists."""
+    state = _load_version_state()
+    if not state or not state.get("update_available"):
+        return
+    cur, lat = state["current"], state["latest"]
+    if state.get("install_type") == "git":
+        msg = (f"adgine-geo-skills {lat} available (current {cur}). "
+               "Tell me: 请帮我更新 adgine-geo-skills 到最新版本")
+    else:
+        msg = (f"adgine-geo-skills {lat} available (current {cur}). "
+               f"Download: {state.get('release_url', '')}")
+    notice = {"update": {"current": cur, "latest": lat, "message": msg}}
+    try:
+        line = f"_notice: {json.dumps(notice, ensure_ascii=False)}\n\n"
+        sys.stdout.write(line)
+        sys.stdout.flush()
+    except Exception:
+        pass
 
-    Delegates to the single source of truth: <repo_root>/scripts/check_version.py
-    (run with --notice). Runs once per process. Silent on any error or timeout.
-    """
-    import subprocess
-    _check = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-        "scripts", "check_version.py",
-    )
-    if not os.path.isfile(_check):
+
+def _print_version_footer():
+    """Emit human-readable footer at process exit (WorkBuddy-compatible)."""
+    state = _load_version_state()
+    if not state or not state.get("update_available"):
         return
     try:
-        _out = subprocess.run(
-            [sys.executable, _check, "--notice"],
-            capture_output=True, text=True, timeout=8,
-        )
-        _notice = (_out.stdout or "") + (_out.stderr or "")
-        if _notice.strip():
-            # Always stdout — _notice uses a distinct prefix so agents parse it
-            # before JSON on the same stream (WorkBuddy/Hermes often only feed
-            # stdout to the model).
-            sys.stdout.write(_notice if _notice.endswith("\n") else _notice + "\n")
+        mod = _load_check_version_module()
+        if mod is None:
+            return
+        footer = mod.format_user_footer(state)
+        if footer:
+            sys.stdout.write("\n" + footer + "\n")
             sys.stdout.flush()
     except Exception:
         pass
 
 
 _print_version_notice()
+atexit.register(_print_version_footer)
 
 
 def get_api_config():

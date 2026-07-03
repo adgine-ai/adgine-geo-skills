@@ -24,6 +24,8 @@ import os
 import sys
 import shutil
 import argparse
+import atexit
+import importlib.util
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.path.join(REPO_ROOT, ".env")
@@ -31,23 +33,35 @@ ENV_EXAMPLE_PATH = os.path.join(REPO_ROOT, ".env.example")
 PLACEHOLDER_VALUES = {"", "geo_sk_live_YOUR_KEY_HERE", "geo_sk...HERE"}
 
 
+def _load_check_version_module():
+    path = os.path.join(REPO_ROOT, "scripts", "check_version.py")
+    if not os.path.isfile(path):
+        return None
+    spec = importlib.util.spec_from_file_location("geo_check_version", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def _emit_version_notice():
-    """Print `_notice:` to stdout if a newer version exists (same as skill scripts)."""
-    import subprocess
-    check = os.path.join(REPO_ROOT, "scripts", "check_version.py")
-    if not os.path.isfile(check):
-        return
     try:
-        out = subprocess.run(
-            [sys.executable, check, "--notice"],
-            capture_output=True, text=True, timeout=8,
-        )
-        notice = (out.stdout or "") + (out.stderr or "")
-        if notice.strip():
-            sys.stdout.write(notice if notice.endswith("\n") else notice + "\n")
-            sys.stdout.flush()
+        mod = _load_check_version_module()
+        if mod is not None:
+            mod.emit_notice()
     except Exception:
         pass
+
+
+def _emit_version_footer():
+    try:
+        mod = _load_check_version_module()
+        if mod is not None:
+            mod.emit_footer()
+    except Exception:
+        pass
+
+
+atexit.register(_emit_version_footer)
 
 
 def read_env_key():

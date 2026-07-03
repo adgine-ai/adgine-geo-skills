@@ -132,6 +132,42 @@ def get_state():
         return None
 
 
+def format_user_footer(state):
+    """Human-readable update block for stdout (WorkBuddy and similar agents).
+
+    Printed at the end of script output so agents that rewrite tool results
+    still surface the message when they quote trailing lines.
+    """
+    if not state or not state.get("update_available"):
+        return ""
+    cur, lat = state["current"], state["latest"]
+    if state.get("install_type") == "git":
+        body = (
+            f"⚠️ adgine-geo-skills v{lat} 已发布（当前 v{cur}）。"
+            "跟我说「请帮我更新 adgine-geo-skills 到最新版本」即可升级。"
+        )
+    else:
+        url = state.get("release_url", "")
+        body = (
+            f"⚠️ adgine-geo-skills v{lat} 已发布（当前 v{cur}）。"
+            f"请前往 {url} 下载最新版并重新安装。"
+        )
+    return f"---\n{body}"
+
+
+def emit_footer(stream=None):
+    """Print the human-readable footer if an update is available."""
+    stream = stream or sys.stdout
+    footer = format_user_footer(get_state())
+    if not footer:
+        return
+    try:
+        stream.write(footer + "\n")
+        stream.flush()
+    except Exception:
+        pass
+
+
 def emit_notice(stream=None):
     """Print a single `_notice:` line to `stream` if an update is available.
 
@@ -164,6 +200,9 @@ def emit_notice(stream=None):
 def main():
     if "--notice" in sys.argv:
         emit_notice()
+        sys.exit(0)
+    if "--footer" in sys.argv:
+        emit_footer()
         sys.exit(0)
     state = get_state()
     if state is not None:
