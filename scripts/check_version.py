@@ -12,6 +12,7 @@ Two output modes:
               is available. Prints nothing otherwise. This is what scripts emit
               at startup so the AI agent sees it in the tool output and prompts
               the user to update.
+  --footer    Print a human-readable `---` / ⚠️ footer IF an update is available.
 
 Exits 0 always — any error (network, parse, etc.) is silently suppressed so the
 calling skill's main flow is never blocked.
@@ -33,6 +34,7 @@ JSON schema (default mode):
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -63,9 +65,36 @@ def _debug(msg):
         print(f"[check_version] {msg}", file=sys.stderr)
 
 
+def _read_version_from_skill_md():
+    """Fallback when installers (e.g. WorkBuddy) omit the root VERSION file."""
+    skill_md = os.path.join(REPO_ROOT, "SKILL.md")
+    if not os.path.isfile(skill_md):
+        return None
+    in_frontmatter = False
+    with open(skill_md, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line == "---":
+                in_frontmatter = not in_frontmatter
+                if not in_frontmatter:
+                    break
+                continue
+            if in_frontmatter:
+                m = re.match(r'^version:\s*["\']?([^"\'#\s]+)', line)
+                if m:
+                    return m.group(1).strip()
+    return None
+
+
 def _read_local_version():
-    with open(VERSION_FILE) as f:
-        return f.read().strip()
+    if os.path.isfile(VERSION_FILE):
+        with open(VERSION_FILE) as f:
+            return f.read().strip()
+    fallback = _read_version_from_skill_md()
+    if fallback:
+        _debug(f"VERSION file missing; using SKILL.md frontmatter ({fallback})")
+        return fallback
+    raise FileNotFoundError(VERSION_FILE)
 
 
 def _fetch_remote_version():

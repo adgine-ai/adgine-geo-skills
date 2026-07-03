@@ -7,7 +7,7 @@ description: >
   触发词：GEO / Adgine / AI visibility / AI citation / 生成式引擎优化 / AI 可见性 /
   引用测试 / 内容生成 / 网站审计 / 品牌画像 / WordPress 发布 / 流量分析 /
   AI 爬虫追踪 / 优化机会 / 页面健康度 / 域名 / 账单 / 积分 / 项目管理.
-version: "1.1.8"
+version: "1.2.4"
 ---
 
 ## 版本检测（路由到任何子技能之前的第一步，必须执行）

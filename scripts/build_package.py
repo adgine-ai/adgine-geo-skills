@@ -15,7 +15,7 @@ from pathlib import Path
 
 EXCLUDE_DIRS = {".git", "dist", "__pycache__", ".github", ".idea", ".vscode", "ref"}
 EXCLUDE_SUFFIXES = {".pyc", ".pyo"}
-EXCLUDE_FILES = {".gitignore", "scripts/build_package.py" ,"VERSION"}
+EXCLUDE_FILES = {".gitignore", "scripts/build_package.py"}
 
 
 def build_archive(output_path: Path, root: Path) -> None:
