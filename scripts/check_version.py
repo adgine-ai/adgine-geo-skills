@@ -146,7 +146,15 @@ def _is_git_repo(path):
 
 
 def get_state():
-    """Return the full version-state dict, or None on any error."""
+    """Return the full version-state dict, or None on any error.
+
+    Returns None immediately when GEO_SKIP_VERSION_CHECK is set. The npm CLI
+    (adgine-geo) sets this so version updates are surfaced by npm instead, and
+    so stdout stays clean (no `_notice:`/footer lines) and no per-command
+    network round-trip to GitHub is incurred.
+    """
+    if os.environ.get("GEO_SKIP_VERSION_CHECK"):
+        return None
     try:
         current = _read_local_version()
         latest = _fetch_remote_version()

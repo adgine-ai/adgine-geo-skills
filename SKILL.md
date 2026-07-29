@@ -87,6 +87,7 @@ _notice: {"update": {"current": "1.1.5", "latest": "1.2.0", "message": "..."}}
 | adgine/geo-opportunities | 发现 AI 识别的内容缺口和优化机会，按影响力（相关性/流量/竞争度/紧迫性）排序 |
 | adgine/geo-integrations | 连接 GA4（OAuth）和 Cloudflare、部署 AI 爬虫追踪 Worker、触发数据同步 |
 | adgine/geo-wordpress | 发布 GEO 文章到 WordPress、管理站点凭证和分类、查看发布历史、更新已发布文章 |
+| adgine/geo-media-publish | 发布文章到本机浏览器已登录的社媒草稿箱（知乎/微信公众号/百家号/头条号/CSDN/小红书…），经 Chrome 扩展桥接，需桌面端 |
 | adgine/geo-saas | 检查子域名可用性、创建并追踪 SaaS 托管网站部署任务 |
 | adgine/geo-billing | 查询订阅套餐、订阅状态、积分余额和充值明细（只读，不执行购买） |
 | adgine/geo-domains | 按关键词搜索可注册域名、列出已注册域名、查看域名详情 |
@@ -97,7 +98,8 @@ _notice: {"update": {"current": "1.1.5", "latest": "1.2.0", "message": "..."}}
 
 部分功能需要多个子技能协作：
 
-- **内容发布**：`geo-content`（生成文章）→ `geo-wordpress`（发布到 WordPress）
+- **内容发布（WordPress）**：`geo-content`（生成文章）→ `geo-wordpress`（发布到 WordPress）
+- **内容发布（社媒草稿箱）**：`geo-content`（生成文章）→ `geo-media-publish`（发布到知乎/公众号/头条等本机已登录平台）
 - **引用测试**：`geo-topics`（创建提示词）→ `geo-citation`（运行测试）→ `geo-visibility`（查看结果）
 - **所有平台功能**：先用 `geo-projects` 配置 API Key 并选定项目，再使用其他子技能
 

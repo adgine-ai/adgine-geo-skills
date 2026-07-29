@@ -6,3 +6,4 @@ __pycache__/
 ref/
 dist/
 scripts/build_package.py
+scripts/sync-workbuddy.sh
