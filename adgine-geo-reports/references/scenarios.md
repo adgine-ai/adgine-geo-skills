@@ -10,6 +10,9 @@
 
 ## Fast routing
 
+The call counts below describe business data calls. A project-scoped report also loads
+`GET /api/projects/{id}` for the user-facing project name unless `--project-name` is supplied.
+
 | User intent | Scenario | Typical call count |
 |---|---|---:|
 | Overall GEO status | `executive-overview` | 1 aggregate (+ capability on cold cache) |
@@ -28,6 +31,7 @@
 | Content operations | `content-pipeline` | 1 aggregate (+ capability on cold cache) |
 | Freshness / operations | `data-freshness` / `operations-overview` | 1 aggregate (+ capability on cold cache) |
 | My account/profile/name/phone/email | `account-info` | 1 |
+| Project list / my projects | `projects` (inline) | 1 |
 
 ## P1 core GEO reports
 
@@ -90,7 +94,7 @@
 | `wordpress-publications` | Publish history | Project |
 | `wordpress-publishable` | Publish-ready content | Project |
 | `billing` | Subscription, credits, and plans | Account only |
-| `projects` | Project catalog | Account only |
+| `projects` | Project catalog; inline by default, never auto-generates HTML | Account only |
 | `domains` | Registered domain portfolio | Account only |
 | `saas-task` | One deployment task | `--resource-id` |
 

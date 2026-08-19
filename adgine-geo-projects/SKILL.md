@@ -5,7 +5,8 @@ description: Lists, creates, retrieves, updates, and deletes GEO platform websit
 
 # GEO Projects
 
-> 用户侧的项目目录/状态报告以及“我的账号信息”默认使用 `adgine/geo-reports` 生成 HTML；项目创建、修改、删除、竞争对手和鉴权配置继续使用本 Skill。
+> 项目列表和“我的账号信息”默认直接在对话中输出，不生成 HTML。其他项目数据分析按
+> `adgine/geo-reports` 的场景默认格式执行；项目创建、修改、删除、竞争对手和鉴权配置继续使用本 Skill。
 
 ## 版本检测（加载本 skill 时执行）
 

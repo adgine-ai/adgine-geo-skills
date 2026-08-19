@@ -5,7 +5,7 @@ description: Generates and manages international GEO article titles, outlines, a
 
 # GEO Content
 
-Use this Skill for content mutations and individual content/job inspection. Use `adgine/geo-reports` for content-pipeline overviews and larger read-only datasets that benefit from an HTML report.
+Use this Skill for content mutations and small individual job-status checks. For content-pipeline overviews and other read-only content datasets, immediately run `adgine/geo-reports` using its scenario default; when that default is HTML, generate and deliver the report link in the same turn without waiting for a second request.
 
 Scripts load `GEO_API_KEY` from the repository `.env`. If it is missing, use
 the repository `setup.py` flow; never place or print the literal key in a shell

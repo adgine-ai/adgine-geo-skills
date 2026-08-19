@@ -9,7 +9,7 @@ Use `scripts/report.py` as the default entry point for all platform data reads. 
 
 ## Required workflow
 
-1. Resolve the active project from `--project-id` or `GEO_PROJECT_ID` when the scenario is project-scoped.
+1. Resolve the active project from `--project-id` or `GEO_PROJECT_ID` when the scenario is project-scoped. Pass `--project-name` when the exact name is already known; otherwise the script loads it from the existing project-detail endpoint for user-facing titles.
 2. Match the report language to the user's latest request and always pass it explicitly:
    - Primarily Chinese request → `--locale zh-CN`
    - Primarily English request → `--locale en-US`
@@ -21,11 +21,11 @@ Use `scripts/report.py` as the default entry point for all platform data reads. 
    - 最近一个月 / last month → `--period 30d`
    - Exact dates → `--start YYYY-MM-DD --end YYYY-MM-DD`
 4. Prefer an explicit Prompt/Topic ID when supplied. Otherwise pass the exact text; supported GEO-Api versions resolve it inside the single report-data business request.
-5. Run exactly one report command. Do not repeat the same query with a specialist script to create a summary.
+5. Run exactly one report command. If the scenario's default format is HTML, generating and delivering that HTML in the same turn is mandatory: do not answer from a specialist read script, do not stop at a prose summary, do not ask whether the user also wants a report, and do not wait for a second request. Do not repeat the same query with a specialist script to create a summary.
 6. For HTML output, follow **WorkBuddy HTML artifact delivery** below. Put the clickable `REPORT_LINK` in the final reply before any summary, then use up to three `REPORT_FINDING` and `REPORT_NEXT` lines.
 7. Use 40 rows per page by default. For “next page / 下一页”, increment `--page` and keep `--limit 40`.
 
-Use the scenario's default output policy. Analysis, trend, inventory, and multi-source reports default to offline HTML. Small single-record results (`account-info`, `worker-deployment`, `saas-task`, and `opportunity-detail`) default to inline Markdown. An explicit user request for HTML, inline output, or raw JSON always overrides the scenario default.
+Use the scenario's default output policy. Analysis, trend, inventory, and multi-source reports default to offline HTML. Project lists and small single-record results (`projects`, `account-info`, `worker-deployment`, `saas-task`, and `opportunity-detail`) default to inline Markdown. An explicit user request for HTML, inline output, or raw JSON always overrides the scenario default.
 
 ## WorkBuddy HTML artifact delivery
 
@@ -91,7 +91,7 @@ Run `python3 <skill-dir>/scripts/report.py --list-scenarios` for the machine-rea
 - Cache only `/report-data/capabilities` for two hours on disk without credentials; never cache report business data. Fall back only for a missing/disabled/incompatible report-data route; never hide 401/403/409/422 or business 5xx failures behind legacy calls.
 - Treat answer citations, AI-assistant HTTP requests, Worker events, and GA4 AI landing sessions as distinct facts even when they refer to the same page.
 - Do not infer page-to-opportunity matches. Until the backend persists `target_path/path_key`, show `PAGE_OPPORTUNITY_MAPPING_UNAVAILABLE` and use only deterministic KPI/health recommendations.
-- Account reports may show the authenticated user's `created_at`, `name`, `phone`, and `email`; do not include user ID, rules, tokens, subscription internals, or unrelated `/auth/me` fields.
+- Account reports may show only the authenticated user's `created_at`, `name`, `phone`, and `email`; do not include user ID, rules, tokens, subscription/credits information, subscription-related follow-up prompts, or unrelated `/auth/me` fields.
 
 Read `references/reporting.md` before changing output behavior, templates, schema fields, chart mapping, or WorkBuddy markers.
 
@@ -103,6 +103,9 @@ python3 <skill-dir>/scripts/report.py executive-overview --project-id <id> --per
 
 # Scenario default: inline Markdown for small single-record results
 python3 <skill-dir>/scripts/report.py account-info
+
+# Project lists also stay inline by default
+python3 <skill-dir>/scripts/report.py projects --locale zh-CN
 
 # Alternative representations
 python3 <skill-dir>/scripts/report.py account-info --format html
@@ -117,3 +120,4 @@ python3 <skill-dir>/scripts/report.py visibility --project-id <id> --locale zh-C
 Support deterministic `en-US` and `zh-CN` presentation. Keep raw Topic/Prompt names, URLs, API values, and user content unchanged; localize only report UI labels and deterministic narrative text. Unsupported locales fall back to `en-US`.
 
 Keep `assets/report-template.html` standalone: no CDN, remote font, remote script, or network dependency.
+Treat every HTML artifact as customer-facing material that may be shared with a prospect. Keep the page title, browser title, subtitle, chart titles, descriptions, legends, and findings concise and self-explanatory; never expose backend container names or implementation terminology.

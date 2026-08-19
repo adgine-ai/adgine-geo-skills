@@ -13,7 +13,7 @@ description: Actively submits AI search prompts to live AI platforms (ChatGPT,
 
 # GEO Citation Tests
 
-> 用户侧的已有引用数据查看/报告默认使用 `adgine/geo-reports` 生成 HTML；只有主动提交新 Citation Test 时才使用本 Skill 的写入流程。
+> 强制交接：用户侧的已有引用数据查看/报告必须立即使用 `adgine/geo-reports` 按场景默认格式执行；默认 HTML 的场景须在本轮生成并交付报告链接。只有主动提交新 Citation Test 时才使用本 Skill 的写入流程。
 
 ## 触发条件
 

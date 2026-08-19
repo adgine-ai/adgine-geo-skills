@@ -32,6 +32,9 @@
     .context b { margin-right:5px }
     .generated { margin-top:15px; font-size:12px; opacity:.72 }
     .metric-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin:20px 0 }
+    .chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:18px }
+    .chart-grid .panel { margin-top:0 }
+    .chart-wide { grid-column:1/-1 }
     .metric,.panel { background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow) }
     .metric { position:relative; min-height:130px; padding:20px; overflow:hidden }
     .metric:before { content:""; position:absolute; inset:0 0 auto; height:4px; background:linear-gradient(90deg,var(--blue),#06b6d4,#8b5cf6) }
@@ -42,13 +45,47 @@
     .panel { margin-top:18px; padding:22px; overflow:hidden }
     .chart-panel { background:linear-gradient(145deg,#fff,#f8fbff) }
     .panel h2 { margin:0 0 15px; font-size:18px } .panel h3 { color:var(--muted) }
+    .chart-description { margin:-8px 0 16px; color:var(--muted); font-size:12px }
     .note { margin:-7px 0 15px; color:var(--muted); font-size:12px }
     .chart,.table-wrap { width:100%; overflow-x:auto }
     svg { display:block; width:100%; min-width:620px; height:auto }
     .svg-label { fill:#334155; font-size:12px } .svg-value { fill:#64748b; font-size:11px }
-    .axis { stroke:#cbd5e1; stroke-width:1 }
+    .axis { stroke:#cbd5e1; stroke-width:1 } .grid-line { stroke:#e8eef5; stroke-width:1 }
     .legend { display:flex; flex-wrap:wrap; gap:14px; margin:0 0 4px 54px; color:var(--muted); font-size:12px }
     .legend i { display:inline-block; width:9px; height:9px; margin-right:5px; border-radius:50% }
+    .donut-layout { display:grid; grid-template-columns:minmax(180px,260px) 1fr; gap:24px; align-items:center }
+    svg.donut { min-width:0; max-width:260px; margin:auto; transform:rotate(-90deg) }
+    .donut-total,.donut-caption { transform:rotate(90deg); transform-origin:60px 60px; fill:var(--ink); font-weight:800; font-size:12px }
+    .donut-caption { fill:var(--muted); font-size:7px; font-weight:600 }
+    .donut-legend { list-style:none; margin:0; padding:0 }
+    .donut-legend li { display:grid; grid-template-columns:10px minmax(90px,1fr) auto auto; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:12px }
+    .donut-legend li:last-child { border-bottom:0 }
+    .donut-legend i { width:9px; height:9px; border-radius:50% }
+    .donut-legend strong { font-variant-numeric:tabular-nums }
+    .donut-legend small { color:var(--muted); min-width:44px; text-align:right }
+    .gauge-chart { min-width:0; max-width:380px; margin:auto }
+    .gauge-value { fill:var(--ink); font-size:27px; font-weight:820 }
+    .funnel-label { fill:#fff; font-size:13px; font-weight:750 }
+    .scatter-chart,.treemap-chart,.funnel-chart { min-width:620px }
+    .treemap-label { fill:#fff; font-size:13px; font-weight:750; pointer-events:none }
+    .treemap-value { fill:rgba(255,255,255,.82); font-size:11px; pointer-events:none }
+    .progress-row+.progress-row { margin-top:16px }
+    .progress-meta { display:flex; justify-content:space-between; gap:14px; margin-bottom:7px; font-size:13px }
+    .progress-meta strong { font-variant-numeric:tabular-nums }
+    .progress-track { height:13px; overflow:hidden; border-radius:999px; background:#e2e8f0 }
+    .progress-track i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#2563eb,#06b6d4) }
+    .timeline { position:relative; list-style:none; margin:0; padding:0 0 0 25px }
+    .timeline:before { content:""; position:absolute; left:7px; top:9px; bottom:9px; width:2px; background:#cbd5e1 }
+    .timeline li { position:relative; padding:0 0 18px }
+    .timeline li:last-child { padding-bottom:0 }
+    .timeline li>i { position:absolute; left:-24px; top:7px; width:14px; height:14px; border:3px solid #dbeafe; border-radius:50%; background:#2563eb }
+    .timeline-card { padding:13px 15px; border:1px solid var(--line); border-radius:13px; background:#f8fafc }
+    .timeline-card time { color:var(--muted); font-size:11px }
+    .timeline-card h3 { display:flex; align-items:center; gap:9px; margin:4px 0 0; color:var(--ink); font-size:14px }
+    .timeline-card p { margin:6px 0 0; color:var(--muted); font-size:12px }
+    .timeline-status { margin-left:auto; padding:2px 7px; border-radius:999px; color:#166534; background:#dcfce7; font-size:10px }
+    .timeline-status.failed,.timeline-status.error { color:#991b1b; background:#fee2e2 }
+    .timeline-status.pending,.timeline-status.running { color:#92400e; background:#fef3c7 }
     table { width:100%; border-collapse:collapse; font-size:13px }
     th { text-align:left; color:var(--muted); background:#f1f5f9; font-weight:700 }
     th,td { padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top }
@@ -67,6 +104,8 @@
     .footer { margin-top:18px; color:var(--muted); text-align:center; font-size:12px }
     @media(max-width:640px) {
       .shell { width:calc(100% - 18px); margin-top:10px } .hero,.panel { padding:17px; border-radius:14px }
+      .chart-grid { grid-template-columns:1fr } .chart-wide { grid-column:auto }
+      .donut-layout { grid-template-columns:1fr }
       .audit-grid { grid-template-columns:1fr }
     }
     @media print {
@@ -87,8 +126,6 @@
     {{CHARTS}}
     {{TABLES}}
     {{INSIGHTS}}
-    {{COVERAGE}}
-    {{AUDIT}}
     <div class="footer">{{FOOTER}}</div>
   </main>
   <script type="application/json" id="adgine-report-data">{{EMBEDDED_JSON}}</script>

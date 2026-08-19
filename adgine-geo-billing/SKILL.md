@@ -5,7 +5,7 @@ description: Queries GEO platform subscription and credits information — lists
 
 # GEO Billing
 
-> 用户侧的账单/积分查看和报告请求默认使用 `adgine/geo-reports` 生成 HTML；本 Skill 的读取脚本仅用于低层排障。
+> 强制交接：明确的账单/积分查看和报告请求必须立即使用 `adgine/geo-reports` 按场景默认格式执行；默认 HTML 的场景须在本轮生成并交付报告链接。本 Skill 的读取脚本仅用于低层排障。查询账号基本信息不得附带订阅或积分数据。
 
 Read-only access to subscription and credits state. Use this skill when the user asks
 "what plan am I on?" / "how much does X cost?" / "when does my subscription

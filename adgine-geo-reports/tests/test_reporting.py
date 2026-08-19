@@ -16,6 +16,7 @@ from _reporting import render_html, render_markdown, write_html  # noqa: E402
 from _contracts import SCENARIOS, get_scenario  # noqa: E402
 from _i18n import label, normalize_locale  # noqa: E402
 from report import (  # noqa: E402
+    SUPPORTED_CHART_TYPES,
     _collect_charts,
     _sanitize,
     _table,
@@ -53,6 +54,12 @@ class RenderingTests(unittest.TestCase):
         embedded = rendered.split('id="adgine-report-data">', 1)[1].split("</script>", 1)[0]
         data = json.loads(embedded)
         self.assertNotIn("next_actions", data)
+        self.assertNotIn("schema_version", data)
+        self.assertNotIn("coverage", data)
+        self.assertNotIn("audit", data)
+        self.assertNotIn("schema", rendered.lower())
+        self.assertNotIn("Data coverage", rendered)
+        self.assertNotIn("Query audit", rendered)
 
     def test_write_html_uses_requested_directory(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -115,8 +122,10 @@ class RenderingTests(unittest.TestCase):
         self.assertIn("Adgine GEO · 国际版报告", rendered)
         self.assertIn("较上一周期 +3.2%", rendered)
         self.assertIn("核心发现", rendered)
-        self.assertIn("数据覆盖情况", rendered)
-        self.assertIn("查询审计与数据质量", rendered)
+        self.assertNotIn("数据覆盖情况", rendered)
+        self.assertNotIn("查询审计与数据质量", rendered)
+        self.assertNotIn("Schema", rendered)
+        self.assertNotIn("数据源", rendered)
         self.assertNotIn("Key findings", rendered)
 
     def test_locale_auto_and_field_labels_support_chinese_and_english(self):
@@ -190,8 +199,96 @@ class RenderingTests(unittest.TestCase):
             }
         }
         charts = _collect_charts(payloads, get_scenario("ai-bots"))
-        self.assertEqual(charts[0]["type"], "line")
+        self.assertEqual(charts[0]["type"], "line_chart")
         self.assertEqual(charts[0]["series"][0]["points"][1]["y"], 2)
+
+    def test_nested_metric_renders_current_and_previous_lines(self):
+        payloads = {
+            "report_data": {
+                "metrics": {
+                    "visibility_score": {
+                        "trend": [{"date": "2026-08-18", "value": 40}],
+                        "prev_trend": [{"date": "2026-08-11", "value": 35}],
+                    }
+                }
+            }
+        }
+        charts = _collect_charts(payloads, get_scenario("topic-detail"), "en-US")
+        self.assertEqual(charts[0]["type"], "line_chart")
+        self.assertEqual(charts[0]["format"], "percent")
+        self.assertEqual(len(charts[0]["series"]), 2)
+        self.assertTrue(charts[0]["series"][1]["dash"])
+
+    def test_distribution_becomes_donut_chart(self):
+        payloads = {
+            "report_data": {
+                "summary": {
+                    "status_counts": {"completed": 7, "failed": 2, "pending": 1},
+                }
+            }
+        }
+        charts = _collect_charts(payloads, get_scenario("content-pipeline"), "zh-CN")
+        donut = next(chart for chart in charts if chart["type"] == "pie_chart")
+        self.assertNotIn("摘要", donut["title"])
+        rendered = render_html({**sample_report(), "locale": "zh-CN", "charts": [donut]})
+        self.assertIn('class="donut-layout"', rendered)
+
+    def test_standard_chart_type_contract_is_complete(self):
+        self.assertEqual(set(SUPPORTED_CHART_TYPES), {
+            "bar_chart", "line_chart", "pie_chart", "gauge", "funnel",
+            "scatter_plot", "treemap", "heatmap_table", "progress_bar", "timeline",
+        })
+
+    def test_all_standard_chart_types_render_offline(self):
+        charts = [
+            {"type": "bar_chart", "title": "Bar", "items": [{"label": "A", "value": 3}]},
+            {"type": "line_chart", "title": "Line", "series": [{"name": "A", "points": [{"x": "2026-08-19", "y": 3}]}]},
+            {"type": "pie_chart", "title": "Pie", "items": [{"label": "A", "value": 3}, {"label": "B", "value": 2}]},
+            {"type": "gauge", "title": "Gauge", "value": 72, "format": "percent"},
+            {"type": "funnel", "title": "Funnel", "items": [{"label": "Visit", "value": 100}, {"label": "Lead", "value": 40}]},
+            {"type": "scatter_plot", "title": "Scatter", "x_label": "X", "y_label": "Y", "points": [{"label": "A", "x": 1, "y": 2}]},
+            {"type": "treemap", "title": "Treemap", "items": [{"label": "A", "value": 3}, {"label": "B", "value": 2}]},
+            {"type": "heatmap_table", "title": "Heatmap", "columns": ["X"], "rows": [{"label": "A", "values": {"X": 3}}]},
+            {"type": "progress_bar", "title": "Progress", "items": [{"label": "A", "value": 72, "max": 100}], "format": "percent"},
+            {"type": "timeline", "title": "Timeline", "items": [{"date": "2026-08-19", "label": "Created", "status": "completed"}]},
+        ]
+        rendered = render_html({**sample_report(), "charts": charts})
+        for chart_type in SUPPORTED_CHART_TYPES:
+            self.assertIn(f'data-chart-type="{chart_type}"', rendered)
+        self.assertNotIn("https://cdn", rendered)
+
+    def test_data_shape_selects_gauge_progress_funnel_scatter_treemap_and_timeline(self):
+        bounded = _collect_charts({
+            "report_data": {
+                "metrics": {
+                    "visibility_score": {"current": 72},
+                    "share_of_voice": {"current": 18},
+                }
+            }
+        }, get_scenario("visibility"), "en-US")
+        self.assertIn("gauge", {chart["type"] for chart in bounded})
+        self.assertIn("progress_bar", {chart["type"] for chart in bounded})
+
+        funnel = _collect_charts({
+            "flow": {"conversion_funnel": {"visits": 100, "leads": 40, "customers": 10}}
+        }, get_scenario("ai-flow"), "en-US")
+        self.assertIn("funnel", {chart["type"] for chart in funnel})
+
+        rows = [
+            {"path": f"/p/{index}", "sessions": 100 - index * 10, "page_views": 150 - index * 8}
+            for index in range(4)
+        ]
+        page_charts = _collect_charts({"pages": {"pages": rows}}, get_scenario("ga4-pages"), "en-US")
+        self.assertIn("treemap", {chart["type"] for chart in page_charts})
+        self.assertIn("scatter_plot", {chart["type"] for chart in page_charts})
+
+        timeline = _collect_charts({
+            "jobs": {"jobs": [
+                {"type": "outline", "status": "completed", "created_at": "2026-08-19T10:00:00Z"},
+                {"type": "article", "status": "running", "created_at": "2026-08-19T11:00:00Z"},
+            ]}
+        }, get_scenario("content-pipeline"), "en-US")
+        self.assertIn("timeline", {chart["type"] for chart in timeline})
 
 
 if __name__ == "__main__":

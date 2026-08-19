@@ -296,6 +296,7 @@ SCENARIOS = {
     "projects": Scenario(
         "projects", "P3", "Project Catalog", "项目目录", "inventory",
         (_r("projects", "/api/projects", paging="page"),),
+        default_format="markdown",
     ),
     "domains": Scenario(
         "domains", "P3", "Domain Portfolio", "域名资产", "inventory",

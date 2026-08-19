@@ -16,8 +16,8 @@
 Use `scripts/report.py` for all read-only GEO reports.
 
 - `auto` is the CLI default. It resolves to the scenario's declared `default_format`.
-- Analysis, trend, inventory, and multi-source scenarios normally resolve to `html` and write a standalone file under the caller's `adgine-reports/` directory.
-- Small single-record scenarios (`account-info`, `worker-deployment`, `saas-task`, and `opportunity-detail`) resolve to inline `markdown`.
+- Analysis, trend, inventory, and multi-source scenarios normally resolve to `html` and write a standalone file under the caller's `adgine-reports/` directory. This is a mandatory same-turn action, not a suggestion that waits for a second user request.
+- Project lists and small single-record scenarios (`projects`, `account-info`, `worker-deployment`, `saas-task`, and `opportunity-detail`) resolve to inline `markdown`.
 - An explicit `--format html|markdown|json|both` always overrides the scenario default.
 - `markdown` prints a fixed narrative/table representation.
 - `json` prints the stable report contract.
@@ -63,19 +63,19 @@ Every representation derives from one dictionary with `schema_version=1.0`:
 | Field | Meaning |
 |---|---|
 | `report_type` | Stable scenario name from `_contracts.py`. |
-| `title`, `subtitle` | Localized title and scope. |
+| `title`, `subtitle` | Localized user-facing title and scope. Project reports include the project name; Topic, Prompt, and page reports lead with the entity value. |
 | `generated_at` | ISO timestamp with offset. |
 | `locale`, `timezone` | Presentation context; raw source dates are not silently shifted. |
 | `context` | Project label, requested range, platform, and selected entity. |
 | `metrics` | KPI cards with raw value, change, format, direction, and optional unit. |
-| `charts` | Declarative line, bar, or heatmap data. |
+| `charts` | Declarative customer-facing charts using the ten standard types below. |
 | `tables` | Explicit columns and rows. |
 | `insights` | At most three deterministic observations. |
 | `next_actions` | At most three follow-up prompts; excluded from the embedded HTML JSON. |
 | `coverage` | Requested/effective range, partial state, source-level status, as-of time, metric-level units, date basis, and freshness fields. |
 | `audit` | Resolution rule, API paths/timings, warnings, and quality caveats. |
 
-The HTML embeds the public report JSON in `#adgine-report-data`. Never embed raw API responses, credentials, or hidden identifiers.
+The HTML embeds a presentation-safe subset of the public report JSON in `#adgine-report-data`. Omit `schema_version`, `coverage`, `audit`, and `next_actions` from the HTML payload; JSON output keeps the complete stable contract. Never embed raw API responses, credentials, or hidden identifiers.
 
 ## Locale selection and bilingual output
 
@@ -92,22 +92,52 @@ Do not infer solely from an entity name: a Chinese request may analyze an Englis
 
 ## Density and visual mapping
 
+HTML reports are customer-facing and may be used in prospect conversations. Use short, specific
+titles; one-sentence plain-language descriptions; visible units; readable legends; and raw entity
+names. Never show container labels such as `report_data`, `metrics`, `summary`, or backend field paths.
+
+Support these chart `type` values without external libraries:
+
+| Type | Use only when the data has this shape |
+|---|---|
+| `bar_chart` | Comparable categories or a ranked list. |
+| `line_chart` | Ordered date/time series. |
+| `pie_chart` | Mutually exclusive parts of a known whole; render as a donut by default. |
+| `gauge` | One bounded 0–100 score where higher is better. |
+| `funnel` | Explicit ordered stages with non-increasing volumes. |
+| `scatter_plot` | At least three records sharing two meaningful numeric metrics. |
+| `treemap` | Additive contribution categories with at least four positive values. |
+| `heatmap_table` | A two-dimensional category matrix. |
+| `progress_bar` | One or more bounded rates, shares, coverage, or completion percentages. |
+| `timeline` | Dated events, executions, jobs, or publications. |
+
+Select the chart from the data shape, not from visual variety. Never fabricate missing stages,
+percentages, pairings, chronology, hierarchy, or denominators merely to use a particular chart.
+When no chart truthfully fits, keep a concise table.
+
 Use four stable densities:
 
 | Density | Use | Primary visuals |
 |---|---|---|
-| `analysis` | Trends, comparisons, prioritization | KPI cards, lines, bars/heatmap, ranked table |
+| `analysis` | Trends, comparisons, prioritization | KPI cards, `line_chart`, `bar_chart` / `heatmap_table`, ranked table |
 | `inventory` | Topics, Prompts, pages, content, projects | Counts and dense sortable-style tables |
 | `detail` | One Prompt, Topic, page, opportunity, or content item | Entity context, focused KPIs, related tables |
 | `status` | Jobs, integration health, billing, publication | State cards, timestamps, issue tables |
 
 Map data deterministically:
 
-- Date series → line chart.
-- Brand/platform comparisons → horizontal bar or heatmap.
-- Flow links → top-flow horizontal bars plus link table.
-- Page/Topic/Prompt lists → table with stable server or created-time ordering.
+- Date series → `line_chart`; show the previous period as a dashed comparison series when available.
+- Brand/platform comparisons → `bar_chart` or `heatmap_table`.
+- True parts-of-whole distributions → `pie_chart`; never use it for arbitrary rankings.
+- Bounded quality scores → `gauge`; bounded shares/rates/progress → `progress_bar`.
+- Explicit ordered, non-increasing stages → `funnel`; mutually exclusive status counts remain `pie_chart`.
+- Paired numeric records → `scatter_plot` when at least three complete points exist.
+- Additive top-source/page contributions → `treemap`; non-additive rankings remain `bar_chart`.
+- Dated jobs/executions/publications/events → `timeline`.
+- Flow links → `bar_chart` plus a link table.
 - KPIs → cards; do not turn arbitrary categorical rows into decorative charts.
+
+Place charts in a responsive two-column grid, with trend lines and heatmaps spanning the full width. Keep exact records in tables below the visuals.
 
 Keep long labels intact in tables. SVG bar labels may visually shorten at the right edge but must preserve the full label in a tooltip.
 
@@ -154,14 +184,14 @@ Exact matching wins. If text has zero or multiple matches, stop and request/use 
 - Remove secrets and keys even when `--show-ids` is enabled.
 - Record entity resolution rule, time window, locale, timezone, concurrency cap, API path, duration, and failure status.
 - Never expose API keys, OAuth tokens, Cloudflare tokens, Worker secrets, WordPress passwords, or generated Worker source containing secrets.
-- For `account-info`, expose only creation time, account name, phone, and email from `/api/auth/me`; omit the user ID and all unrelated response fields.
+- For `account-info`, expose only creation time, account name, phone, and email from `/api/auth/me`; omit the user ID, subscription/credits information and follow-up prompts, and all unrelated response fields.
 - Show `0` as zero. Show `null`/missing as `—`.
 - If an execution count is zero, state that no completed executions were observed; do not convert this to a performance score of zero.
 - Treat average position/rank, bounce, latency, negative sentiment, and Web Vitals as lower-is-better when assigning direction color.
 
 ## Template maintenance
 
-Change visuals in `assets/report-template.html` and `_reporting.py`, not in `SKILL.md`.
+Change visuals in `assets/report-template.html` and `_reporting.py`, not in `SKILL.md`. Do not render schema labels, generic summary tables, source/coverage tables, or query-audit sections in HTML. Keep those fields only in the complete JSON contract for diagnostics.
 
 Keep the template fully offline:
 

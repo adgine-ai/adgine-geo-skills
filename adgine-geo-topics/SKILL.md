@@ -5,7 +5,7 @@ description: Creates and manages GEO content topics and AI answer prompts for SE
 
 # GEO Topics
 
-> 只读的 Topic / Prompt 目录、盘点和表现查询优先使用 `adgine/geo-reports` 生成 HTML；本技能负责创建、生成、更新、删除及低层排障。
+> 强制交接：只读的 Topic / Prompt 目录、盘点和表现查询必须立即使用 `adgine/geo-reports` 按场景默认格式执行；默认 HTML 的场景须在本轮生成并交付报告链接。本技能负责创建、生成、更新、删除及低层排障。
 
 ## Output rules — IDs (apply to every reply)
 

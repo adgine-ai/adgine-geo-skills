@@ -5,7 +5,7 @@ description: Views, generates (async AI job), edits and inspects the GEO brand c
 
 # GEO Brand
 
-> 用户侧的品牌画像/任务查看和报告默认使用 `adgine/geo-reports` 生成 HTML；品牌生成和更新继续使用本 Skill。
+> 强制交接：用户侧的品牌画像/任务查看和报告必须立即使用 `adgine/geo-reports` 按场景默认格式执行；默认 HTML 的场景须在本轮生成并交付报告链接。品牌生成和更新继续使用本 Skill。
 
 ## Output rules — IDs (apply to every reply)
 

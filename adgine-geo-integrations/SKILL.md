@@ -15,7 +15,7 @@ description: Connects, configures, and syncs GA4 and Cloudflare data sources for
 
 # GEO Integrations
 
-> 用户侧的 GA4/Cloudflare 数据查看和集成状态报告默认使用 `adgine/geo-reports` 生成 HTML；连接、同步、部署和断开继续使用本 Skill。
+> 强制交接：用户侧的 GA4/Cloudflare 数据查看和集成状态报告必须立即使用 `adgine/geo-reports` 按场景默认格式执行；默认 HTML 的场景须在本轮生成并交付报告链接。连接、同步、部署和断开继续使用本 Skill。
 
 Unified skill for the two analytics integrations (GA4 + Cloudflare). Four
 scripts cover OAuth setup, data sync, traffic queries, and Cloudflare Worker

@@ -25,6 +25,10 @@ INTERNAL_KEYS = {
     "content_id", "job_id", "record_id", "task_id", "brand_relation_id",
 }
 SENSITIVE_KEY_PARTS = ("password", "secret", "api_key", "api_token", "access_token", "refresh_token")
+PRESENTATION_META_KEYS = {
+    "schema_version", "requested_range", "effective_range", "as_of", "partial",
+    "warnings", "sources",
+}
 DATE_KEYS = ("date", "day", "timestamp", "occurred_at", "created_at", "analyzed_at")
 PREFERRED_COLUMNS = (
     "name", "title", "content", "path", "page_path", "landing_page", "platform",
@@ -64,6 +68,10 @@ SOURCE_UNITS = {
 }
 
 DEFAULT_PAGE_SIZE = 40
+SUPPORTED_CHART_TYPES = (
+    "bar_chart", "line_chart", "pie_chart", "gauge", "funnel",
+    "scatter_plot", "treemap", "heatmap_table", "progress_bar", "timeline",
+)
 
 REPORT_DATA_SCENARIOS = {
     "executive-overview": ("executive_overview", "executive-overview"),
@@ -417,6 +425,12 @@ def _try_report_data(client, scenario, args, start, end, analytics_params):
             "used": False,
             "warning": t(args.locale, "warning_schema_unsupported"),
         }
+    entity_key = "topic" if scenario.name in ("topic-detail", "topic-lifecycle") else (
+        "prompt" if scenario.name in ("prompt-performance", "prompt-executions") else None
+    )
+    resolved_entity = data.get(entity_key) if entity_key else None
+    if isinstance(resolved_entity, dict):
+        entity = resolved_entity
     return {
         "used": True,
         "payloads": _native_payloads(scenario, data),
@@ -482,7 +496,7 @@ def _collect_metrics(payloads, limit=8, locale="en-US"):
     def add(key, value):
         if key in seen or len(metrics) >= limit:
             return
-        if key in INTERNAL_KEYS or str(key).endswith("_id"):
+        if key in INTERNAL_KEYS or key in PRESENTATION_META_KEYS or str(key).endswith("_id"):
             return
         if isinstance(value, dict) and "current" in value:
             metric = _comparison_metric(key, value, locale)
@@ -510,7 +524,7 @@ def _collect_metrics(payloads, limit=8, locale="en-US"):
                 for key, value in container.items():
                     add(key, value)
         for key, value in payload.items():
-            if key in ("total", "page", "limit", "pages", "period_days"):
+            if key in PRESENTATION_META_KEYS or key in ("total", "page", "limit", "pages", "period_days"):
                 continue
             add(key, value)
     return metrics
@@ -536,7 +550,220 @@ def _series_from_list(name, points, color=None, locale="en-US"):
     return output
 
 
+def _category_number(value):
+    if isinstance(value, dict):
+        for key in ("current", "value", "count", "total", "requests", "sessions", "page_views", "score"):
+            number = _numeric(value.get(key))
+            if number is not None:
+                return number
+        return None
+    return _numeric(value)
+
+
+def _category_items(values, locale="en-US"):
+    if not isinstance(values, dict):
+        return []
+    items = []
+    for key, value in values.items():
+        number = _category_number(value)
+        if number is not None:
+            items.append({"label": _label(key, locale), "value": number})
+    return items
+
+
+def _named_dicts(value, path=(), depth=0):
+    if not isinstance(value, dict) or depth > 3:
+        return
+    for key, item in value.items():
+        if key in PRESENTATION_META_KEYS:
+            continue
+        if key == "summary" and isinstance(item, dict):
+            yield from _named_dicts(item, path, depth + 1)
+            continue
+        current_path = path + (key,)
+        if isinstance(item, dict):
+            yield current_path, item
+            yield from _named_dicts(item, current_path, depth + 1)
+
+
+def _ranked_chart(rows, title, list_key=None, locale="en-US"):
+    if not isinstance(rows, list) or not rows:
+        return None
+    label_keys = ("name", "title", "content", "path", "page_path", "landing_page", "domain", "source", "platform", "bot_name", "status")
+    value_keys = ("visibility_score", "share_of_voice", "requests", "sessions", "page_views", "visits", "score", "count", "total", "value")
+    label_key = next((key for key in label_keys if any(isinstance(row, dict) and row.get(key) not in (None, "") for row in rows)), None)
+    value_key = next((key for key in value_keys if any(isinstance(row, dict) and _numeric(row.get(key)) is not None for row in rows)), None)
+    if not label_key or not value_key:
+        return None
+    items = [
+        {"label": row.get(label_key), "value": row.get(value_key)}
+        for row in rows if isinstance(row, dict) and _numeric(row.get(value_key)) is not None
+    ]
+    items.sort(key=lambda item: _numeric(item.get("value")) or 0, reverse=True)
+    if not items:
+        return None
+    additive_values = {"requests", "sessions", "page_views", "visits", "count", "total", "value"}
+    treemap_lists = {"citation_sources", "pages", "results"}
+    chart_type = (
+        "treemap"
+        if list_key in treemap_lists and value_key in additive_values and len(items) >= 4
+        else "bar_chart"
+    )
+    return {
+        "type": chart_type,
+        "title": title,
+        "items": items[:12],
+        "format": _format_for(value_key),
+        "description": t(locale, "chart_desc_treemap" if chart_type == "treemap" else "chart_desc_bar"),
+    }
+
+
+def _scatter_chart(rows, title, locale="en-US"):
+    if not isinstance(rows, list) or len(rows) < 3:
+        return None
+    label_keys = ("name", "title", "content", "path", "page_path", "domain", "source", "platform")
+    numeric_keys = (
+        "visibility_score", "average_position", "share_of_voice", "citation_rate",
+        "requests", "sessions", "page_views", "visits", "score", "rank",
+    )
+    label_key = next((key for key in label_keys if any(isinstance(row, dict) and row.get(key) for row in rows)), None)
+    available = [
+        key for key in numeric_keys
+        if sum(isinstance(row, dict) and _numeric(row.get(key)) is not None for row in rows) >= 3
+    ]
+    if not label_key or len(available) < 2:
+        return None
+    x_key, y_key = available[:2]
+    points = [
+        {"label": row.get(label_key), "x": row.get(x_key), "y": row.get(y_key)}
+        for row in rows
+        if isinstance(row, dict) and _numeric(row.get(x_key)) is not None and _numeric(row.get(y_key)) is not None
+    ]
+    if len(points) < 3:
+        return None
+    x_label, y_label = _label(x_key, locale), _label(y_key, locale)
+    return {
+        "type": "scatter_plot",
+        "title": t(locale, "chart_relationship", x=x_label, y=y_label),
+        "description": t(locale, "chart_desc_scatter"),
+        "x_label": x_label,
+        "y_label": y_label,
+        "x_format": _format_for(x_key),
+        "y_format": _format_for(y_key),
+        "points": points[:40],
+    }
+
+
+def _timeline_chart(rows, title, scenario, locale="en-US"):
+    timeline_scenarios = {
+        "prompt-executions", "content-pipeline", "brand-jobs",
+        "wordpress-publications", "worker-events", "operations-overview",
+    }
+    if scenario.name not in timeline_scenarios or not isinstance(rows, list):
+        return None
+    date_key = next((key for key in DATE_KEYS if any(isinstance(row, dict) and row.get(key) for row in rows)), None)
+    if not date_key:
+        return None
+    label_keys = ("title", "name", "content", "type", "path", "page_path", "platform")
+    label_key = next((key for key in label_keys if any(isinstance(row, dict) and row.get(key) for row in rows)), None)
+    if not label_key:
+        return None
+    items = []
+    for row in rows:
+        if not isinstance(row, dict) or not row.get(date_key):
+            continue
+        description = row.get("error") or row.get("message") or row.get("current_step")
+        items.append({
+            "date": row.get(date_key),
+            "label": row.get(label_key),
+            "status": row.get("status") or row.get("job_status") or row.get("publish_status"),
+            "description": description,
+        })
+    items.sort(key=lambda item: str(item.get("date") or ""), reverse=True)
+    if not items:
+        return None
+    return {
+        "type": "timeline", "title": title,
+        "description": t(locale, "chart_desc_timeline"), "items": items[:12],
+    }
+
+
+def _funnel_chart(rows, title, locale="en-US"):
+    if not isinstance(rows, list) or len(rows) < 2:
+        return None
+    label_keys = ("stage", "name", "label", "status", "type")
+    value_keys = ("value", "count", "total", "users", "sessions", "requests")
+    label_key = next((key for key in label_keys if all(isinstance(row, dict) and row.get(key) for row in rows)), None)
+    value_key = next((key for key in value_keys if all(isinstance(row, dict) and _numeric(row.get(key)) is not None for row in rows)), None)
+    if not label_key or not value_key:
+        return None
+    items = [{"label": row.get(label_key), "value": row.get(value_key)} for row in rows]
+    values = [_numeric(item["value"]) for item in items]
+    if any(value < 0 for value in values) or any(values[index] < values[index + 1] for index in range(len(values) - 1)):
+        return None
+    return {
+        "type": "funnel", "title": title,
+        "description": t(locale, "chart_desc_funnel"),
+        "items": items, "format": _format_for(value_key),
+    }
+
+
+def _numeric_metrics(value, path=(), depth=0):
+    if not isinstance(value, dict) or depth > 5:
+        return
+    if path and _numeric(value.get("current")) is not None:
+        yield path, value.get("current")
+    for key, item in value.items():
+        if key in PRESENTATION_META_KEYS or key in ("current", "previous", "change"):
+            continue
+        current_path = path + (key,)
+        if isinstance(item, dict):
+            yield from _numeric_metrics(item, current_path, depth + 1)
+        elif _numeric(item) is not None:
+            yield current_path, item
+
+
+def _bounded_charts(payload, alias, locale="en-US"):
+    gauges, progress, seen = [], [], set()
+    for path, value in _numeric_metrics(payload):
+        key = path[-1]
+        normalized = str(key).lower()
+        number = _numeric(value)
+        if number is None or not 0 <= number <= 100 or key in seen:
+            continue
+        label = _label(key, locale)
+        if "score" in normalized and not any(token in normalized for token in ("rank", "position")):
+            gauges.append({
+                "type": "gauge", "title": label,
+                "description": t(locale, "chart_desc_gauge"),
+                "value": number, "min": 0, "max": 100, "format": _format_for(key),
+            })
+            seen.add(key)
+        elif any(token in normalized for token in ("rate", "share", "progress", "coverage", "percent", "pct")):
+            progress.append({"label": label, "value": number, "max": 100})
+            seen.add(key)
+    charts = gauges[:1]
+    if progress:
+        charts.append({
+            "type": "progress_bar",
+            "title": t(locale, "chart_progress"),
+            "description": t(locale, "chart_desc_progress"),
+            "items": progress[:6],
+            "format": "percent",
+        })
+    return charts
+
+
+def _chart_title(alias, path, locale="en-US"):
+    structural = {"report_data", "metrics", "kpis", "execution_summary"}
+    parts = [item for item in path if item not in structural]
+    if alias not in structural and (not parts or parts[0] != alias):
+        parts.insert(0, alias)
+    return " · ".join(_label(item, locale) for item in parts)
+
+
 def _collect_charts(payloads, scenario, locale="en-US"):
+    max_charts = 10
     charts = []
     matrix = payloads.get("matrix")
     if isinstance(matrix, dict):
@@ -544,7 +771,8 @@ def _collect_charts(payloads, scenario, locale="en-US"):
         competitors = matrix.get("competitors") or matrix.get("rows") or []
         if platforms and competitors:
             charts.append({
-                "type": "heatmap", "title": t(locale, "cross_platform_comparison"),
+                "type": "heatmap_table", "title": t(locale, "cross_platform_comparison"),
+                "description": t(locale, "chart_desc_heatmap"),
                 "columns": [item.get("code") or item.get("name") if isinstance(item, dict) else item for item in platforms],
                 "rows": [
                     {
@@ -557,23 +785,40 @@ def _collect_charts(payloads, scenario, locale="en-US"):
                 "format": "percent",
             })
     for alias, payload in payloads.items():
-        if not isinstance(payload, dict) or len(charts) >= 5:
+        if not isinstance(payload, dict) or len(charts) >= max_charts:
             continue
-        comparison_series = []
-        for key, value in payload.items():
-            if isinstance(value, dict):
-                metric_trend = value.get("trend") or value.get("daily")
-            else:
-                metric_trend = None
+        for path, value in _named_dicts(payload):
+            if len(charts) >= max_charts:
+                break
+            key = path[-1]
+            metric_trend = value.get("trend") or value.get("daily")
             if isinstance(metric_trend, list) and metric_trend:
-                points = [{"x": item.get("date"), "y": item.get("value")} for item in metric_trend]
-                comparison_series.append({"name": _label(key, locale), "points": points})
-        if comparison_series:
-            charts.append({
-                "type": "line",
-                "title": t(locale, "trend", name=_label(alias, locale)),
-                "series": comparison_series,
-            })
+                points = [
+                    {"x": item.get("date"), "y": item.get("value")}
+                    for item in metric_trend if isinstance(item, dict)
+                ]
+                series = [{"name": _label(key, locale), "points": points}]
+                previous = value.get("prev_trend") or value.get("previous_trend")
+                if isinstance(previous, list) and previous:
+                    series.append({
+                        "name": f"{_label(key, locale)} · {t(locale, 'previous_period_label')}",
+                        "points": [
+                            {"x": item.get("date"), "y": item.get("value")}
+                            for item in previous if isinstance(item, dict)
+                        ],
+                        "dash": True,
+                    })
+                charts.append({
+                    "type": "line_chart",
+                    "title": t(locale, "trend", name=_label(key, locale)),
+                    "description": t(locale, "chart_desc_line"),
+                    "series": series,
+                    "format": _format_for(key),
+                })
+        for chart in _bounded_charts(payload, alias, locale):
+            if len(charts) >= max_charts:
+                break
+            charts.append(chart)
         kpi_series = []
         for item in payload.get("kpis") or []:
             if not isinstance(item, dict):
@@ -582,29 +827,93 @@ def _collect_charts(payloads, scenario, locale="en-US"):
             kpi_series.extend(_series_from_list(str(metric_name), item.get("daily"), locale=locale)[:1])
             if len(kpi_series) >= 4:
                 break
-        if kpi_series and len(charts) < 5:
+        if kpi_series and len(charts) < max_charts:
             charts.append({
-                "type": "line",
+                "type": "line_chart",
                 "title": t(locale, "kpi_trend", name=_label(alias, locale)),
+                "description": t(locale, "chart_desc_line"),
                 "series": kpi_series[:4],
             })
         for key in ("daily", "trend", "prev_daily"):
             points = payload.get(key)
             series = _series_from_list(_label(alias, locale), points, locale=locale)
-            if series and len(charts) < 5:
+            if series and len(charts) < max_charts:
                 charts.append({
-                    "type": "line",
+                    "type": "line_chart",
                     "title": f"{_label(alias, locale)} · {_label(key, locale)}",
+                    "description": t(locale, "chart_desc_line"),
                     "series": series,
                 })
         links = payload.get("links")
-        if isinstance(links, list) and links and len(charts) < 5:
+        if isinstance(links, list) and links and len(charts) < max_charts:
             items = sorted(links, key=lambda item: _numeric(item.get("value")) or 0, reverse=True)[:15]
             charts.append({
-                "type": "bar", "title": t(locale, "top_flows", name=_label(alias, locale)),
+                "type": "bar_chart", "title": t(locale, "top_flows", name=_label(alias, locale)),
+                "description": t(locale, "chart_desc_bar"),
                 "items": [{"label": f"{item.get('source')} → {item.get('target')}", "value": item.get("value")} for item in items],
                 "format": "integer",
             })
+        donut_keys = {"distribution", "sentiment_distribution", "status_counts", "publish_status_counts"}
+        comparison_keys = {"by_platform", "platform_counts", "source_counts", "channel_counts", "counts"}
+        funnel_keys = {"funnel", "stages", "pipeline_stages", "conversion_funnel"}
+        for path, values in _named_dicts(payload):
+            if len(charts) >= max_charts:
+                break
+            key = path[-1]
+            items = _category_items(values, locale)
+            if not items or len(items) > 12:
+                continue
+            title = _chart_title(alias, path, locale)
+            format_key = next(
+                (item for item in reversed(path) if _format_for(item) is not None),
+                key,
+            )
+            chart_format = _format_for(format_key) or "integer"
+            positive_values = [max(0, item["value"]) for item in items]
+            if key in funnel_keys and len(items) >= 2 and all(
+                positive_values[index] >= positive_values[index + 1]
+                for index in range(len(positive_values) - 1)
+            ):
+                charts.append({
+                    "type": "funnel", "title": title,
+                    "description": t(locale, "chart_desc_funnel"),
+                    "items": items, "format": chart_format,
+                })
+            elif key in donut_keys and len(items) >= 2 and sum(positive_values) > 0:
+                charts.append({
+                    "type": "pie_chart", "variant": "donut", "title": title,
+                    "description": t(locale, "chart_desc_pie"),
+                    "items": items, "format": chart_format,
+                })
+            elif key in comparison_keys:
+                charts.append({
+                    "type": "bar_chart", "title": title,
+                    "description": t(locale, "chart_desc_bar"),
+                    "items": items, "format": chart_format,
+                })
+        ranked_keys = {
+            "items", "rows", "topics", "prompts", "pages", "results",
+            "citation_sources", "platforms", "executions", "jobs", "publications", "events",
+            "funnel", "stages", "pipeline_stages", "conversion_funnel",
+        }
+        for key, rows in _payload_lists(payload):
+            if len(charts) >= max_charts or key not in ranked_keys:
+                continue
+            title = _chart_title(alias, (key,), locale)
+            if key in funnel_keys:
+                funnel = _funnel_chart(rows, title, locale)
+                if funnel:
+                    charts.append(funnel)
+                continue
+            timeline = _timeline_chart(rows, t(locale, "chart_recent_activity"), scenario, locale)
+            if timeline and len(charts) < max_charts:
+                charts.append(timeline)
+            chart = _ranked_chart(rows, title, key, locale)
+            if chart and len(charts) < max_charts:
+                charts.append(chart)
+            scatter = _scatter_chart(rows, title, locale)
+            if scatter and len(charts) < max_charts:
+                charts.append(scatter)
     return charts
 
 
@@ -616,6 +925,8 @@ def _public_keys(rows, show_ids=False):
     for row in rows:
         for key, value in row.items():
             if key.startswith("_") or key in keys:
+                continue
+            if key in PRESENTATION_META_KEYS:
                 continue
             if not show_ids and (key in INTERNAL_KEYS or key.endswith("_id")):
                 continue
@@ -665,6 +976,8 @@ def _payload_lists(payload):
         return []
     output = []
     for key, value in payload.items():
+        if key in PRESENTATION_META_KEYS:
+            continue
         if isinstance(value, list) and value and all(isinstance(item, dict) for item in value):
             if key in ("daily", "trend", "prev_daily", "previous_trend", "nodes"):
                 continue
@@ -740,7 +1053,7 @@ def _collect_tables(payloads, scenario, show_ids=False, locale="en-US"):
     for alias, payload in payloads.items():
         payload_tables = _payload_lists(payload)
         for key, rows in payload_tables:
-            if key == "kpis":
+            if key in ("kpis", "summary"):
                 continue
             tables.append(_table(
                 f"{_label(alias, locale)} · {_label(key, locale)}",
@@ -754,16 +1067,16 @@ def _collect_tables(payloads, scenario, show_ids=False, locale="en-US"):
             safe_payload = _sanitize(payload, show_ids)
             scalar_rows = []
             for key, value in safe_payload.items():
-                if isinstance(value, list):
+                if key in PRESENTATION_META_KEYS or key == "summary":
+                    continue
+                if isinstance(value, (dict, list)):
                     continue
                 if isinstance(value, str) and len(value) > 500:
-                    continue
-                if isinstance(value, dict) and len(json.dumps(value, ensure_ascii=False, default=str)) > 500:
                     continue
                 scalar_rows.append({"field": _label(key, locale), "value": value})
             if scalar_rows:
                 tables.insert(0, _table(
-                    t(locale, "summary", name=_label(alias, locale)),
+                    t(locale, "details", name=_label(alias, locale)),
                     scalar_rows,
                     show_ids,
                     locale=locale,
@@ -874,7 +1187,7 @@ def _next_actions(scenario, args, locale="en-US"):
         "ai-pages": ["next_leading_page", "next_page_opportunities", "next_bot_human"],
         "page-detail": ["next_generate_page_opportunities", "next_page_logs", "next_related_pages"],
         "content-pipeline": ["next_failed_content", "next_latest_content", "next_publish_readiness"],
-        "account-info": ["next_subscription", "next_projects", "next_integration_health"],
+        "account-info": ["next_projects", "next_integration_health"],
     }
     keys = actions.get(
         scenario.name,
@@ -913,25 +1226,97 @@ def _sanitize(value, show_ids=False):
     return value
 
 
+def _load_project_name(client, args, project_scoped):
+    if not project_scoped:
+        return None
+    explicit = str(getattr(args, "project_name", "") or "").strip()
+    if explicit:
+        return explicit
+    try:
+        project = client.get(f"/api/projects/{client.project_id}") or {}
+    except ApiError:
+        return None
+    if not isinstance(project, dict):
+        return None
+    return project.get("name") or project.get("domain") or project.get("url")
+
+
+def _entity_display_name(scenario, args, entity, payloads, locale):
+    if isinstance(entity, dict):
+        value = entity.get("name") or entity.get("content") or entity.get("title") or entity.get("path")
+        if value:
+            return str(value)
+    if scenario.name in ("topic-detail", "topic-lifecycle") and args.topic:
+        return str(args.topic)
+    if scenario.name in ("prompt-performance", "prompt-executions") and args.prompt:
+        return str(args.prompt)
+    if scenario.name in ("page-detail", "page-health", "page-opportunities") and args.path:
+        return str(args.path)
+    if scenario.name in ("content-detail", "opportunity-detail"):
+        for payload in payloads.values():
+            if isinstance(payload, dict):
+                value = payload.get("title") or payload.get("name")
+                if value:
+                    return str(value)
+    return None
+
+
+def _user_facing_title(scenario, locale, project_name, entity_name):
+    if entity_name and scenario.name in ("topic-detail", "topic-lifecycle"):
+        return t(locale, "title_topic_analysis", entity=entity_name)
+    if entity_name and scenario.name in ("prompt-performance", "prompt-executions"):
+        return t(locale, "title_prompt_analysis", entity=entity_name)
+    if entity_name and scenario.name in ("page-detail", "page-health", "page-opportunities"):
+        return t(locale, "title_page_analysis", entity=entity_name)
+    if project_name:
+        project_title = str(project_name)
+        if locale == "zh-CN":
+            if not project_title.endswith("项目"):
+                project_title += "项目"
+        elif not project_title.lower().endswith("project"):
+            project_title += " Project"
+        if scenario.name == "executive-overview":
+            return t(locale, "title_project_analysis", project=project_title)
+        if scenario.name == "visibility":
+            return t(locale, "title_project_visibility", project=project_title)
+        scenario_title = scenario.title_zh if locale == "zh-CN" else scenario.title
+        return t(locale, "title_project_scenario", project=project_title, scenario=scenario_title)
+    return scenario.title_zh if locale == "zh-CN" else scenario.title
+
+
+def _user_facing_subtitle(scenario, locale, project_name, entity_name):
+    if entity_name and scenario.name in ("topic-detail", "topic-lifecycle"):
+        return t(locale, "subtitle_topic_entity", entity=entity_name)
+    if entity_name and scenario.name in ("prompt-performance", "prompt-executions"):
+        return t(locale, "subtitle_prompt_entity", entity=entity_name)
+    if entity_name and scenario.name in ("page-detail", "page-health", "page-opportunities"):
+        return t(locale, "subtitle_page_entity", entity=entity_name)
+    description_key = f"description_{scenario.name}"
+    if scenario.description:
+        return t(locale, description_key)
+    if project_name:
+        scenario_title = scenario.title_zh if locale == "zh-CN" else scenario.title
+        return t(locale, "subtitle_project_scenario", scenario=scenario_title)
+    return t(locale, f"subtitle_{scenario.density}")
+
+
 def build_report(
     scenario, args, client, payloads, errors, start, end, entity=None,
-    resolution=None, native_metadata=None, workflow_warning=None,
+    resolution=None, native_metadata=None, workflow_warning=None, project_name=None,
 ):
     locale = normalize_locale(args.locale, args.topic, args.prompt)
-    title = scenario.title_zh if locale == "zh-CN" else scenario.title
-    description_key = f"description_{scenario.name}"
-    subtitle = (
-        t(locale, description_key)
-        if scenario.description
-        else t(locale, f"subtitle_{scenario.density}")
-    )
+    entity_name = _entity_display_name(scenario, args, entity, payloads, locale)
+    title = _user_facing_title(scenario, locale, project_name, entity_name)
+    subtitle = _user_facing_subtitle(scenario, locale, project_name, entity_name)
     project_scoped = any("{project_id}" in spec.path for spec in scenario.requests)
+    project_label = project_name or t(locale, "current_project")
+    if project_scoped and args.show_ids:
+        project_label = f"{project_label} ({client.project_id})"
     context = [
         {
             "label": t(locale, "project") if project_scoped else t(locale, "account"),
             "value": (
-                client.project_id if project_scoped and args.show_ids
-                else t(locale, "current_project") if project_scoped
+                project_label if project_scoped
                 else t(locale, "current_account")
             ),
         },
@@ -946,10 +1331,10 @@ def build_report(
             {"label": t(locale, "page"), "value": args.page},
             {"label": t(locale, "page_size"), "value": args.limit},
         ])
-    if entity:
+    if entity_name:
         context.append({
             "label": t(locale, "entity"),
-            "value": entity.get("name") or entity.get("content") or args.path or t(locale, "selected_entity"),
+            "value": entity_name,
         })
     metrics = _collect_metrics(payloads, locale=locale)
     charts = _collect_charts(payloads, scenario, locale)
@@ -1071,11 +1456,12 @@ def run_report(args, client=None):
     if args.page < 1 or args.limit < 1:
         raise ValueError("--page and --limit must be positive integers")
     start, end = _window(args)
+    project_required = any("{project_id}" in spec.path for spec in scenario.requests)
     if client is None:
         key, base = get_api_config()
-        project_required = any("{project_id}" in spec.path for spec in scenario.requests)
         project_id = get_project_id(args.project_id) if project_required else args.project_id
         client = ReportClient(key, base, project_id)
+    project_name = _load_project_name(client, args, project_required)
     values = {
         "project_id": client.project_id,
         "topic_id": "",
@@ -1099,6 +1485,7 @@ def run_report(args, client=None):
             native.get("resolution"),
             native_metadata=native.get("metadata"),
             workflow_warning=native.get("warning"),
+            project_name=project_name,
         )
     workflow_warning = native.get("warning") if native else None
     if "topic" in scenario.requires:
@@ -1111,7 +1498,7 @@ def run_report(args, client=None):
     payloads, errors = _fetch_scenario(client, scenario, args, start, end, values)
     return build_report(
         scenario, args, client, payloads, errors, start, end, entity, resolution,
-        workflow_warning=workflow_warning,
+        workflow_warning=workflow_warning, project_name=project_name,
     )
 
 
@@ -1154,6 +1541,7 @@ def parse_args(argv=None):
     parser.add_argument("scenario", nargs="?", choices=sorted(SCENARIOS), help="Report scenario")
     parser.add_argument("--list-scenarios", action="store_true", help="List all P1-P3 report scenarios")
     parser.add_argument("--project-id", help="Project ID, or use GEO_PROJECT_ID")
+    parser.add_argument("--project-name", help="Known project name for the report title; otherwise loaded from GEO-Api")
     parser.add_argument("--period", choices=["7d", "14d", "30d", "90d"], default="7d")
     parser.add_argument("--start", help="Start date YYYY-MM-DD")
     parser.add_argument("--end", help="End date YYYY-MM-DD; defaults to yesterday")
