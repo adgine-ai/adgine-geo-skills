@@ -55,9 +55,10 @@ def main():
         print_json(data)
         return
 
-    current = data.get("current_score")
-    change = data.get("change") or data.get("score_change")
-    trend = data.get("daily_scores") or data.get("trend") or []
+    visibility = (data.get("metrics") or {}).get("visibility_score") or {}
+    current = visibility.get("current")
+    change = visibility.get("change")
+    trend = visibility.get("trend") or []
 
     print(f"Visibility Overview")
     print(f"Project: {pid}")
@@ -81,7 +82,7 @@ def main():
         print("├────────────┼──────────┤")
         for point in trend[:14]:
             date = str(point.get("date", "--"))[:10]
-            score = _fmt_score(point.get("score"))
+            score = _fmt_score(point.get("value"))
             print(f"│ {pad(date, 10)} │ {score:>8} │")
         print("└────────────┴──────────┘")
         print("```")

@@ -4,12 +4,12 @@
 Subcommands:
   overview-kpi                     — site overall KPIs (5 cards + trends):
                                      citation / index / training / agent / referral
-  pages       [--page 1] [--limit 20]   — top pages by AI references
-  pages-detail [--limit 20]        — 5-metric table per page (citation/index/training/
+  pages       [--page 1] [--limit 40]   — top pages by AI references
+  pages-detail [--page 1] [--limit 40] — 5-metric table per page (citation/index/training/
                                      agent/referral) with previous-period delta
   pages-export [--format csv|json] — download pages-detail as CSV/JSON
   platform-flow                    — Sankey: AI platform → page path
-  logs [--limit 50]                — raw AI event logs (bot + human, paginated)
+  logs [--page 1] [--limit 40]     — raw AI event logs (bot + human, paginated)
 
 Common opts: --start --end [--platform]
 
@@ -111,7 +111,7 @@ def cmd_overview_kpi(args, key, base, pid):
 
 def cmd_pages(args, key, base, pid):
     params = _date_params(args) or {}
-    params["page"] = args.page
+    params["offset"] = (args.page - 1) * args.limit
     params["limit"] = args.limit
     result = api_get(f"/api/projects/{pid}/ai-agent/pages",
                      key, base, params=params)
@@ -148,7 +148,7 @@ def cmd_pages(args, key, base, pid):
 
 def cmd_pages_detail(args, key, base, pid):
     params = _date_params(args) or {}
-    params["page"] = args.page
+    params["offset"] = (args.page - 1) * args.limit
     params["limit"] = args.limit
     result = api_get(f"/api/projects/{pid}/ai-agent/pages-detail",
                      key, base, params=params)
@@ -282,7 +282,7 @@ def main():
         p.add_argument("--end")
         p.add_argument("--platform")
         p.add_argument("--page", type=int, default=1)
-        p.add_argument("--limit", type=int, default=20)
+        p.add_argument("--limit", type=int, default=40)
 
     p_ex = sub.add_parser("pages-export")
     p_ex.add_argument("--start")
@@ -295,7 +295,7 @@ def main():
     p_lg.add_argument("--end")
     p_lg.add_argument("--platform")
     p_lg.add_argument("--page", type=int, default=1)
-    p_lg.add_argument("--limit", type=int, default=50)
+    p_lg.add_argument("--limit", type=int, default=40)
     p_lg.add_argument("--traffic-type", choices=["bot", "human"])
 
     args = parser.parse_args()

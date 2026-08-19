@@ -5,6 +5,8 @@ description: Views, generates (async AI job), edits and inspects the GEO brand c
 
 # GEO Brand
 
+> 用户侧的品牌画像/任务查看和报告默认使用 `adgine/geo-reports` 生成 HTML；品牌生成和更新继续使用本 Skill。
+
 ## Output rules — IDs (apply to every reply)
 
 These rules apply to **every list, table, and confirmation message** in this skill. Their goal: keep user-facing output friendly while preserving the IDs the agent needs internally.
@@ -87,7 +89,7 @@ python3 scripts/update_brand.py [--project-id <id>] --field <field_name> --value
 
 List recent brand jobs:
 ```bash
-python3 scripts/list_jobs.py list [--project-id <id>] [--page 1] [--limit 20] [--json]
+python3 scripts/list_jobs.py list [--project-id <id>] [--page 1] [--limit 40] [--json]
 ```
 
 Inspect one job in detail (status, phases, error message):

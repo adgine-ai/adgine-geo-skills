@@ -151,7 +151,7 @@ def main():
     ]:
         p = sub.add_parser(sub_name)
         p.add_argument("--page", type=int, default=1)
-        p.add_argument("--limit", type=int, default=20)
+        p.add_argument("--limit", type=int, default=40)
 
     for sub_name, _path, _title in [
         ("get-outline",  "/content/outline-jobs", "Outline job"),

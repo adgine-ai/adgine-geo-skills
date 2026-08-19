@@ -5,6 +5,8 @@ description: Creates and manages GEO content topics and AI answer prompts for SE
 
 # GEO Topics
 
+> 只读的 Topic / Prompt 目录、盘点和表现查询优先使用 `adgine/geo-reports` 生成 HTML；本技能负责创建、生成、更新、删除及低层排障。
+
 ## Output rules — IDs (apply to every reply)
 
 These rules apply to **every list, table, and confirmation message** in this skill. Their goal: keep user-facing output friendly while preserving the IDs the agent needs internally.
@@ -54,7 +56,7 @@ Topics organize prompts. Prompts are used for citation tests and article generat
 
 ### List all topics
 ```bash
-python3 scripts/manage_topics.py list [--project-id <id>] [--page 1] [--limit 20] [--json]
+python3 scripts/manage_topics.py list [--project-id <id>] [--page 1] [--limit 40] [--json]
 ```
 
 ### Create a topic
@@ -83,12 +85,12 @@ python3 scripts/manage_topics.py delete --topic-id <id>
 
 ### List prompts for a topic
 ```bash
-python3 scripts/manage_prompts.py list --topic-id <tid> [--project-id <id>] [--json]
+python3 scripts/manage_prompts.py list --topic-id <tid> [--project-id <id>] [--page 1] [--limit 40] [--json]
 ```
 
 ### List all prompts across the project
 ```bash
-python3 scripts/manage_prompts.py list-all [--project-id <id>] [--json]
+python3 scripts/manage_prompts.py list-all [--project-id <id>] [--page 1] [--limit 40] [--json]
 ```
 
 ### Create a prompt manually
@@ -229,4 +231,3 @@ If the project has no brand profile yet, also suggest: 生成品牌画像（提�
 > 💡 **建议下一步：**
 > 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
 > 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
-

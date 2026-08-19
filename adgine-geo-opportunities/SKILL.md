@@ -11,6 +11,8 @@ description: Discovers and displays GEO optimization opportunities for a project
 
 # GEO Opportunity Discovery
 
+> 用户侧的查看、查询、分析和报告请求默认使用 `adgine/geo-reports` 生成 HTML；本 Skill 的读取脚本仅用于低层排障。
+
 ## Output rules — IDs (apply to every reply)
 
 These rules apply to **every list, table, and confirmation message** in this skill. Their goal: keep user-facing output friendly while preserving the IDs the agent needs internally.

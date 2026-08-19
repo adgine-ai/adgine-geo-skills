@@ -43,9 +43,8 @@ query_params = {"path": page_path, "strategy": args.strategy}
 if args.refresh:
     print(f"Refreshing page health for: {page_path}  (strategy: {args.strategy}, project: {pid})")
     result = api_post(
-        f"/api/projects/{pid}/ai-agent/pages/by-path/health/refresh",
+        f"/api/projects/{pid}/ai-agent/pages/by-path/health/refresh?{urllib.parse.urlencode(query_params)}",
         key, base,
-        params=query_params,
     )
 else:
     print(f"Fetching page health for: {page_path}  (strategy: {args.strategy}, project: {pid})")
@@ -71,8 +70,12 @@ if not data:
     print("  No data returned. The page may not be indexed yet.")
     sys.exit(0)
 
-# Support both a list of metrics and a single report object
-metrics = data if isinstance(data, list) else data.get("metrics") or [data]
+# Current GEO-Api wraps the PageSpeed payload in data.report.
+report = data.get("report") if isinstance(data, dict) and "report" in data else data
+if report is None:
+    print("  No cached PageSpeed report. Re-run with --refresh to generate one.")
+    sys.exit(0)
+metrics = report if isinstance(report, list) else report.get("metrics") or [report]
 
 for metric in metrics:
     check   = metric.get("check") or metric.get("name") or metric.get("type") or ""

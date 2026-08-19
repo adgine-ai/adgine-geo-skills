@@ -28,7 +28,7 @@ def format_price(value, currency="USD"):
 def main():
     parser = argparse.ArgumentParser(description="Search available domains by keyword")
     parser.add_argument("keyword", help="Search keyword (e.g. mybrand)")
-    parser.add_argument("--limit", type=int, default=20, help="Max results (default: 20)")
+    parser.add_argument("--limit", type=int, default=20, help="Max results (backend-capped at 20)")
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
     args = parser.parse_args()
 

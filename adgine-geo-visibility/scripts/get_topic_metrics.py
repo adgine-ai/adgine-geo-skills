@@ -53,13 +53,13 @@ def _fmt_change(c):
 def cmd_list(args, key, base, pid):
     params = {}
     if args.start:
-        params["start_date"] = args.start
+        params["date_from"] = args.start
     if args.end:
-        params["end_date"] = args.end
+        params["date_to"] = args.end
     result = api_get(f"/api/projects/{pid}/analytics/topics", key, base,
                      params=params or None)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("topics", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -77,7 +77,7 @@ def cmd_list(args, key, base, pid):
         vis = _fmt(t.get("visibility_score") or t.get("visibility"))
         sov = _fmt(t.get("share_of_voice") or t.get("sov"))
         ap = _fmt(t.get("average_position") or t.get("avg_position"))
-        ch = _fmt_change(t.get("visibility_change") or t.get("change"))
+        ch = _fmt_change(t.get("visibility_score_change"))
         print(f"│ {pad(name, 28)} │ {vis:>8} │ {sov:>8} │ {ap:>8} │ {ch:>8} │")
     print("└──────────────────────────────┴──────────┴──────────┴──────────┴──────────┘")
     print("```")
@@ -87,7 +87,7 @@ def cmd_visibility(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/analytics/topics/visibility",
                      key, base)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("topics", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -115,7 +115,7 @@ def cmd_prompts(args, key, base, pid):
         key, base,
     )
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("prompts", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -129,7 +129,7 @@ def cmd_prompts(args, key, base, pid):
     print("│ Prompt                                   │   Vis(%) │   SoV(%) │  AvgPos  │")
     print("├──────────────────────────────────────────┼──────────┼──────────┼──────────┤")
     for p in items:
-        text = truncate(p.get("text") or p.get("prompt") or p.get("name"), 40)
+        text = truncate(p.get("content") or p.get("text") or p.get("prompt"), 40)
         vis = _fmt(p.get("visibility_score") or p.get("visibility"))
         sov = _fmt(p.get("share_of_voice") or p.get("sov"))
         ap = _fmt(p.get("average_position") or p.get("avg_position"))
@@ -144,7 +144,7 @@ def cmd_prompts_visibility(args, key, base, pid):
         key, base,
     )
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("prompts", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -159,7 +159,7 @@ def cmd_prompts_visibility(args, key, base, pid):
     print("├──────────────────────────────────────┼──────────────────────────────┼──────────┤")
     for p in items:
         pid_ = truncate(p.get("id") or p.get("prompt_id"), 36)
-        text = truncate(p.get("text") or p.get("prompt"), 28)
+        text = truncate(p.get("content") or p.get("text") or p.get("prompt"), 28)
         vis = _fmt(p.get("visibility_score") or p.get("score") or p.get("visibility"))
         print(f"│ {pad(pid_, 36)} │ {pad(text, 28)} │ {vis:>8} │")
     print("└──────────────────────────────────────┴──────────────────────────────┴──────────┘")

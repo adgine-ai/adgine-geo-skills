@@ -5,6 +5,8 @@ description: Generates AI-optimized article outlines and full articles for GEO c
 
 # GEO Content
 
+> 用户侧的内容库/任务查看和报告默认使用 `adgine/geo-reports` 生成 HTML；标题、大纲、文章生成和内容修改继续使用本 Skill。
+
 ## Output rules — IDs (apply to every reply)
 
 These rules apply to **every list, table, and confirmation message** in this skill. Their goal: keep user-facing output friendly while preserving the IDs the agent needs internally.
@@ -60,7 +62,7 @@ Each item also has a `publish_status`:
 ### List content items
 ```bash
 python3 scripts/list_content.py [--project-id <id>] [--status draft|outline|article] \
-  [--publish-status unpublished|published] [--topic-id <id>] [--page 1] [--limit 20] [--json]
+  [--publish-status unpublished|published] [--topic-id <id>] [--page 1] [--limit 40] [--json]
 ```
 
 ### Suggest article titles (quick, sync)
@@ -97,9 +99,9 @@ endpoints. Use `manage_jobs.py` to inspect or retry them.
 
 List jobs:
 ```bash
-python3 scripts/manage_jobs.py list-workflow [--page 1] [--limit 20] [--json]
-python3 scripts/manage_jobs.py list-outline  [--page 1] [--limit 20] [--json]
-python3 scripts/manage_jobs.py list-article  [--page 1] [--limit 20] [--json]
+python3 scripts/manage_jobs.py list-workflow [--page 1] [--limit 40] [--json]
+python3 scripts/manage_jobs.py list-outline  [--page 1] [--limit 40] [--json]
+python3 scripts/manage_jobs.py list-article  [--page 1] [--limit 40] [--json]
 ```
 
 Get job detail:

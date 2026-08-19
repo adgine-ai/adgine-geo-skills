@@ -3,7 +3,7 @@
 
 Usage:
   # Results for a single prompt (all platforms):
-  python3 scripts/get_results.py --prompt-id <id> [--project-id <id>] [--json]
+  python3 scripts/get_results.py --prompt-id <id> [--project-id <id>] [--page 1] [--limit 40] [--json]
 
   # Aggregated cited URLs across multiple prompts:
   python3 scripts/get_results.py --aggregate --prompt-ids <id1,id2,...> [--project-id <id>]
@@ -24,6 +24,8 @@ parser.add_argument("--aggregate",  action="store_true",
                     help="Aggregate cited URLs across multiple prompts")
 parser.add_argument("--start-date", help="Filter by start date (YYYY-MM-DD), uses analytics endpoint")
 parser.add_argument("--end-date",   help="Filter by end date (YYYY-MM-DD), uses analytics endpoint")
+parser.add_argument("--page", type=int, default=1, help="Execution page for date-filtered queries (default: 1)")
+parser.add_argument("--limit", type=int, default=40, help="Executions per page for date-filtered queries (default: 40)")
 parser.add_argument("--show-response", action="store_true",
                     help="Print the full AI response text for each test")
 parser.add_argument("--json", action="store_true", help="Output raw JSON")
@@ -45,7 +47,11 @@ if args.aggregate:
         print("ERROR: --prompt-ids is required with --aggregate")
         sys.exit(1)
     prompt_ids = [p.strip() for p in args.prompt_ids.split(",") if p.strip()]
-    body = {"prompt_ids": prompt_ids}
+    body = {
+        "prompt_ids": prompt_ids,
+        "page": args.page,
+        "page_size": args.limit,
+    }
     result = api_post(f"/api/projects/{pid}/citation-tests/urls", key, base, body)
     data = extract_data(result)
 
@@ -53,11 +59,12 @@ if args.aggregate:
         print_json(data)
         sys.exit(0)
 
-    urls   = data.get("urls") or []
+    urls   = data.get("items") or data.get("urls") or []
     total  = data.get("total", len(urls))
     print(f"Cited URLs ({total} found across {len(prompt_ids)} prompts):")
     print()
-    for url in urls:
+    for item in urls:
+        url = item.get("url") if isinstance(item, dict) else item
         print(f"  {url}")
     sys.exit(0)
 
@@ -92,7 +99,7 @@ if not args.prompt_id:
 
 # If date filters provided, use the analytics execution endpoint (supports date range)
 if args.start_date or args.end_date:
-    params = {}
+    params = {"page": args.page, "page_size": args.limit}
     if args.start_date:
         params["date_from"] = args.start_date
     if args.end_date:
@@ -124,7 +131,7 @@ if args.start_date or args.end_date:
 
 result = api_get(
     f"/api/projects/{pid}/citation-tests/prompts/{args.prompt_id}",
-    key, base,
+    key, base, params={"page": args.page, "limit": args.limit},
 )
 data = extract_data(result)
 

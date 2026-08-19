@@ -13,6 +13,8 @@ description: Actively submits AI search prompts to live AI platforms (ChatGPT,
 
 # GEO Citation Tests
 
+> 用户侧的已有引用数据查看/报告默认使用 `adgine/geo-reports` 生成 HTML；只有主动提交新 Citation Test 时才使用本 Skill 的写入流程。
+
 ## 触发条件
 
 当用户说出以下意图时使用本 skill：
@@ -79,7 +81,7 @@ Creates citation tests for each prompt × platform combination. Results are proc
 
 ### Get results for a prompt
 ```bash
-python3 scripts/get_results.py --prompt-id <id> [--project-id <id>] [--json]
+python3 scripts/get_results.py --prompt-id <id> [--project-id <id>] [--page 1] [--limit 40] [--json]
 ```
 Shows citation test results for a specific prompt, including:
 - Platform
@@ -90,7 +92,7 @@ Shows citation test results for a specific prompt, including:
 
 ### Get results with date filtering
 ```bash
-python3 scripts/get_results.py --prompt-id <id> --start-date 2025-02-01 --end-date 2025-03-01 [--json]
+python3 scripts/get_results.py --prompt-id <id> --start-date 2025-02-01 --end-date 2025-03-01 [--page 1] [--limit 40] [--json]
 ```
 When `--start-date` / `--end-date` are provided, uses the analytics endpoint to filter executions by date range. Useful for comparing citation performance across time periods.
 

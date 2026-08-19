@@ -15,6 +15,8 @@ description: Connects, configures, and syncs GA4 and Cloudflare data sources for
 
 # GEO Integrations
 
+> 用户侧的 GA4/Cloudflare 数据查看和集成状态报告默认使用 `adgine/geo-reports` 生成 HTML；连接、同步、部署和断开继续使用本 Skill。
+
 Unified skill for the two analytics integrations (GA4 + Cloudflare). Four
 scripts cover OAuth setup, data sync, traffic queries, and Cloudflare Worker
 management for AI traffic tracking.
@@ -88,7 +90,7 @@ python3 scripts/ga4_setup.py select --property-id <id>      # bind property (tri
 python3 scripts/ga4_data.py sync                                  # pull latest data into local DB
 python3 scripts/ga4_data.py overview     [--start ...] [--end ...]   # sessions/users/pageviews
 python3 scripts/ga4_data.py ai-referrals [--start ...] [--end ...]   # AI platform breakdown
-python3 scripts/ga4_data.py pages        [--page 1] [--limit 20]     # top pages
+python3 scripts/ga4_data.py pages        [--page 1] [--limit 40]     # top pages
 python3 scripts/ga4_data.py sources      [--start ...] [--end ...]   # channel split
 ```
 
@@ -108,7 +110,7 @@ python3 scripts/cloudflare_worker.py config                      # get Worker JS
 python3 scripts/cloudflare_worker.py deploy [--zone-id <id>]     # one-click deploy
 python3 scripts/cloudflare_worker.py deploy-status               # is Worker deployed?
 python3 scripts/cloudflare_worker.py overview [--start ...] [--end ...]
-python3 scripts/cloudflare_worker.py pages   [--page 1] [--limit 20]
+python3 scripts/cloudflare_worker.py pages   [--page 1] [--limit 40]
 python3 scripts/cloudflare_worker.py undeploy [--keep-script] --yes   # DESTRUCTIVE
 ```
 

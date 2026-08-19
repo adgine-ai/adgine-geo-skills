@@ -12,7 +12,7 @@ Subcommands:
 GA4-based (require GA4 connected):
   ga-overview                     — GA4 sessions/revenue from AI sources (trend)
   ga-platforms                    — GA4 sessions/transactions/revenue by AI platform
-  ga-landing-pages [--limit 20]   — GA4 top landing pages from AI traffic
+  ga-landing-pages [--page 1] [--limit 40] — GA4 top landing pages from AI traffic
   ga-landing-flow                 — GA4 Sankey: AI platform → landing page
 
 Common opts: --start --end --platform
@@ -113,7 +113,7 @@ def cmd_platforms(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/human-platforms",
                      key, base, params=_date_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("platforms", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -127,9 +127,9 @@ def cmd_platforms(args, key, base, pid):
     print("│ Platform           │       Visits │       Change │")
     print("├────────────────────┼──────────────┼──────────────┤")
     for p in items:
-        name = truncate(p.get("name") or p.get("platform"), 18)
-        v = _fmt_num(p.get("visits") or p.get("sessions") or p.get("count"))
-        ch = _fmt_change(p.get("change") or p.get("delta"))
+        name = truncate(p.get("display_name") or p.get("name") or p.get("platform_id"), 18)
+        v = _fmt_num(p.get("total_visits") or p.get("visits") or p.get("sessions"))
+        ch = _fmt_change(p.get("total_delta") if p.get("total_delta") is not None else p.get("delta"))
         print(f"│ {pad(name, 18)} │ {v:>12} │ {ch:>12} │")
     print("└────────────────────┴──────────────┴──────────────┘")
     print("```")
@@ -137,12 +137,12 @@ def cmd_platforms(args, key, base, pid):
 
 def cmd_pages(args, key, base, pid):
     params = _date_params(args) or {}
-    params["page"] = args.page
+    params["offset"] = (args.page - 1) * args.limit
     params["limit"] = args.limit
     result = api_get(f"/api/projects/{pid}/ai-agent/human-pages",
                      key, base, params=params)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("pages", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -157,7 +157,7 @@ def cmd_pages(args, key, base, pid):
     print("├────────────────────────────────────────────┼──────────┤")
     for p in items:
         path = truncate(p.get("path") or p.get("url"), 42)
-        v = _fmt_num(p.get("visits") or p.get("count"))
+        v = _fmt_num(p.get("total_visits") or p.get("visits"))
         print(f"│ {pad(path, 42)} │ {v:>8} │")
     print("└────────────────────────────────────────────┴──────────┘")
     print("```")
@@ -187,7 +187,7 @@ def cmd_referral(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/referral-traffic",
                      key, base, params=_date_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("sources", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -237,7 +237,7 @@ def cmd_ga_platforms(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/ga-platforms",
                      key, base, params=_date_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("platforms", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -251,7 +251,7 @@ def cmd_ga_platforms(args, key, base, pid):
     print("│ Platform           │ Sessions │   Trans  │  Revenue │   Conv % │")
     print("├────────────────────┼──────────┼──────────┼──────────┼──────────┤")
     for p in items:
-        name = truncate(p.get("name") or p.get("platform"), 18)
+        name = truncate(p.get("display_name") or p.get("name") or p.get("platform"), 18)
         s = _fmt_num(p.get("sessions"))
         t = _fmt_num(p.get("transactions"))
         r = _fmt_num(p.get("revenue"))
@@ -264,11 +264,12 @@ def cmd_ga_platforms(args, key, base, pid):
 
 def cmd_ga_landing_pages(args, key, base, pid):
     params = _date_params(args) or {}
+    params["offset"] = (args.page - 1) * args.limit
     params["limit"] = args.limit
     result = api_get(f"/api/projects/{pid}/ai-agent/ga-landing-pages",
                      key, base, params=params)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("pages", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -282,7 +283,7 @@ def cmd_ga_landing_pages(args, key, base, pid):
     print("│ Landing page                         │ Sessions │  Revenue │")
     print("├──────────────────────────────────────┼──────────┼──────────┤")
     for p in items:
-        path = truncate(p.get("path") or p.get("url") or p.get("page_path"), 36)
+        path = truncate(p.get("landing_page") or p.get("path") or p.get("page_path"), 36)
         s = _fmt_num(p.get("sessions"))
         r = _fmt_num(p.get("revenue"))
         print(f"│ {pad(path, 36)} │ {s:>8} │ {r:>8} │")
@@ -327,13 +328,14 @@ def main():
     p_pages.add_argument("--end")
     p_pages.add_argument("--platform")
     p_pages.add_argument("--page", type=int, default=1)
-    p_pages.add_argument("--limit", type=int, default=20)
+    p_pages.add_argument("--limit", type=int, default=40)
 
     p_glp = sub.add_parser("ga-landing-pages")
     p_glp.add_argument("--start")
     p_glp.add_argument("--end")
     p_glp.add_argument("--platform")
-    p_glp.add_argument("--limit", type=int, default=20)
+    p_glp.add_argument("--page", type=int, default=1)
+    p_glp.add_argument("--limit", type=int, default=40)
 
     args = parser.parse_args()
     key, base = get_api_config()

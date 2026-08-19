@@ -4,7 +4,7 @@
 Usage:
   python3 scripts/list_content.py [--project-id <id>] [--status draft|outline|article]
                                  [--publish-status unpublished|published]
-                                 [--topic-id <id>] [--page 1] [--limit 20] [--json]
+                                 [--topic-id <id>] [--page 1] [--limit 40] [--json]
 """
 import sys
 import os
@@ -21,7 +21,7 @@ parser.add_argument("--publish-status", choices=["unpublished", "published"],
                     help="Filter by WordPress publish status")
 parser.add_argument("--topic-id", help="Filter by topic ID")
 parser.add_argument("--page",  type=int, default=1,  help="Page number (default: 1)")
-parser.add_argument("--limit", type=int, default=20, help="Results per page (default: 20)")
+parser.add_argument("--limit", type=int, default=40, help="Results per page (default: 40)")
 parser.add_argument("--json", action="store_true", help="Output raw JSON")
 args = parser.parse_args()
 

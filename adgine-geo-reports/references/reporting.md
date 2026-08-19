@@ -1,0 +1,136 @@
+# Stable reporting protocol
+
+## Contents
+
+- Output modes and markers
+- Report schema
+- Density and visual mapping
+- Coverage and unit rules
+- Entity resolution and performance
+- Audit, privacy, and empty values
+- Template maintenance
+
+## Output modes and markers
+
+Use `scripts/report.py` for all read-only GEO reports.
+
+- `html` is the default and writes a standalone file under the caller's `adgine-reports/` directory.
+- `markdown` prints a fixed narrative/table representation.
+- `json` prints the stable report contract.
+- `both` prints Markdown and writes HTML.
+
+After writing HTML, emit these WorkBuddy-compatible lines:
+
+```text
+REPORT_TITLE: <title>
+REPORT_FILE: <absolute path>
+REPORT_PREVIEW: <absolute path>
+REPORT_FINDING: <deterministic finding, at most 3>
+REPORT_NEXT: <contextual next question, at most 3>
+```
+
+Consume these markers directly. Do not perform another API query merely to restate the result.
+
+## Report schema
+
+Every representation derives from one dictionary with `schema_version=1.0`:
+
+| Field | Meaning |
+|---|---|
+| `report_type` | Stable scenario name from `_contracts.py`. |
+| `title`, `subtitle` | Localized title and scope. |
+| `generated_at` | ISO timestamp with offset. |
+| `locale`, `timezone` | Presentation context; raw source dates are not silently shifted. |
+| `context` | Project label, requested range, platform, and selected entity. |
+| `metrics` | KPI cards with raw value, change, format, direction, and optional unit. |
+| `charts` | Declarative line, bar, or heatmap data. |
+| `tables` | Explicit columns and rows. |
+| `insights` | At most three deterministic observations. |
+| `next_actions` | At most three follow-up prompts; excluded from the embedded HTML JSON. |
+| `coverage` | Requested/effective range, partial state, source-level status, as-of time, metric-level units, date basis, and freshness fields. |
+| `audit` | Resolution rule, API paths/timings, warnings, and quality caveats. |
+
+The HTML embeds the public report JSON in `#adgine-report-data`. Never embed raw API responses, credentials, or hidden identifiers.
+
+## Density and visual mapping
+
+Use four stable densities:
+
+| Density | Use | Primary visuals |
+|---|---|---|
+| `analysis` | Trends, comparisons, prioritization | KPI cards, lines, bars/heatmap, ranked table |
+| `inventory` | Topics, Prompts, pages, content, projects | Counts and dense sortable-style tables |
+| `detail` | One Prompt, Topic, page, opportunity, or content item | Entity context, focused KPIs, related tables |
+| `status` | Jobs, integration health, billing, publication | State cards, timestamps, issue tables |
+
+Map data deterministically:
+
+- Date series → line chart.
+- Brand/platform comparisons → horizontal bar or heatmap.
+- Flow links → top-flow horizontal bars plus link table.
+- Page/Topic/Prompt lists → table with stable server or created-time ordering.
+- KPIs → cards; do not turn arbitrary categorical rows into decorative charts.
+
+Keep long labels intact in tables. SVG bar labels may visually shorten at the right edge but must preserve the full label in a tooltip.
+
+## Coverage and unit rules
+
+Always distinguish these units:
+
+- GA4: sessions, active users, page views, transactions, revenue.
+- Cloudflare Analytics: HTTP requests, cached requests, bytes, threats, page views, unique visitors.
+- Cloudflare Worker: captured events/requests by AI traffic type.
+- AI Agent: derived bot/human event aggregates, with endpoint-specific source metadata.
+- Visibility: percentages, positions, ranks, and completed model execution counts.
+
+Never add metrics across those unit families. A management overview may place them next to one another only when each card/table keeps its source and unit.
+
+Default `end` to yesterday. Report the requested range separately from each source's available/as-of state. Mark optional failures as `partial` or `error` while still producing the artifact. Fail the report only when a required primary source fails.
+
+Do not auto-sync external systems. A report reflects already-ingested local data unless a scenario explicitly documents a realtime endpoint; current report scenarios use local/cached reads.
+
+## Capability, fallback, and performance
+
+Apply the smallest call plan:
+
+- Topic portfolio: one `/analytics/topics` call.
+- Topic detail by ID/exact name: one `/report-data/topic-performance` business call.
+- Prompt by ID/exact text: one `/report-data/prompt-performance` business call.
+- Page detail and multi-source overview: one report-data aggregate business call.
+- Paginated reads: 40 rows per page; next-page offsets advance by exactly 40.
+
+Cache only report-data capabilities on disk for two hours, keyed by API origin and Project ID. Never cache report business data or persist API credentials. A cold cache adds one capability request; a warm cache sends only the business request. Set `GEO_REPORT_CAPABILITY_CACHE_TTL_SECONDS` to a non-negative number of seconds to shorten the window during a backend rollout; `0` forces a capability probe on every report command.
+
+Fallback rules are strict:
+
+- Legacy workflow is allowed for capability/route 404 or 501, `feature=false`, or unsupported schema version.
+- A capability discovery outage may use stale cache; without cache it uses legacy workflow with an explicit audit warning.
+- 401, 403, entity 404 (`40405`/`40406`), 409, 422, business 5xx, and business timeouts never silently fall back.
+
+Exact matching wins. If text has zero or multiple matches, stop and request/use an ID instead of guessing.
+
+## Audit, privacy, and empty values
+
+- Mask Project, Topic, Prompt, Opportunity, Content, and Task IDs in user-facing audit paths.
+- Omit all `*_id` fields by default. Use `--show-ids` only for explicit debugging.
+- Remove secrets and keys even when `--show-ids` is enabled.
+- Record entity resolution rule, time window, locale, timezone, concurrency cap, API path, duration, and failure status.
+- Never expose API keys, OAuth tokens, Cloudflare tokens, Worker secrets, WordPress passwords, or generated Worker source containing secrets.
+- For `account-info`, expose only creation time, account name, phone, and email from `/api/auth/me`; omit the user ID and all unrelated response fields.
+- Show `0` as zero. Show `null`/missing as `—`.
+- If an execution count is zero, state that no completed executions were observed; do not convert this to a performance score of zero.
+- Treat average position/rank, bounce, latency, negative sentiment, and Web Vitals as lower-is-better when assigning direction color.
+
+## Template maintenance
+
+Change visuals in `assets/report-template.html` and `_reporting.py`, not in `SKILL.md`.
+
+Keep the template fully offline:
+
+- Inline CSS and SVG only.
+- No remote fonts, scripts, images, analytics, or CDN assets.
+- Escape all table/context text.
+- Escape `</` in embedded JSON.
+- Preserve responsive and print styles.
+
+Run the report tests and `quick_validate.py` after changing the contract, renderer, Skill instructions, or agent metadata.

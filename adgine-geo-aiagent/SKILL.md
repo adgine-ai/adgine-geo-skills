@@ -14,6 +14,8 @@ description: Deep drill-down tracking for AI bot crawls and AI-driven human traf
 
 # GEO AI-Agent Tracking
 
+> 用户侧的查看、查询、分析和报告请求默认使用 `adgine/geo-reports` 生成 HTML；本 Skill 的读取脚本仅用于低层排障。
+
 The biggest analytics skill — 27 endpoints under `/api/projects/{id}/ai-agent/*`.
 Grouped into 4 scripts by user intent:
 
@@ -89,14 +91,14 @@ python3 scripts/bot_traffic.py pages-by-bot      # per-bot top pages
 ```bash
 python3 scripts/human_traffic.py overview        # 3 KPI: UTM / referral / share
 python3 scripts/human_traffic.py platforms       # human visits by AI platform
-python3 scripts/human_traffic.py pages           # human visits per page
+python3 scripts/human_traffic.py pages --page 1 --limit 40  # human visits per page
 python3 scripts/human_traffic.py platform-flow   # Sankey: AI platform → landing page
 python3 scripts/human_traffic.py referral        # referral-only by source
 
 # GA4-backed (requires GA4 connected):
 python3 scripts/human_traffic.py ga-overview
 python3 scripts/human_traffic.py ga-platforms
-python3 scripts/human_traffic.py ga-landing-pages
+python3 scripts/human_traffic.py ga-landing-pages --page 1 --limit 40
 python3 scripts/human_traffic.py ga-landing-flow
 ```
 
@@ -104,11 +106,11 @@ python3 scripts/human_traffic.py ga-landing-flow
 
 ```bash
 python3 scripts/page_analytics.py overview-kpi             # citation/index/training/agent/referral
-python3 scripts/page_analytics.py pages                    # top AI-referenced pages
-python3 scripts/page_analytics.py pages-detail             # 5-metric table per page
+python3 scripts/page_analytics.py pages --page 1 --limit 40        # top AI-referenced pages
+python3 scripts/page_analytics.py pages-detail --page 1 --limit 40 # 5-metric table per page
 python3 scripts/page_analytics.py pages-export --format csv > pages.csv
 python3 scripts/page_analytics.py platform-flow            # Sankey
-python3 scripts/page_analytics.py logs                     # raw AI event logs
+python3 scripts/page_analytics.py logs --page 1 --limit 40 # raw AI event logs
 ```
 
 ### page_detail.py — specific page path
@@ -117,7 +119,7 @@ All commands require `--path /your/page/path`.
 
 ```bash
 python3 scripts/page_detail.py kpi       --path /blog/article
-python3 scripts/page_detail.py logs      --path /blog/article --limit 20
+python3 scripts/page_detail.py logs      --path /blog/article --page 1 --limit 40
 python3 scripts/page_detail.py platforms --path /blog/article
 python3 scripts/page_detail.py related   --path /blog/article
 python3 scripts/page_detail.py health    --path /blog/article

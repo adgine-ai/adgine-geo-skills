@@ -5,6 +5,8 @@ description: Creates and tracks GEO SaaS-hosted websites — checks if a subdoma
 
 # GEO SaaS
 
+> SaaS 部署任务的只读状态报告优先使用 `adgine/geo-reports`；本技能负责域名检查、网站创建和低层任务轮询。
+
 Three-script flow for spinning up a SaaS-hosted website on the GEO platform:
 
 1. **Check** that the desired subdomain is available.

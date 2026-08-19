@@ -5,6 +5,8 @@ description: Search available domains by keyword, list registered domains, and v
 
 # GEO Domains
 
+> 用户侧的域名资产查看和报告请求默认使用 `adgine/geo-reports` 生成 HTML；搜索或其他专项操作继续使用本 Skill。
+
 Read-only access to domain search and your registered domains. Use this skill when the
 user asks "search domains for my brand" / "is example.com available?" / "show my
 domains" / "域名搜索" / "查询域名" / "我的域名" / "这个域名能注册吗".

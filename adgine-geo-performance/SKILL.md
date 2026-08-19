@@ -12,6 +12,8 @@ description: Checks a specific page's AI-optimization health within a GEO projec
 
 # GEO Performance
 
+> 用户侧的查看、查询、分析和报告请求默认使用 `adgine/geo-reports` 生成 HTML；只有用户明确要求刷新 PageSpeed 时才单独执行本 Skill 的 refresh。
+
 Fetches the AI-agent page health report for a specific page path within a project.
 
 ## 触发条件

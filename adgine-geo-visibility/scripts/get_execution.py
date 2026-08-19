@@ -4,7 +4,7 @@
 Subcommands:
   list   --prompt-id <id>                    — recent executions of this prompt
         [--platform <code>] [--start <>] [--end <>]
-        [--limit 20]
+        [--page 1] [--limit 40]
   get    --prompt-id <id> --execution-id <eid>  — full AI response, brand
                                                   mentions (rank/sentiment),
                                                   citations & matches
@@ -28,20 +28,20 @@ from _client import (
 
 
 def cmd_list(args, key, base, pid):
-    params = {"limit": args.limit}
+    params = {"page": args.page, "page_size": args.limit}
     if args.platform:
         params["platform"] = args.platform
     if args.start:
-        params["start_date"] = args.start
+        params["date_from"] = args.start
     if args.end:
-        params["end_date"] = args.end
+        params["date_to"] = args.end
 
     result = api_get(
         f"/api/projects/{pid}/analytics/prompts/{args.prompt_id}/executions",
         key, base, params=params,
     )
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("executions", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
 
     if args.json:
         print_json(items)
@@ -60,10 +60,8 @@ def cmd_list(args, key, base, pid):
     for e in items:
         eid = truncate(e.get("id") or e.get("execution_id"), 36)
         plat = truncate(e.get("platform") or "--", 10)
-        date = truncate((e.get("executed_at") or e.get("created_at") or "--")[:10], 10)
-        mentioned = e.get("brand_mentioned")
-        if mentioned is None:
-            mentioned = bool(e.get("brand_mentions") or e.get("self_mentioned"))
+        date = truncate(str(e.get("date") or e.get("analyzed_at") or "--")[:10], 10)
+        mentioned = e.get("our_brand_mentioned")
         bm = "Yes" if mentioned else "No"
         print(f"│ {pad(eid, 36)} │ {pad(plat, 10)} │ {pad(date, 10)} │ {pad(bm, 10)} │")
     print("└──────────────────────────────────────┴────────────┴────────────┴────────────┘")
@@ -84,9 +82,9 @@ def cmd_get(args, key, base, pid):
     print(f"Execution {args.execution_id}")
     print(f"  prompt:    {args.prompt_id}")
     print(f"  platform:  {data.get('platform')}")
-    print(f"  date:      {(data.get('executed_at') or data.get('created_at') or '')[:19]}")
+    print(f"  date:      {str(data.get('date') or data.get('analyzed_at') or '')[:19]}")
     print()
-    response = data.get("response") or data.get("ai_response") or data.get("answer")
+    response = data.get("response_text") or data.get("response") or data.get("ai_response")
     if response:
         print("AI Response:")
         print("---")
@@ -106,7 +104,7 @@ def cmd_get(args, key, base, pid):
             name = truncate(m.get("brand") or m.get("name"), 28)
             rank = m.get("rank") or m.get("position") or "--"
             sent = truncate(m.get("sentiment") or "--", 10)
-            mine = "Yes" if (m.get("is_self") or m.get("self")) else "No"
+            mine = "Yes" if (m.get("is_our_brand") or m.get("is_self")) else "No"
             print(f"│ {pad(name, 28)} │ {str(rank):>6} │ {pad(sent, 10)} │ {pad(mine, 10)} │")
         print("└──────────────────────────────┴────────┴────────────┴────────────┘")
         print("```")
@@ -133,7 +131,8 @@ def main():
     p_l.add_argument("--platform", choices=["openai", "google_aio", "perplexity", "gemini"])
     p_l.add_argument("--start", help="Start date YYYY-MM-DD")
     p_l.add_argument("--end", help="End date YYYY-MM-DD")
-    p_l.add_argument("--limit", type=int, default=20)
+    p_l.add_argument("--page", type=int, default=1)
+    p_l.add_argument("--limit", type=int, default=40)
 
     p_g = sub.add_parser("get", help="Full execution detail")
     p_g.add_argument("--prompt-id", required=True)

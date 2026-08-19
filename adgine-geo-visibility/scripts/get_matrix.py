@@ -47,12 +47,12 @@ def main():
     pid = get_project_id(args.project_id)
 
     # API expects "share_of_voice" not "sov"
-    metric_param = "share_of_voice" if args.metric == "sov" else args.metric
+    metric_param = "share_of_voice" if args.metric == "sov" else "visibility_score"
     params = {"metric": metric_param}
     if args.start:
-        params["start_date"] = args.start
+        params["date_from"] = args.start
     if args.end:
-        params["end_date"] = args.end
+        params["date_to"] = args.end
 
     result = api_get(
         f"/api/projects/{pid}/analytics/platforms/matrix",
@@ -65,7 +65,7 @@ def main():
         return
 
     platforms = data.get("platforms") or data.get("columns") or []
-    rows = data.get("rows") or data.get("brands") or data.get("competitors") or []
+    rows = data.get("competitors") or []
 
     if not rows or not platforms:
         print("No matrix data available.")
@@ -81,7 +81,7 @@ def main():
     sep_mid = "├" + "─" * 22 + "┼"
     sep_bot = "└" + "─" * 22 + "┴"
     for p in platforms:
-        name = truncate(p.get("name") or p.get("code") or str(p), 8)
+        name = truncate(p.get("name") or p.get("code") if isinstance(p, dict) else str(p), 8)
         head += " {:>8} │".format(name)
         sep_top += "─" * 10 + "┬"
         sep_mid += "─" * 10 + "┼"
@@ -91,13 +91,13 @@ def main():
     print(sep_mid[:-1] + "┤")
     for r in rows:
         bname = truncate(r.get("brand") or r.get("name") or "?", 20)
-        is_self = r.get("is_self") or r.get("self")
+        is_self = r.get("is_our_brand")
         prefix = "★ " if is_self else "  "
         row = "│ {:<20} │".format(prefix + bname)[:24]  # safety
         row = "│ {:<20} │".format(prefix + bname)
         values = r.get("values") or r.get("scores") or {}
         for p in platforms:
-            code = p.get("code") or p.get("name") or str(p)
+            code = p.get("code") or p.get("name") if isinstance(p, dict) else str(p)
             v = values.get(code) if isinstance(values, dict) else None
             row += " {:>8} │".format(_fmt(v))
         print(row)

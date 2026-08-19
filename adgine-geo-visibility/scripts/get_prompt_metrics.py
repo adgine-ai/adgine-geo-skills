@@ -53,9 +53,9 @@ def main():
 
     params = {}
     if args.start:
-        params["start_date"] = args.start
+        params["date_from"] = args.start
     if args.end:
-        params["end_date"] = args.end
+        params["date_to"] = args.end
 
     result = api_get(
         f"/api/projects/{pid}/analytics/prompts/{args.prompt_id}/overview",
@@ -71,19 +71,27 @@ def main():
     ap = data.get("average_position") or {}
 
     print(f"Prompt overview — {args.prompt_id}")
-    if data.get("prompt_text"):
-        print(f"  text: {truncate(data['prompt_text'], 80)}")
+    prompt = data.get("prompt") or {}
+    if prompt.get("content"):
+        print(f"  text: {truncate(prompt['content'], 80)}")
     print()
     print("```")
     print("┌────────────────────┬──────────────┬──────────────┬──────────────┐")
     print("│ Metric             │      Current │     Previous │       Change │")
     print("├────────────────────┼──────────────┼──────────────┼──────────────┤")
-    print(f"│ {pad('Visibility Score', 18)} │ {_fmt(vs.get('current')):>12} │ {_fmt(vs.get('previous')):>12} │ {_fmt_change(vs.get('change')):>12} │")
-    print(f"│ {pad('Average Position', 18)} │ {_fmt(ap.get('current')):>12} │ {_fmt(ap.get('previous')):>12} │ {_fmt_change(ap.get('change')):>12} │")
+    vs_previous = (vs.get("current") - vs.get("change")) if vs.get("current") is not None and vs.get("change") is not None else None
+    ap_previous = (ap.get("current") - ap.get("change")) if ap.get("current") is not None and ap.get("change") is not None else None
+    print(f"│ {pad('Visibility Score', 18)} │ {_fmt(vs.get('current')):>12} │ {_fmt(vs_previous):>12} │ {_fmt_change(vs.get('change')):>12} │")
+    print(f"│ {pad('Average Position', 18)} │ {_fmt(ap.get('current')):>12} │ {_fmt(ap_previous):>12} │ {_fmt_change(ap.get('change')):>12} │")
     print("└────────────────────┴──────────────┴──────────────┴──────────────┘")
     print("```")
 
-    by_platform = data.get("by_platform") or data.get("platforms") or []
+    vis_platforms = {item.get("platform"): item.get("value") for item in vs.get("by_platform") or []}
+    pos_platforms = {item.get("platform"): item.get("value") for item in ap.get("by_platform") or []}
+    by_platform = [
+        {"platform": platform, "visibility_score": vis_platforms.get(platform), "average_position": pos_platforms.get(platform)}
+        for platform in sorted(set(vis_platforms) | set(pos_platforms))
+    ]
     if by_platform:
         print()
         print("By platform:")

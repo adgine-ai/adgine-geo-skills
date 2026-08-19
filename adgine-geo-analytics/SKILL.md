@@ -10,6 +10,8 @@ description: High-level traffic analytics overview for a GEO project — GA4 ses
 
 # GEO Analytics
 
+> 用户侧的查看、查询、分析和报告请求默认使用 `adgine/geo-reports` 生成 HTML；本 Skill 的读取脚本仅用于低层排障。
+
 Fetches the full dashboard overview for a project — search, traffic, AI impact,
 and infrastructure data in a single call.
 

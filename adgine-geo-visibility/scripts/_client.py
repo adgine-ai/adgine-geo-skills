@@ -17,6 +17,15 @@ import urllib.request as _req
 import urllib.error as _uerr
 import urllib.parse as _up
 
+
+class ApiError(RuntimeError):
+    """HTTP/API failure that callers may catch for partial report output."""
+
+    def __init__(self, message, status_code=None, payload=None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.payload = payload
+
 def _load_dot_env():
     """Load .env from the repo root (adgine-geo-skills/) into os.environ.
 
@@ -183,7 +192,7 @@ def get_project_id(arg_value=None):
     return pid
 
 
-def _do_request(method, url, key, body=None, timeout=30):
+def _do_request(method, url, key, body=None, timeout=30, exit_on_error=True):
     """Execute an HTTP request and return parsed JSON.
 
     Exits with an error message on HTTP errors or network failures.
@@ -199,14 +208,27 @@ def _do_request(method, url, key, body=None, timeout=30):
     try:
         with _req.urlopen(request, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8")
-            return json.loads(raw) if raw else {}
+            if not raw:
+                return {}
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError:
+                # A few export endpoints intentionally return CSV/text.
+                return raw
     except _uerr.HTTPError as e:
         raw = e.read().decode("utf-8")[:400]
+        err_payload = raw
         try:
-            err_data = json.loads(raw)
-            msg = err_data.get("message") or err_data.get("detail") or raw
+            err_payload = json.loads(raw)
+            msg = (
+                err_payload.get("message") or err_payload.get("detail") or raw
+                if isinstance(err_payload, dict)
+                else raw
+            )
         except Exception:
             msg = raw
+        if not exit_on_error:
+            raise ApiError(str(msg), status_code=e.code, payload=err_payload)
         if e.code == 401:
             print("ERROR: Unauthorized — API key is invalid or revoked.")
             print("  Generate a new key: https://platform.adgine.ai")
@@ -218,33 +240,51 @@ def _do_request(method, url, key, body=None, timeout=30):
             print(f"ERROR: HTTP {e.code} — {msg}")
         sys.exit(1)
     except Exception as e:
+        if isinstance(e, ApiError):
+            raise
+        if not exit_on_error:
+            raise ApiError(str(e)) from e
         print(f"ERROR: Request failed — {e}")
         sys.exit(1)
 
 
-def api_get(path, key, base, params=None, timeout=30):
+def _query_pairs(params):
+    """Serialize FastAPI query values (repeat lists, lowercase booleans)."""
+    pairs = []
+    for name, value in (params or {}).items():
+        if value is None:
+            continue
+        values = value if isinstance(value, (list, tuple, set)) else [value]
+        for item in values:
+            if isinstance(item, bool):
+                item = "true" if item else "false"
+            pairs.append((name, str(item)))
+    return pairs
+
+
+def api_get(path, key, base, params=None, timeout=30, exit_on_error=True):
     url = f"{base}{path}"
     if params:
-        clean = {k: str(v) for k, v in params.items() if v is not None}
+        clean = _query_pairs(params)
         if clean:
-            url += "?" + _up.urlencode(clean)
-    return _do_request("GET", url, key, timeout=timeout)
+            url += "?" + _up.urlencode(clean, doseq=True)
+    return _do_request("GET", url, key, timeout=timeout, exit_on_error=exit_on_error)
 
 
-def api_post(path, key, base, body=None, timeout=30):
-    return _do_request("POST", f"{base}{path}", key, body, timeout=timeout)
+def api_post(path, key, base, body=None, timeout=30, exit_on_error=True):
+    return _do_request("POST", f"{base}{path}", key, body, timeout=timeout, exit_on_error=exit_on_error)
 
 
-def api_patch(path, key, base, body=None, timeout=30):
-    return _do_request("PATCH", f"{base}{path}", key, body, timeout=timeout)
+def api_patch(path, key, base, body=None, timeout=30, exit_on_error=True):
+    return _do_request("PATCH", f"{base}{path}", key, body, timeout=timeout, exit_on_error=exit_on_error)
 
 
-def api_put(path, key, base, body=None, timeout=30):
-    return _do_request("PUT", f"{base}{path}", key, body, timeout=timeout)
+def api_put(path, key, base, body=None, timeout=30, exit_on_error=True):
+    return _do_request("PUT", f"{base}{path}", key, body, timeout=timeout, exit_on_error=exit_on_error)
 
 
-def api_delete(path, key, base, timeout=30):
-    return _do_request("DELETE", f"{base}{path}", key, timeout=timeout)
+def api_delete(path, key, base, timeout=30, exit_on_error=True):
+    return _do_request("DELETE", f"{base}{path}", key, timeout=timeout, exit_on_error=exit_on_error)
 
 
 def extract_data(result):

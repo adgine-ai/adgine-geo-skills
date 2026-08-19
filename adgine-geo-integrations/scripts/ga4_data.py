@@ -5,7 +5,7 @@ Subcommands:
   sync                                            — pull latest GA4 data into the local DB (POST)
   overview      [--start <YYYY-MM-DD>] [--end <>] — sessions/users/pageviews + channel split
   ai-referrals  [--start <>] [--end <>]           — AI-platform referral detail + trends
-  pages         [--page 1] [--limit 20]           — top pages by views
+  pages         [--page 1] [--limit 40]           — top pages by views
   sources       [--start <>] [--end <>]           — traffic by channel group
 
 Usage:
@@ -72,13 +72,15 @@ def cmd_overview(args, key, base, pid):
     print("│ Metric             │        Value │")
     print("├────────────────────┼──────────────┤")
     for k, label in [
-        ("sessions", "Sessions"),
-        ("active_users", "Active users"),
-        ("pageviews", "Pageviews"),
-        ("ai_referral_sessions", "AI ref sessions"),
+        ("total_sessions", "Sessions"),
+        ("total_active_users", "Active users"),
+        ("total_page_views", "Pageviews"),
+        ("avg_daily_uv", "Avg daily users"),
     ]:
         if k in data:
-            print(f"│ {pad(label, 18)} │ {_fmt_num(data.get(k)):>12} │")
+            metric = data.get(k)
+            value = metric.get("current") if isinstance(metric, dict) else metric
+            print(f"│ {pad(label, 18)} │ {_fmt_num(value):>12} │")
     print("└────────────────────┴──────────────┘")
     print("```")
 
@@ -90,7 +92,7 @@ def cmd_ai_referrals(args, key, base, pid):
     if args.json:
         print_json(data)
         return
-    plats = data.get("platforms") or data.get("by_platform") or []
+    plats = data.get("items") or []
     print("GA4 AI Referrals")
     print()
     print("```")
@@ -98,7 +100,7 @@ def cmd_ai_referrals(args, key, base, pid):
     print("│ Platform           │     Sessions │        Users │")
     print("├────────────────────┼──────────────┼──────────────┤")
     for p in plats[:10]:
-        name = truncate(p.get("name") or p.get("platform"), 18)
+        name = truncate(p.get("source") or p.get("name") or p.get("platform"), 18)
         sess = _fmt_num(p.get("sessions"))
         users = _fmt_num(p.get("users") or p.get("active_users"))
         print(f"│ {pad(name, 18)} │ {sess:>12} │ {users:>12} │")
@@ -107,10 +109,12 @@ def cmd_ai_referrals(args, key, base, pid):
 
 
 def cmd_pages(args, key, base, pid):
+    params = _date_params(args) or {}
+    params.update({"offset": (args.page - 1) * args.limit, "limit": args.limit})
     result = api_get(f"/api/projects/{pid}/integrations/ga4/pages", key, base,
-                     params={"page": args.page, "limit": args.limit})
+                     params=params)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("pages", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -121,13 +125,13 @@ def cmd_pages(args, key, base, pid):
     print()
     print("```")
     print("┌────────────────────────────────────────────┬──────────┬──────────┐")
-    print("│ Page                                       │    Views │ Sessions │")
+    print("│ Page                                       │    Views │    Users │")
     print("├────────────────────────────────────────────┼──────────┼──────────┤")
     for p in items:
         path = truncate(p.get("page_path") or p.get("path") or p.get("url"), 42)
         views = _fmt_num(p.get("views") or p.get("page_views"))
-        sess = _fmt_num(p.get("sessions"))
-        print(f"│ {pad(path, 42)} │ {views:>8} │ {sess:>8} │")
+        users = _fmt_num(p.get("active_users"))
+        print(f"│ {pad(path, 42)} │ {views:>8} │ {users:>8} │")
     print("└────────────────────────────────────────────┴──────────┴──────────┘")
     print("```")
 
@@ -136,7 +140,7 @@ def cmd_sources(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/integrations/ga4/sources", key, base,
                      params=_date_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("sources") or (data or {}).get("channels", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -171,8 +175,10 @@ def main():
         p.add_argument("--end", help="End date YYYY-MM-DD")
 
     p_pages = sub.add_parser("pages")
+    p_pages.add_argument("--start", help="Start date YYYY-MM-DD")
+    p_pages.add_argument("--end", help="End date YYYY-MM-DD")
     p_pages.add_argument("--page", type=int, default=1)
-    p_pages.add_argument("--limit", type=int, default=20)
+    p_pages.add_argument("--limit", type=int, default=40)
 
     args = parser.parse_args()
     key, base = get_api_config()

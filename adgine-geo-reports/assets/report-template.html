@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}}</title>
+  <style>
+    :root {
+      --ink:#14213d; --muted:#64748b; --line:#dce5ef; --paper:#fff;
+      --blue:#2563eb; --cyan:#0891b2; --good:#047857; --bad:#dc2626;
+      --warn:#b45309; --shadow:0 18px 54px rgba(15,23,42,.09);
+    }
+    * { box-sizing:border-box }
+    body {
+      margin:0; color:var(--ink); line-height:1.5;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI","PingFang SC",sans-serif;
+      background:radial-gradient(circle at 10% 0,rgba(37,99,235,.15),transparent 29%),
+        radial-gradient(circle at 92% 3%,rgba(8,145,178,.13),transparent 25%),#f4f7fb;
+    }
+    .shell { width:min(1240px,calc(100% - 32px)); margin:32px auto 64px }
+    .hero {
+      padding:30px; overflow:hidden; color:#fff; border-radius:26px;
+      background:radial-gradient(circle at 86% 20%,rgba(34,211,238,.55),transparent 18%),
+        linear-gradient(132deg,#0f172a,#172554 38%,#1d4ed8 74%,#0891b2);
+      box-shadow:0 26px 70px rgba(30,64,175,.23)
+    }
+    .eyebrow { opacity:.76; font-size:12px; letter-spacing:.14em; text-transform:uppercase }
+    h1 { margin:8px 0 5px; font-size:clamp(28px,4vw,42px); line-height:1.16 }
+    .subtitle { max-width:860px; margin:0; opacity:.86 }
+    .context { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px }
+    .context span { padding:6px 10px; border:1px solid rgba(255,255,255,.28); border-radius:999px; background:rgba(255,255,255,.11); font-size:12px }
+    .context b { margin-right:5px }
+    .generated { margin-top:15px; font-size:12px; opacity:.72 }
+    .metric-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin:20px 0 }
+    .metric,.panel { background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow) }
+    .metric { position:relative; min-height:130px; padding:20px; overflow:hidden }
+    .metric:before { content:""; position:absolute; inset:0 0 auto; height:4px; background:linear-gradient(90deg,var(--blue),#06b6d4,#8b5cf6) }
+    .metric-label { color:var(--muted); font-size:13px }
+    .metric-value { margin-top:8px; font-size:31px; font-weight:780; letter-spacing:-.04em }
+    .metric-delta { margin-top:7px; color:var(--muted); font-size:13px }
+    .metric-delta.good { color:var(--good) } .metric-delta.bad { color:var(--bad) }
+    .panel { margin-top:18px; padding:22px; overflow:hidden }
+    .chart-panel { background:linear-gradient(145deg,#fff,#f8fbff) }
+    .panel h2 { margin:0 0 15px; font-size:18px } .panel h3 { color:var(--muted) }
+    .note { margin:-7px 0 15px; color:var(--muted); font-size:12px }
+    .chart,.table-wrap { width:100%; overflow-x:auto }
+    svg { display:block; width:100%; min-width:620px; height:auto }
+    .svg-label { fill:#334155; font-size:12px } .svg-value { fill:#64748b; font-size:11px }
+    .axis { stroke:#cbd5e1; stroke-width:1 }
+    .legend { display:flex; flex-wrap:wrap; gap:14px; margin:0 0 4px 54px; color:var(--muted); font-size:12px }
+    .legend i { display:inline-block; width:9px; height:9px; margin-right:5px; border-radius:50% }
+    table { width:100%; border-collapse:collapse; font-size:13px }
+    th { text-align:left; color:var(--muted); background:#f1f5f9; font-weight:700 }
+    th,td { padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top }
+    tbody tr:last-child td,tbody tr:last-child th { border-bottom:0 }
+    tbody tr:hover td { background:#f8fbff } tbody tr.highlight td,tbody tr.highlight th { background:#eaf3ff; font-weight:650 }
+    .num { text-align:right; font-variant-numeric:tabular-nums }
+    .heat { min-width:70px; padding:7px 8px; border-radius:7px; text-align:right; font-variant-numeric:tabular-nums }
+    .insights-panel { border-color:#bfdbfe; background:linear-gradient(135deg,#eff6ff,#f0fdfa) }
+    .insights { margin:0; padding-left:22px } .insights li+li { margin-top:8px }
+    .status { display:inline-block; padding:3px 8px; border-radius:999px; background:#dcfce7; color:var(--good); font-size:11px; font-weight:700 }
+    .status.partial { background:#fef3c7; color:var(--warn) } .status.error { background:#fee2e2; color:var(--bad) }
+    details { color:var(--muted); font-size:12px } details summary { cursor:pointer; color:var(--ink); font-weight:700 }
+    .audit-grid { display:grid; grid-template-columns:190px 1fr; gap:6px 14px; margin:14px 0 }
+    .audit-key { color:var(--muted) } .warnings { color:var(--warn) }
+    .empty { padding:22px; color:var(--muted); text-align:center; border-radius:12px; background:#f8fafc }
+    .footer { margin-top:18px; color:var(--muted); text-align:center; font-size:12px }
+    @media(max-width:640px) {
+      .shell { width:calc(100% - 18px); margin-top:10px } .hero,.panel { padding:17px; border-radius:14px }
+      .audit-grid { grid-template-columns:1fr }
+    }
+    @media print {
+      body { background:#fff } .shell { width:100%; margin:0 } .hero,.metric,.panel { box-shadow:none; break-inside:avoid }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow">Adgine GEO · International Report</div>
+      <h1>{{TITLE}}</h1>
+      <p class="subtitle">{{SUBTITLE}}</p>
+      <div class="context">{{CONTEXT}}</div>
+      <div class="generated">Generated {{GENERATED_AT}}</div>
+    </header>
+    <section class="metric-grid">{{METRICS}}</section>
+    {{CHARTS}}
+    {{TABLES}}
+    {{INSIGHTS}}
+    {{COVERAGE}}
+    {{AUDIT}}
+    <div class="footer">Standalone offline report · schema {{SCHEMA_VERSION}} · platform.adgine.ai</div>
+  </main>
+  <script type="application/json" id="adgine-report-data">{{EMBEDDED_JSON}}</script>
+</body>
+</html>

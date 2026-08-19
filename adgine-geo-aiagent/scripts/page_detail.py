@@ -7,7 +7,7 @@ Subcommands:
   kpi --path <p>          — 5 KPI cards for this page (citation/index/training/
                             agent/total bots) with delta + daily trend
   logs --path <p>         — recent AI access events on this exact path
-        [--limit 50] [--traffic-type bot|human]
+        [--page 1] [--limit 40] [--traffic-type bot|human]
   platforms --path <p>    — per-platform 4-AI + human-referral + share table
   related --path <p>      — sibling pages under the same parent path, with
                             5-metric comparison
@@ -19,12 +19,13 @@ Common opts: --start --end
 
 Usage:
   python3 scripts/page_detail.py kpi --path /blog/my-article
-  python3 scripts/page_detail.py logs --path /blog/my-article --limit 20
+  python3 scripts/page_detail.py logs --path /blog/my-article --limit 40
   python3 scripts/page_detail.py health --path /blog/my-article
 """
 import sys
 import os
 import argparse
+from urllib.parse import quote
 
 sys.path.insert(0, os.path.dirname(__file__))
 from _client import (
@@ -100,13 +101,14 @@ def cmd_kpi(args, key, base, pid):
 
 def cmd_logs(args, key, base, pid):
     params = _base_params(args)
+    params["page"] = args.page
     params["limit"] = args.limit
     if args.traffic_type:
         params["traffic_type"] = args.traffic_type
     result = api_get(f"/api/projects/{pid}/ai-agent/pages/by-path/logs",
                      key, base, params=params)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("logs") or (data or {}).get("events", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -120,9 +122,9 @@ def cmd_logs(args, key, base, pid):
     print("│ Time               │ Bot / UA           │ Platform   │")
     print("├────────────────────┼────────────────────┼────────────┤")
     for e in items:
-        t = truncate((e.get("timestamp") or e.get("created_at") or "")[:19], 18)
+        t = truncate(str(e.get("occurred_at") or e.get("timestamp") or "")[:19], 18)
         bot = truncate(e.get("bot_name") or e.get("user_agent") or "(human)", 18)
-        plat = truncate(e.get("platform") or "--", 10)
+        plat = truncate(e.get("platform_name") or e.get("platform") or "--", 10)
         print(f"│ {pad(t, 18)} │ {pad(bot, 18)} │ {pad(plat, 10)} │")
     print("└────────────────────┴────────────────────┴────────────┘")
     print("```")
@@ -132,7 +134,7 @@ def cmd_platforms(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/pages/by-path/platforms",
                      key, base, params=_base_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("platforms", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -146,13 +148,13 @@ def cmd_platforms(args, key, base, pid):
     print("│ Platform           │ Cite │ Indx │ Trn  │ Agnt │ Human  │   %    │")
     print("├────────────────────┼──────┼──────┼──────┼──────┼────────┼────────┤")
     for p in items:
-        name = truncate(p.get("name") or p.get("platform"), 18)
+        name = truncate(p.get("display_name") or p.get("name") or p.get("platform"), 18)
         c = _fmt_num(p.get("ai_citation"))
         i = _fmt_num(p.get("ai_index"))
         t = _fmt_num(p.get("ai_training"))
         a = _fmt_num(p.get("ai_agent"))
-        h = _fmt_num(p.get("human_referral") or p.get("human"))
-        pct = p.get("share") or p.get("percentage")
+        h = _fmt_num(p.get("human_referrals") or p.get("human_referral"))
+        pct = p.get("referral_pct")
         pct_s = (f"{float(pct):.1f}%" if pct is not None else "--")
         print(f"│ {pad(name, 18)} │ {c:>4} │ {i:>4} │ {t:>4} │ {a:>4} │ {h:>6} │ {pct_s:>6} │")
     print("└────────────────────┴──────┴──────┴──────┴──────┴────────┴────────┘")
@@ -163,7 +165,7 @@ def cmd_related(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/pages/by-path/related",
                      key, base, params=_base_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("pages", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -196,8 +198,8 @@ def cmd_health(args, key, base, pid):
     if args.json:
         print_json(data)
         return
-    report = data.get("report") or data
-    if not report or report == {}:
+    report = data.get("report") if "report" in data else data
+    if report is None or report == {}:
         print(f"No PageSpeed report cached for {args.path}.")
         print("Run `python3 scripts/page_detail.py health-refresh --path ...` to generate one.")
         return
@@ -217,14 +219,18 @@ def cmd_health(args, key, base, pid):
 
 def cmd_health_refresh(args, key, base, pid):
     print(f"Refreshing PageSpeed report for {args.path} (15–60s blocking)...")
-    result = api_post(f"/api/projects/{pid}/ai-agent/pages/by-path/health/refresh",
-                      key, base, body={"path": args.path})
+    encoded_path = quote(args.path, safe="")
+    result = api_post(
+        f"/api/projects/{pid}/ai-agent/pages/by-path/health/refresh?path={encoded_path}",
+        key, base,
+    )
     data = extract_data(result) or {}
     if args.json:
         print_json(data)
         return
     print("Refresh completed.")
-    perf = data.get("performance_score") or data.get("performance")
+    report = data.get("report") or {}
+    perf = report.get("performance_score")
     if perf is not None:
         print(f"  Performance score: {perf}")
 
@@ -245,7 +251,8 @@ def main():
     p_lg.add_argument("--path", required=True)
     p_lg.add_argument("--start")
     p_lg.add_argument("--end")
-    p_lg.add_argument("--limit", type=int, default=50)
+    p_lg.add_argument("--page", type=int, default=1)
+    p_lg.add_argument("--limit", type=int, default=40)
     p_lg.add_argument("--traffic-type", choices=["bot", "human"])
 
     p_h = sub.add_parser("health")

@@ -115,7 +115,7 @@ def cmd_platforms(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/platforms",
                      key, base, params=_date_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("platforms", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -129,8 +129,8 @@ def cmd_platforms(args, key, base, pid):
     print("│ Platform           │     Requests │        Share │")
     print("├────────────────────┼──────────────┼──────────────┤")
     for p in items:
-        name = truncate(p.get("name") or p.get("platform"), 18)
-        req = _fmt_num(p.get("requests") or p.get("count") or p.get("total"))
+        name = truncate(p.get("display_name") or p.get("name") or p.get("platform_id"), 18)
+        req = _fmt_num(p.get("total_requests") or p.get("requests") or p.get("count"))
         pct = p.get("share") or p.get("percentage") or p.get("pct")
         pct_str = (f"{float(pct):.1f}%" if pct is not None else "--")
         print(f"│ {pad(name, 18)} │ {req:>12} │ {pct_str:>12} │")
@@ -142,7 +142,7 @@ def cmd_by_platform(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/bot-platforms",
                      key, base, params=_date_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("platforms", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -152,8 +152,8 @@ def cmd_by_platform(args, key, base, pid):
     print(f"Bots grouped by AI platform ({len(items)})")
     print()
     for p in items[:10]:
-        name = p.get("name") or p.get("platform")
-        total = _fmt_num(p.get("total") or p.get("requests"))
+        name = p.get("display_name") or p.get("name") or p.get("platform_id")
+        total = _fmt_num(p.get("total_requests") or p.get("requests"))
         print(f"• {name} — total {total}")
         bots = p.get("bots") or []
         for b in bots[:5]:
@@ -167,7 +167,7 @@ def cmd_types(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/bot-types",
                      key, base, params=_date_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("types", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -194,7 +194,7 @@ def cmd_useragents(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/bot-useragents",
                      key, base, params=_date_params(args))
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("useragents") or (data or {}).get("bots", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -209,8 +209,8 @@ def cmd_useragents(args, key, base, pid):
     print("├──────────────────────────────┼────────────────────┼──────────────┤")
     for u in items:
         name = truncate(u.get("bot_name") or u.get("name") or u.get("user_agent"), 28)
-        plat = truncate(u.get("platform") or "--", 18)
-        req = _fmt_num(u.get("requests") or u.get("count"))
+        plat = truncate(u.get("display_name") or u.get("platform_id") or "--", 18)
+        req = _fmt_num(u.get("total_requests") or u.get("requests"))
         print(f"│ {pad(name, 28)} │ {pad(plat, 18)} │ {req:>12} │")
     print("└──────────────────────────────┴────────────────────┴──────────────┘")
     print("```")
@@ -222,7 +222,7 @@ def cmd_pages_by_bot(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/pages-by-bot",
                      key, base, params=params)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("bots", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return

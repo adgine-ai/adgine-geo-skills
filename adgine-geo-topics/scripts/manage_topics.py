@@ -2,7 +2,7 @@
 """List, create, batch-create, update, or delete GEO topics.
 
 Usage:
-  python3 scripts/manage_topics.py list   [--project-id <id>] [--page 1] [--limit 20] [--json]
+  python3 scripts/manage_topics.py list   [--project-id <id>] [--page 1] [--limit 40] [--json]
   python3 scripts/manage_topics.py create --name "Product Reviews" [--description "..."]
   python3 scripts/manage_topics.py batch  --names "Topic A,Topic B,Topic C"
   python3 scripts/manage_topics.py update --topic-id <id> [--name "..."] [--description "..."]
@@ -27,7 +27,7 @@ parser.add_argument("--name",        help="Topic name")
 parser.add_argument("--description", help="Topic description")
 parser.add_argument("--names",       help="Comma-separated names for batch create")
 parser.add_argument("--page",  type=int, default=1,  help="Page number (list only)")
-parser.add_argument("--limit", type=int, default=20, help="Results per page (list only)")
+parser.add_argument("--limit", type=int, default=40, help="Results per page (list only; default: 40)")
 parser.add_argument("--json", action="store_true", help="Output raw JSON")
 args = parser.parse_args()
 

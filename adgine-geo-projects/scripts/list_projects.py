@@ -2,7 +2,7 @@
 """List GEO website projects for the authenticated user.
 
 Usage:
-  python3 scripts/list_projects.py [--limit N] [--json]
+  python3 scripts/list_projects.py [--page N] [--limit 40] [--json]
 """
 import sys
 import os
@@ -11,12 +11,13 @@ sys.path.insert(0, os.path.dirname(__file__))
 from _client import get_api_config, api_get, extract_data, print_json  # _notice printed on import
 
 parser = argparse.ArgumentParser(description="List GEO projects")
-parser.add_argument("--limit", type=int, default=50, help="Max results (default: 50)")
+parser.add_argument("--page", type=int, default=1, help="Page number (default: 1)")
+parser.add_argument("--limit", type=int, default=40, help="Results per page (default: 40)")
 parser.add_argument("--json", action="store_true", help="Output raw JSON")
 args = parser.parse_args()
 
 key, base = get_api_config()
-result = api_get("/api/projects", key, base, params={"limit": args.limit})
+result = api_get("/api/projects", key, base, params={"page": args.page, "limit": args.limit})
 data = extract_data(result)
 
 if args.json:

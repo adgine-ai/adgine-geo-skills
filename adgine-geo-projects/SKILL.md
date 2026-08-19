@@ -5,6 +5,8 @@ description: Lists, creates, retrieves, updates, and deletes GEO platform websit
 
 # GEO Projects
 
+> 用户侧的项目目录/状态报告以及“我的账号信息”默认使用 `adgine/geo-reports` 生成 HTML；项目创建、修改、删除、竞争对手和鉴权配置继续使用本 Skill。
+
 ## 版本检测（加载本 skill 时执行）
 
 作为最常用的入口技能，加载本 skill 处理 GEO 相关请求时，**先单独运行**（本轮第一个 bash 命令）：
@@ -126,7 +128,7 @@ export GEO_PROJECT_ID=<id-from-list>   # resets when terminal closes
 
 ### List all projects
 ```bash
-python3 scripts/list_projects.py [--limit 20] [--json]
+python3 scripts/list_projects.py [--page 1] [--limit 40] [--json]
 ```
 
 ### Get project details

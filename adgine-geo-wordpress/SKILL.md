@@ -5,6 +5,8 @@ description: Connects a GEO project to a WordPress site (站点凭证管理 — 
 
 # GEO WordPress
 
+> 用户侧的待发布内容和发布历史报告默认使用 `adgine/geo-reports` 生成 HTML；凭证、分类、发布和更新继续使用本 Skill。
+
 End-to-end WordPress publishing for GEO-generated content. Three steps:
 
 1. **Connect** your WordPress site (save URL + username + application password).

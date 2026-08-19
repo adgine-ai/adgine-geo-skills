@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adgine GEO Reports"
+  short_description: "Generate auditable GEO data reports in offline HTML"
+  default_prompt: "Use $adgine/geo-reports to generate an HTML GEO report for my project."

@@ -4,7 +4,7 @@ Agent Skills are folders of instructions, scripts, and resources that AI agents 
 
 **Works with all mainstream AI agents.** Supports [WorkBuddy](https://workbuddy.ai), [Codex](https://openai.com/codex), [OpenClaw](https://github.com/openclaw/openclaw), and [Hermes](https://github.com/hermes-agent/hermes).
 
-**Current version:** [`v1.0.2`](VERSION) · [All releases](https://github.com/adgine-ai/adgine-geo-skills/releases)
+**Current version:** [`v1.3.0`](VERSION) · [All releases](https://github.com/adgine-ai/adgine-geo-skills/releases)
 
 ---
 
@@ -109,6 +109,7 @@ Users can trigger a version check or update with natural language:
 
 | Skill | What it does |
 |---|---|
+| [`adgine-geo-reports`](adgine-geo-reports/) | Default read-only facade — account profile, scenario analytics, and standalone offline HTML reports across visibility, traffic, bots, pages, opportunities, content, integrations, and account data |
 | [`adgine-geo-projects`](adgine-geo-projects/) | List, create, update, delete projects; manage competitors; verify auth; configure API key |
 | [`adgine-geo-dashboard`](adgine-geo-dashboard/) | Project snapshot — visibility score, aggregate metrics, 7-day trend, integration health |
 | [`adgine-geo-analytics`](adgine-geo-analytics/) | Traffic overview — GA4 sessions, active users, source breakdown, AI referral summary |
@@ -122,12 +123,33 @@ Users can trigger a version check or update with natural language:
 | [`adgine-geo-opportunities`](adgine-geo-opportunities/) | AI-discovered content gaps and optimization opportunities ranked by impact — relevance, traffic, competition, urgency, AI citation scores |
 | [`adgine-geo-integrations`](adgine-geo-integrations/) | Connect GA4 (OAuth) and Cloudflare; deploy AI crawler tracking Worker; sync traffic data; query integration-specific data |
 | [`adgine-geo-wordpress`](adgine-geo-wordpress/) | Publish GEO articles to WordPress; manage credentials & categories; track publish history; update existing posts |
+| [`adgine-geo-media-publish`](adgine-geo-media-publish/) | Save content to signed-in social-media drafts through the local Adgine browser bridge |
 | [`adgine-geo-saas`](adgine-geo-saas/) | Check subdomain availability; create and track SaaS-hosted website deployments |
 | [`adgine-geo-billing`](adgine-geo-billing/) | View plan, status, renewal date, remaining credits, and credits pricing |
+| [`adgine-geo-domains`](adgine-geo-domains/) | Search registrable domains and inspect the current account's registered-domain portfolio |
 | [`adgine-geo-docs`](adgine-geo-docs/) | Adgine platform user manual (使用手册) — hosted PDF, no API key required |
 | [`adgine-geo-site-audit`](adgine-geo-site-audit/) | **Standalone** GEO technical audit for any public URL — 5-dimension 30-item checklist, local crawl, PDF report export. No API key required |
 
 Each skill is self-contained in its own folder with a `SKILL.md` file containing the instructions and metadata that agents use for tool routing and intent matching.
+
+### Default data-report workflow
+
+Read-only data questions route through `adgine/geo-reports` and generate a standalone offline HTML artifact by default. For example:
+
+```bash
+python3 adgine-geo-reports/scripts/report.py visibility --project-id <id> --period 7d
+python3 adgine-geo-reports/scripts/report.py prompt-performance --project-id <id> --prompt "exact prompt text" --period 14d
+python3 adgine-geo-reports/scripts/report.py traffic-overview --project-id <id> --period 14d
+python3 adgine-geo-reports/scripts/report.py data-freshness --project-id <id>
+python3 adgine-geo-reports/scripts/report.py page-opportunities --project-id <id> --path /blog/example --period 30d
+python3 adgine-geo-reports/scripts/report.py account-info
+```
+
+Paginated reads use 40 rows per page by default. Use `--page 2 --limit 40` for the next page.
+
+Supported GEO-Api versions use one `/report-data` business request per high-frequency report. Only capabilities are cached for two hours without credentials; report business data is always queried live. Strict fallback rules prevent authentication, validation, entity, or backend errors from being hidden by legacy calls.
+
+Use the specialist skills for mutations, connection/sync, PageSpeed refresh, generation, publication, and low-level debugging.
 
 ---
 
@@ -138,6 +160,8 @@ adgine-geo-skills/
 ├── VERSION                        # Current release version
 ├── setup.py                       # API key configuration helper
 ├── .env.example                   # Environment variable template
+├── docs/                          # Backend handoff and additive API plans
+├── adgine-geo-reports/            # Default read-only facade and offline HTML renderer
 ├── adgine-geo-<domain>/
 │   ├── SKILL.md                   # Agent skill definition — YAML frontmatter (name, description) + usage instructions
 │   ├── WORKFLOW.md                # (some skills) End-to-end workflow guide

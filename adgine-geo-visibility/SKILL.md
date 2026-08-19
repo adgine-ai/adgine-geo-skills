@@ -13,6 +13,8 @@ description: Reads and analyzes already-collected AI visibility data for a GEO
 
 # GEO Visibility (Analytics)
 
+> 用户侧的查看、查询、分析和报告请求默认使用 `adgine/geo-reports` 生成 HTML；本 Skill 的读取脚本仅用于低层排障。
+
 Deep analytics over `/api/projects/{id}/analytics/*` — 11 endpoints covering
 the AI visibility funnel from brand-level single metrics down to individual
 prompt executions.
@@ -106,8 +108,8 @@ python3 scripts/get_prompt_metrics.py --prompt-id <prompt_id>
 ### Prompt execution history & detail
 
 ```bash
-python3 scripts/get_execution.py list --prompt-id <prompt_id>
-python3 scripts/get_execution.py list --prompt-id <pid> --platform openai
+python3 scripts/get_execution.py list --prompt-id <prompt_id> --page 1 --limit 40
+python3 scripts/get_execution.py list --prompt-id <pid> --platform openai --page 1 --limit 40
 python3 scripts/get_execution.py get --prompt-id <pid> --execution-id <eid>
 ```
 

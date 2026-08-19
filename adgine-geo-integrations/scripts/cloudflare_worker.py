@@ -7,11 +7,11 @@ analytics.
 
 Subcommands:
   config                                  — get the Worker JS code + keys
-  deploy [--zone-id <id>]                 — deploy / re-deploy the Worker
-  undeploy [--keep-script] --yes          — remove route (and optionally script) DESTRUCTIVE
+  deploy [--force]                        — deploy / re-deploy the Worker
+  undeploy [--delete-script] --yes        — remove route (and optionally script) DESTRUCTIVE
   deploy-status                           — check whether Worker is deployed
   overview   [--start <>] [--end <>]      — Worker traffic overview (AI grouping)
-  pages      [--page 1] [--limit 20]      — Worker page-level AI traffic rankings
+  pages      [--page 1] [--limit 40]      — Worker page-level AI traffic rankings
 
 Usage:
   python3 scripts/cloudflare_worker.py config
@@ -52,10 +52,10 @@ def cmd_config(args, key, base, pid):
         return
     print("Worker configuration")
     print()
-    for k in ("worker_name", "receiver_url", "secret_key"):
+    for k in ("api_url", "worker_secret"):
         if k in data:
             print(f"  {k}: {data.get(k)}")
-    script = data.get("script") or data.get("worker_script")
+    script = data.get("worker_js")
     if script:
         print()
         print("Worker script:")
@@ -65,17 +65,16 @@ def cmd_config(args, key, base, pid):
 
 
 def cmd_deploy(args, key, base, pid):
-    body = {}
-    if args.zone_id:
-        body["zone_id"] = args.zone_id
-    result = api_post(f"/api/projects/{pid}/integrations/cloudflare/worker/deploy", key, base,
-                      body=body or None)
+    result = api_post(
+        f"/api/projects/{pid}/integrations/cloudflare/worker/deploy?force={'true' if args.force else 'false'}",
+        key, base,
+    )
     data = extract_data(result) or {}
     if args.json:
         print_json(data)
         return
     print("Worker deployment started.")
-    for k in ("worker_name", "routes", "status"):
+    for k in ("script_name", "route_pattern", "message", "conflict"):
         if k in data:
             print(f"  {k}: {data.get(k)}")
 
@@ -85,7 +84,7 @@ def cmd_undeploy(args, key, base, pid):
         print(f"About to remove Worker route for project {pid}.")
         print("Re-run with --yes to confirm.")
         sys.exit(1)
-    qs = "?keep_script=true" if args.keep_script else ""
+    qs = "?delete_script=true" if args.delete_script else "?delete_script=false"
     api_delete(f"/api/projects/{pid}/integrations/cloudflare/worker/deploy" + qs, key, base)
     print("Worker route removed.")
 
@@ -132,22 +131,19 @@ def cmd_overview(args, key, base, pid):
     print("┌────────────────────┬──────────────┐")
     print("│ Metric             │        Value │")
     print("├────────────────────┼──────────────┤")
-    for k, label in [
-        ("ai_crawler_requests", "AI crawler reqs"),
-        ("ai_referral_visits", "AI referral hits"),
-        ("total_events", "Total events"),
-    ]:
-        if k in data:
-            print(f"│ {pad(label, 18)} │ {_fmt_num(data.get(k)):>12} │")
+    print(f"│ {pad('Total events', 18)} │ {_fmt_num(data.get('total_requests')):>12} │")
+    for item in data.get("summary") or []:
+        label = truncate(item.get("traffic_type") or "Unknown", 18)
+        print(f"│ {pad(label, 18)} │ {_fmt_num(item.get('requests')):>12} │")
     print("└────────────────────┴──────────────┘")
     print("```")
 
 
 def cmd_pages(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/integrations/cloudflare/worker/pages", key, base,
-                     params={"page": args.page, "limit": args.limit})
+                     params={"offset": (args.page - 1) * args.limit, "limit": args.limit})
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("pages", [])
+    items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
         print_json(items)
         return
@@ -162,7 +158,7 @@ def cmd_pages(args, key, base, pid):
     print("├────────────────────────────────────────────┼──────────┤")
     for p in items:
         path = truncate(p.get("page_path") or p.get("path") or p.get("url"), 42)
-        hits = _fmt_num(p.get("ai_hits") or p.get("hits") or p.get("count"))
+        hits = _fmt_num(p.get("requests"))
         print(f"│ {pad(path, 42)} │ {hits:>8} │")
     print("└────────────────────────────────────────────┴──────────┘")
     print("```")
@@ -177,10 +173,10 @@ def main():
     sub.add_parser("config")
 
     p_d = sub.add_parser("deploy")
-    p_d.add_argument("--zone-id", help="Override zone ID (optional)")
+    p_d.add_argument("--force", action="store_true", help="Replace a conflicting Worker route")
 
     p_u = sub.add_parser("undeploy", help="Remove route (DESTRUCTIVE)")
-    p_u.add_argument("--keep-script", action="store_true", help="Keep the script, remove only the route")
+    p_u.add_argument("--delete-script", action="store_true", help="Also delete the Worker script")
     p_u.add_argument("--yes", action="store_true", help="Confirm")
 
     sub.add_parser("deploy-status")
@@ -191,7 +187,7 @@ def main():
 
     p_p = sub.add_parser("pages")
     p_p.add_argument("--page", type=int, default=1)
-    p_p.add_argument("--limit", type=int, default=20)
+    p_p.add_argument("--limit", type=int, default=40)
 
     args = parser.parse_args()
     key, base = get_api_config()

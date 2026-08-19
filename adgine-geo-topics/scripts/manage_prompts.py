@@ -2,8 +2,8 @@
 """List, create, update, or delete prompts within a GEO topic.
 
 Usage:
-  python3 scripts/manage_prompts.py list     --topic-id <tid> [--project-id <id>] [--json]
-  python3 scripts/manage_prompts.py list-all [--project-id <id>] [--json]
+  python3 scripts/manage_prompts.py list     --topic-id <tid> [--project-id <id>] [--page 1] [--limit 40] [--json]
+  python3 scripts/manage_prompts.py list-all [--project-id <id>] [--page 1] [--limit 40] [--json]
   python3 scripts/manage_prompts.py create   --topic-id <tid> --content "What is...?" \
                                             [--language "English (en-US)"] [--region US] \
                                             [--platforms "ChatGPT,Perplexity,Google AI Overviews"]
@@ -30,6 +30,8 @@ parser.add_argument("--content",    help="Prompt text content")
 parser.add_argument("--language",   default="English (en-US)", help="Language (default: English (en-US))")
 parser.add_argument("--region",     default="US", help="Region code (default: US)")
 parser.add_argument("--platforms",  help="Comma-separated platform IDs (e.g. openai,perplexity,google_aio)")
+parser.add_argument("--page", type=int, default=1, help="Page number for list/list-all (default: 1)")
+parser.add_argument("--limit", type=int, default=40, help="Rows per page for list/list-all (default: 40)")
 parser.add_argument("--json", action="store_true", help="Output raw JSON")
 args = parser.parse_args()
 
@@ -46,7 +48,10 @@ if args.action == "list":
     if not args.topic_id:
         print("ERROR: --topic-id is required for list")
         sys.exit(1)
-    result = api_get(f"/api/projects/{pid}/topics/{args.topic_id}/prompts", key, base)
+    result = api_get(
+        f"/api/projects/{pid}/topics/{args.topic_id}/prompts", key, base,
+        params={"page": args.page, "limit": args.limit},
+    )
     data = extract_data(result)
     items = data if isinstance(data, list) else data.get("items") or data.get("prompts") or []
     if args.json:
@@ -63,7 +68,10 @@ if args.action == "list":
 
 # ── LIST-ALL (project-wide) ───────────────────────────────────────────────────
 elif args.action == "list-all":
-    result = api_get(f"/api/projects/{pid}/prompts", key, base)
+    result = api_get(
+        f"/api/projects/{pid}/prompts", key, base,
+        params={"page": args.page, "limit": args.limit},
+    )
     data = extract_data(result)
     items = data if isinstance(data, list) else data.get("items") or data.get("prompts") or []
     if args.json:

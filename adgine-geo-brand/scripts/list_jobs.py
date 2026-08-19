@@ -42,6 +42,12 @@ def cmd_list(args, key, base, pid):
                      params={"page": args.page, "limit": args.limit})
     data = extract_data(result)
     items = data if isinstance(data, list) else (data or {}).get("jobs") or (data or {}).get("items", [])
+    server_paginated = isinstance(data, dict) and any(
+        key in data for key in ("page", "limit", "pages", "total_pages")
+    )
+    if not server_paginated:
+        start = (args.page - 1) * args.limit
+        items = items[start:start + args.limit]
 
     if args.json:
         print_json(items)
@@ -129,7 +135,7 @@ def main():
 
     p_list = sub.add_parser("list", help="List brand jobs")
     p_list.add_argument("--page", type=int, default=1)
-    p_list.add_argument("--limit", type=int, default=20)
+    p_list.add_argument("--limit", type=int, default=40)
 
     p_get = sub.add_parser("get", help="Get one job's details")
     p_get.add_argument("--job-id", required=True)

@@ -11,6 +11,8 @@ description: Fetches the top-level project dashboard snapshot — aggregate coun
 
 # GEO Dashboard
 
+> 用户侧的查看、查询、分析和报告请求默认使用 `adgine/geo-reports` 生成 HTML；本 Skill 的读取脚本仅用于低层排障。
+
 Project-level snapshot skill: aggregate metrics, lightweight visibility trend,
 and third-party integration status. Use this for the "what's the state of my
 project right now" question.

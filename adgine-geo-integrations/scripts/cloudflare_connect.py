@@ -109,10 +109,10 @@ def cmd_overview(args, key, base, pid):
     print("├────────────────────┼──────────────┤")
     for k, label in [
         ("total_requests", "Total requests"),
-        ("bandwidth", "Bandwidth"),
-        ("page_views", "Page views"),
-        ("unique_visitors", "Unique visitors"),
-        ("threats_blocked", "Threats blocked"),
+        ("total_bandwidth", "Bandwidth"),
+        ("total_page_views", "Page views"),
+        ("total_unique_visitors", "Unique visitors"),
+        ("total_threats", "Threats blocked"),
     ]:
         if k in data:
             print(f"│ {pad(label, 18)} │ {_fmt_num(data.get(k)):>12} │")

@@ -5,6 +5,8 @@ description: Queries GEO platform subscription and credits information — lists
 
 # GEO Billing
 
+> 用户侧的账单/积分查看和报告请求默认使用 `adgine/geo-reports` 生成 HTML；本 Skill 的读取脚本仅用于低层排障。
+
 Read-only access to subscription and credits state. Use this skill when the user asks
 "what plan am I on?" / "how much does X cost?" / "when does my subscription
 renew?" / "how many credits do I have left?" / "查询积分" / "我还有多少积分" /
