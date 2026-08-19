@@ -1,8 +1,10 @@
+import io
 import json
 import os
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from types import SimpleNamespace
 
 os.environ.setdefault("GEO_SKIP_VERSION_CHECK", "1")
@@ -13,7 +15,13 @@ if SCRIPTS not in sys.path:
 from _reporting import render_html, render_markdown, write_html  # noqa: E402
 from _contracts import SCENARIOS, get_scenario  # noqa: E402
 from _i18n import label, normalize_locale  # noqa: E402
-from report import _collect_charts, _sanitize, _table, build_report  # noqa: E402
+from report import (  # noqa: E402
+    _collect_charts,
+    _sanitize,
+    _table,
+    build_report,
+    emit_report,
+)
 
 
 def sample_report():
@@ -51,6 +59,43 @@ class RenderingTests(unittest.TestCase):
             path = write_html(sample_report(), output_dir=directory)
             self.assertTrue(os.path.isfile(path))
             self.assertTrue(path.startswith(directory))
+
+    def test_html_emits_mandatory_workbuddy_link(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = SimpleNamespace(
+                json=False,
+                format="html",
+                output=None,
+                output_dir=directory,
+                scenario="visibility",
+            )
+            stream = io.StringIO()
+            with redirect_stdout(stream):
+                path = emit_report(sample_report(), args)
+            output = stream.getvalue()
+            self.assertTrue(os.path.isfile(path))
+            self.assertIn(f"REPORT_FILE: {path}", output)
+            self.assertIn(f"REPORT_PREVIEW: {path}", output)
+            self.assertIn(f"REPORT_LINK: [Open HTML report](<{path}>)", output)
+
+    def test_chinese_html_emits_localized_workbuddy_link(self):
+        report = sample_report()
+        report["locale"] = "zh-CN"
+        with tempfile.TemporaryDirectory() as directory:
+            args = SimpleNamespace(
+                json=False,
+                format="html",
+                output=None,
+                output_dir=directory,
+                scenario="visibility",
+            )
+            stream = io.StringIO()
+            with redirect_stdout(stream):
+                path = emit_report(report, args)
+            self.assertIn(
+                f"REPORT_LINK: [打开 HTML 报告](<{path}>)",
+                stream.getvalue(),
+            )
 
     def test_chinese_html_localizes_shared_report_chrome(self):
         report = sample_report()

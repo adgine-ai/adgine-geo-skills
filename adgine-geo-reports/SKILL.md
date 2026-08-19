@@ -22,10 +22,38 @@ Use `scripts/report.py` as the default entry point for all platform data reads. 
    - Exact dates → `--start YYYY-MM-DD --end YYYY-MM-DD`
 4. Prefer an explicit Prompt/Topic ID when supplied. Otherwise pass the exact text; supported GEO-Api versions resolve it inside the single report-data business request.
 5. Run exactly one report command. Do not repeat the same query with a specialist script to create a summary.
-6. Return the generated artifact from `REPORT_FILE` / `REPORT_PREVIEW`, then summarize up to three `REPORT_FINDING` lines and offer the `REPORT_NEXT` prompts.
+6. For HTML output, follow **WorkBuddy HTML artifact delivery** below. Put the clickable `REPORT_LINK` in the final reply before any summary, then use up to three `REPORT_FINDING` and `REPORT_NEXT` lines.
 7. Use 40 rows per page by default. For “next page / 下一页”, increment `--page` and keep `--limit 40`.
 
 Use the scenario's default output policy. Analysis, trend, inventory, and multi-source reports default to offline HTML. Small single-record results (`account-info`, `worker-deployment`, `saas-task`, and `opportunity-detail`) default to inline Markdown. An explicit user request for HTML, inline output, or raw JSON always overrides the scenario default.
+
+## WorkBuddy HTML artifact delivery
+
+Apply this protocol whenever the resolved output format is `html` or `both`:
+
+1. Run the report from the user's current task workspace. Pass
+   `--output-dir "<task-workspace>/adgine-reports"` when the current directory
+   is the installed Skill directory or any directory outside that workspace.
+2. Read `REPORT_FILE`, `REPORT_PREVIEW`, and `REPORT_LINK` from the same command
+   output. Verify that `REPORT_FILE` exists and is inside the task workspace. If
+   not, rerun once with the explicit workspace output directory.
+3. If WorkBuddy exposes an artifact/preview presentation facility, present
+   `REPORT_PREVIEW` with it. Treat this as an optional UI enhancement.
+4. Start the final reply with the `REPORT_LINK` line exactly as emitted by the
+   script. If `REPORT_LINK` is unavailable, construct
+   `[打开 HTML 报告](<REPORT_FILE absolute path>)` for Chinese or
+   `[Open HTML report](<REPORT_FILE absolute path>)` for English.
+5. Always keep that link in the final reply, even when WorkBuddy successfully
+   displays a native artifact card or preview panel. Never replace it with only
+   “the report is open in Preview.”
+6. Say that Preview was opened only after the presentation facility reports
+   success. Otherwise say only that the report was generated; the clickable
+   link is the guaranteed fallback.
+7. If the file does not exist or cannot be delivered, report the failure
+   instead of claiming that an HTML report was generated.
+
+After the link, summarize at most three `REPORT_FINDING` lines and offer at
+most three `REPORT_NEXT` prompts. Do not rerun the data query for the summary.
 
 ```bash
 python3 <skill-dir>/scripts/report.py visibility --project-id <id> --period 7d --locale en-US

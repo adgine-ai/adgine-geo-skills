@@ -29,11 +29,32 @@ After writing HTML, emit these WorkBuddy-compatible lines:
 REPORT_TITLE: <title>
 REPORT_FILE: <absolute path>
 REPORT_PREVIEW: <absolute path>
+REPORT_LINK: <localized Markdown link to the absolute path>
 REPORT_FINDING: <deterministic finding, at most 3>
 REPORT_NEXT: <contextual next question, at most 3>
 ```
 
 Consume these markers directly. Do not perform another API query merely to restate the result.
+
+### WorkBuddy delivery contract
+
+- Treat `REPORT_FILE` as the file-existence source of truth.
+- Treat `REPORT_PREVIEW` as a hint for an optional WorkBuddy presentation
+  facility. Printing the marker does not prove that the UI opened a panel.
+- Treat `REPORT_LINK` as mandatory final-reply content. Copy it before the
+  findings so users always have a visible entry point independent of native UI
+  rendering.
+- Keep the artifact under the current task workspace. When the report command
+  is invoked from an installed Skill directory, pass an explicit
+  `--output-dir <task-workspace>/adgine-reports`.
+- Never claim “opened in Preview” unless the host presentation call returned
+  success. If no presentation facility exists, return the link without apology;
+  it is the supported fallback.
+- If `REPORT_LINK` is missing, construct it from the verified `REPORT_FILE`:
+  `[打开 HTML 报告](</absolute/path/report.html>)` for Chinese or
+  `[Open HTML report](</absolute/path/report.html>)` for English.
+- Do not omit the link because the final answer also contains findings or next
+  actions. Do not expose a nonexistent link when generation failed.
 
 ## Report schema
 

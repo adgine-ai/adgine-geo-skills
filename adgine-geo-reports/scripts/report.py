@@ -1133,9 +1133,12 @@ def emit_report(report, args):
     path = None
     if output_format in ("html", "both"):
         path = write_html(report, args.output, args.output_dir)
+        locale = normalize_locale(report.get("locale"))
+        link_label = "打开 HTML 报告" if locale == "zh-CN" else "Open HTML report"
         print(f"\nREPORT_TITLE: {report.get('title')}")
         print(f"REPORT_FILE: {path}")
         print(f"REPORT_PREVIEW: {path}")
+        print(f"REPORT_LINK: [{link_label}](<{path}>)")
         for finding in (report.get("insights") or [])[:3]:
             text = finding.get("body") if isinstance(finding, dict) else finding
             print(f"REPORT_FINDING: {' '.join(str(text).split())}")
