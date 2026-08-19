@@ -33,6 +33,53 @@ class FakeClient:
                 "subscription": {"plan": "secret-plan"},
                 "rules": ["unrelated-rule"],
             }
+        if path == "/api/projects/project-secret-id/competitors":
+            return {
+                "items": [{
+                    "id": "competitor-secret-id",
+                    "project_id": "project-secret-id",
+                    "name": "Acme",
+                    "domain": "https://www.acme.example/",
+                }],
+                "total": 1,
+            }
+        if path.endswith("/competitors/visibility-rankings"):
+            return {
+                "date_range": {"from": "2026-08-12", "to": "2026-08-18"},
+                "competitors": [
+                    {"rank": 1, "competitor_id": "competitor-secret-id", "name": "Acme", "domain": "acme.example", "is_our_brand": False, "current": 61.5},
+                    {"rank": 2, "competitor_id": "our-secret-id", "name": "Coffee Lab", "domain": "coffee.example", "is_our_brand": True, "current": 48.0},
+                ],
+            }
+        if path.endswith("/competitors/competitor-secret-id/overview"):
+            return {
+                "competitor_id": "competitor-secret-id",
+                "competitor": {"name": "Acme", "domain": "acme.example"},
+                "our_brand": {"name": "Coffee Lab", "domain": "coffee.example"},
+                "visibility": {
+                    "competitor": {"visibility_score": 61.5, "share_of_voice": 32.0},
+                    "ours": {"visibility_score": 48.0, "share_of_voice": 25.0},
+                },
+                "sentiment": {
+                    "competitor": {"positive": 60, "neutral": 30, "negative": 10, "classified_count": 10, "unclassified_count": 2},
+                    "ours": {"positive": 55, "neutral": 35, "negative": 10, "classified_count": 8, "unclassified_count": 1},
+                },
+                "topic_rankings": [{
+                    "topic_id": "topic-secret-id", "topic_name": "Coffee", "prompt_count": 4,
+                    "competitor": {"rank": 1, "score": 65}, "ours": {"rank": 2, "score": 52},
+                }],
+            }
+        if path.endswith("/competitors/competitor-secret-id/topics"):
+            return {
+                "competitor": {"competitor_id": "competitor-secret-id", "name": "Acme", "domain": "acme.example"},
+                "items": [{"topic_id": "topic-secret-id", "name": "Coffee", "prompt_count": 4, "visibility_score": 65, "visibility_rank": 1, "share_of_voice": 35, "average_position": 1.5, "executions": 12}],
+            }
+        if path.endswith("/competitors/competitor-secret-id/topics/topic-secret-id/prompts"):
+            return {
+                "competitor": {"competitor_id": "competitor-secret-id", "name": "Acme", "domain": "acme.example"},
+                "topic": {"id": "topic-secret-id", "name": "Coffee"},
+                "items": [{"prompt_id": "prompt-secret-id", "content": "Best coffee?", "platforms": ["openai"], "visibility_score": 70, "visibility_rank": 1, "share_of_voice": 40, "average_position": 1.2, "executions": 5}],
+            }
         if path.endswith("/report-data/capabilities"):
             return {
                 "schema_version": "1.0",
@@ -256,6 +303,58 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(client.calls[1]["params"]["offset"], 40)
         self.assertEqual(client.calls[1]["params"]["limit"], 40)
         self.assertIn({"label": "Page size", "value": 40}, report["context"])
+
+    def test_competitor_rankings_treats_api_response_as_complete_set(self):
+        client = FakeClient()
+        report = run_report(parse_args([
+            "competitor-rankings", "--project-name", "Coffee Lab", "--period", "7d",
+        ]), client=client)
+        self.assertEqual(len(client.calls), 1)
+        self.assertTrue(client.calls[0]["path"].endswith("/competitors/visibility-rankings"))
+        self.assertEqual(report["metrics"][0]["value"], 2)
+        self.assertIn("Acme", str(report))
+        self.assertNotIn("competitor-secret-id", str(report))
+        self.assertNotIn("line_chart", {chart["type"] for chart in report["charts"]})
+
+    def test_competitor_name_resolves_from_items_then_calls_overview(self):
+        client = FakeClient()
+        report = run_report(parse_args([
+            "competitor-overview", "--project-name", "Coffee Lab",
+            "--competitor", "www.acme.example", "--locale", "en-US",
+        ]), client=client)
+        self.assertEqual(len(client.calls), 2)
+        self.assertEqual(client.calls[0]["path"], "/api/projects/project-secret-id/competitors")
+        self.assertTrue(client.calls[1]["path"].endswith("/competitors/competitor-secret-id/overview"))
+        self.assertEqual(report["title"], "Competitor Analysis: Acme")
+        self.assertTrue(any(chart["type"] == "pie_chart" for chart in report["charts"]))
+        self.assertNotIn("competitor-secret-id", str(report))
+
+    def test_competitor_overview_sends_repeatable_topic_and_prompt_filters(self):
+        client = FakeClient()
+        run_report(parse_args([
+            "competitor-overview", "--project-name", "Coffee Lab",
+            "--competitor-id", "competitor-secret-id",
+            "--filter-topic-id", "topic-a,topic-b", "--filter-topic-id", "topic-c",
+            "--filter-prompt-id", "prompt-a", "--filter-prompt-id", "prompt-b,prompt-c",
+        ]), client=client)
+        self.assertEqual(len(client.calls), 1)
+        self.assertEqual(client.calls[0]["params"]["topic_id"], ["topic-a", "topic-b", "topic-c"])
+        self.assertEqual(client.calls[0]["params"]["prompt_id"], ["prompt-a", "prompt-b", "prompt-c"])
+
+    def test_competitor_prompt_filters_match_existing_api_contract(self):
+        client = FakeClient()
+        report = run_report(parse_args([
+            "competitor-prompts", "--project-name", "Coffee Lab",
+            "--competitor-id", "competitor-secret-id", "--topic-id", "topic-secret-id",
+            "--platform", "openai,gemini", "--tag-id", "tag-1", "--locale", "zh-CN",
+        ]), client=client)
+        self.assertEqual(len(client.calls), 1)
+        call = client.calls[0]
+        self.assertTrue(call["path"].endswith("/competitors/competitor-secret-id/topics/topic-secret-id/prompts"))
+        self.assertEqual(call["params"]["platform"], ["openai", "gemini"])
+        self.assertEqual(call["params"]["types"], ["visibility"])
+        self.assertEqual(call["params"]["tags"], ["tag-1"])
+        self.assertEqual(report["title"], "竞争对手 Prompt 分析：Acme")
 
 
 if __name__ == "__main__":

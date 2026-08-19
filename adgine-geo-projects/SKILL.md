@@ -1,12 +1,21 @@
 ---
 name: adgine/geo-projects
-description: Lists, creates, retrieves, updates, and deletes GEO platform website projects, manages a project's competitor list (add / list / remove), and verifies API authentication. Use when the user needs to see their website projects, select a project to work on, create a new website project, check which project is active, manage competitors (竞争对手 / 竞品 / competitors / competitor brands), or when any other GEO operation needs to identify a project ID before proceeding. Also use this skill first to verify authentication is configured correctly. Also load this skill whenever the user provides, pastes, sets, or wants to configure a GEO API key. Intent synonyms: 项目列表, project list, 创建项目, new project, 项目详情, project details, 竞品分析, competitor analysis, who are my competitors, 配置key, 设置key, 设置API key, 我的key是, set api key, configure api key, install api key, GEO_API_KEY, geo_sk_live_, api key setup.
+description: >
+  Lists, creates, retrieves, updates, and deletes GEO platform website projects,
+  manages a project's configured competitor list (add / list / remove), and
+  verifies API authentication. Use for project selection and competitor
+  configuration mutations, not competitor performance analysis (which uses
+  adgine/geo-reports). Also use this skill whenever the user provides or
+  configures a GEO API key. Intent synonyms include 项目列表, project list,
+  创建项目, 项目详情, 添加竞品, 删除竞品, competitor configuration, 配置key,
+  设置API key, GEO_API_KEY, and geo_sk_live_.
 ---
 
 # GEO Projects
 
 > 项目列表和“我的账号信息”默认直接在对话中输出，不生成 HTML。其他项目数据分析按
-> `adgine/geo-reports` 的场景默认格式执行；项目创建、修改、删除、竞争对手和鉴权配置继续使用本 Skill。
+> `adgine/geo-reports` 的场景默认格式执行；项目创建、修改、删除、竞争对手配置和鉴权配置继续使用本 Skill。
+> “竞争对手排名/表现/与我方对比/按 Topic 或 Prompt 分析”属于只读分析，必须交给 `adgine/geo-reports`；本 Skill 只负责列出、添加和移除项目配置中的竞争对手。
 
 ## 版本检测（加载本 skill 时执行）
 

@@ -23,6 +23,10 @@ The call counts below describe business data calls. A project-scoped report also
 | One Prompt with ID | `prompt-performance` | 1 aggregate (+ capability on cold cache) |
 | One Prompt by text | `prompt-performance` | 1 aggregate (+ capability on cold cache) |
 | AI citation / sentiment | `citations` / `sentiment` | 1 |
+| All competitor rankings | `competitor-rankings` | 1 |
+| One competitor vs our brand | `competitor-overview` | 1 (+ name/domain resolution when no ID) |
+| One competitor by Topic | `competitor-topics` | 1 (+ name/domain resolution when no ID) |
+| One competitor by Prompt | `competitor-prompts` | 1 (+ optional competitor/Topic resolution) |
 | GA4 / Cloudflare | matching P2 scenario | 1 |
 | Bot/human multiview | `ai-bots` / `ai-humans` | 1 / 3 concurrent |
 | Cross-source traffic | `traffic-overview` | 1 aggregate + 1 existing Cloudflare AI endpoint (+ capability on cold cache) |
@@ -48,8 +52,14 @@ The call counts below describe business data calls. A project-scoped report also
 | `prompt-executions` | What completed model executions exist for one Prompt? | Prompt selector |
 | `citations` | How often and where is the brand cited? | Project/window |
 | `sentiment` | What sentiment distribution/trend appears in brand mentions? | Project/window |
+| `competitor-rankings` | Which competitors lead on visibility? | Project/window |
+| `competitor-overview` | How does one competitor compare with our brand? | `--competitor-id` or `--competitor` |
+| `competitor-topics` | How does one competitor perform by Topic? | Competitor selector |
+| `competitor-prompts` | How does one competitor perform by Prompt inside a Topic? | Competitor selector + `--topic-id` or `--topic` |
 
 `topic-lifecycle` divides Prompts into deterministic halves ordered by `created_at ASC`; it is descriptive, not causal.
+
+The competitor ranking response is treated as GEO-Api's complete competitor set. Skills do not merge configured competitors into it. Competitor reports use period aggregates, so they use ranking bars, comparison charts, sentiment donuts, tables, and scatter plots instead of fabricated time-series lines. See `competitors.md`.
 
 ## P2 acquisition, bots, pages, and flows
 

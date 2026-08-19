@@ -12,12 +12,13 @@ SCRIPTS = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts
 if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
 
-from _reporting import render_html, render_markdown, write_html  # noqa: E402
+from _reporting import _render_scatter, render_html, render_markdown, write_html  # noqa: E402
 from _contracts import SCENARIOS, get_scenario  # noqa: E402
 from _i18n import label, normalize_locale  # noqa: E402
 from report import (  # noqa: E402
     SUPPORTED_CHART_TYPES,
     _collect_charts,
+    _mask_path,
     _presentation_payloads,
     _sanitize,
     _table,
@@ -46,6 +47,16 @@ def sample_report():
 
 
 class RenderingTests(unittest.TestCase):
+    def test_competitor_audit_masks_ids_but_keeps_static_ranking_route(self):
+        self.assertEqual(
+            _mask_path("/api/projects/p/competitors/visibility-rankings"),
+            "/api/projects/<project>/competitors/visibility-rankings",
+        )
+        self.assertEqual(
+            _mask_path("/api/projects/p/competitors/c/overview"),
+            "/api/projects/<project>/competitors/<competitor>/overview",
+        )
+
     def test_html_is_offline_escaped_and_embeds_public_json(self):
         rendered = render_html(sample_report())
         self.assertIn("Visibility &lt;Report&gt;", rendered)
@@ -84,7 +95,11 @@ class RenderingTests(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             self.assertIn(f"REPORT_FILE: {path}", output)
             self.assertIn(f"REPORT_PREVIEW: {path}", output)
-            self.assertIn(f"REPORT_LINK: [Open HTML report](<{path}>)", output)
+            link = f"REPORT_LINK: [Open HTML report](<{path}>)"
+            self.assertIn(link, output)
+            self.assertTrue(output.rstrip().endswith(link))
+            self.assertLess(output.index("REPORT_FINDING:"), output.index(link))
+            self.assertLess(output.index("REPORT_NEXT:"), output.index(link))
 
     def test_chinese_html_emits_localized_workbuddy_link(self):
         report = sample_report()
@@ -100,10 +115,10 @@ class RenderingTests(unittest.TestCase):
             stream = io.StringIO()
             with redirect_stdout(stream):
                 path = emit_report(report, args)
-            self.assertIn(
-                f"REPORT_LINK: [打开 HTML 报告](<{path}>)",
-                stream.getvalue(),
-            )
+            link = f"REPORT_LINK: [打开 HTML 报告](<{path}>)"
+            output = stream.getvalue()
+            self.assertIn(link, output)
+            self.assertTrue(output.rstrip().endswith(link))
 
     def test_chinese_html_localizes_shared_report_chrome(self):
         report = sample_report()
@@ -400,6 +415,28 @@ class RenderingTests(unittest.TestCase):
             self.assertIn(f'data-chart-type="{chart_type}"', rendered)
         self.assertNotIn("https://cdn", rendered)
 
+    def test_scatter_renders_formatted_ticks_and_reverses_position_axis(self):
+        rendered = _render_scatter({
+            "x_label": "AI Visibility Score",
+            "y_label": "Average Position",
+            "x_format": "percent",
+            "x_min": 0,
+            "x_max": 100,
+            "y_min": 1,
+            "y_max": 5,
+            "y_reverse": True,
+            "points": [
+                {"label": "Best", "x": 25, "y": 1},
+                {"label": "Worst", "x": 75, "y": 5},
+            ],
+        })
+        self.assertIn('class="svg-value axis-tick x-tick">0.0%</text>', rendered)
+        self.assertIn('class="svg-value axis-tick x-tick">100.0%</text>', rendered)
+        self.assertIn('class="svg-value axis-tick y-tick">1</text>', rendered)
+        self.assertIn('class="svg-value axis-tick y-tick">5</text>', rendered)
+        self.assertIn('<circle cx="241.5" cy="24.0"', rendered)
+        self.assertIn('<circle cx="568.5" cy="288.0"', rendered)
+
     def test_data_shape_selects_gauge_progress_funnel_scatter_treemap_and_timeline(self):
         bounded = _collect_charts({
             "report_data": {
@@ -424,6 +461,18 @@ class RenderingTests(unittest.TestCase):
         page_charts = _collect_charts({"pages": {"pages": rows}}, get_scenario("ga4-pages"), "en-US")
         self.assertIn("treemap", {chart["type"] for chart in page_charts})
         self.assertIn("scatter_plot", {chart["type"] for chart in page_charts})
+
+        relationship_rows = [
+            {"name": f"Topic {index}", "visibility_score": 20 + index * 10, "average_position": index + 1}
+            for index in range(4)
+        ]
+        relationship_charts = _collect_charts(
+            {"topics": {"items": relationship_rows}}, get_scenario("topics"), "en-US",
+        )
+        relationship = next(chart for chart in relationship_charts if chart["type"] == "scatter_plot")
+        self.assertEqual((relationship["x_min"], relationship["x_max"]), (0, 100))
+        self.assertEqual((relationship["y_min"], relationship["y_max"]), (1, 4))
+        self.assertTrue(relationship["y_reverse"])
 
         timeline = _collect_charts({
             "jobs": {"jobs": [

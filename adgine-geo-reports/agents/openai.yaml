@@ -1,4 +1,4 @@
 interface:
   display_name: "Adgine GEO Reports"
-  short_description: "Generate GEO reports with reliable clickable HTML delivery"
-  default_prompt: "Use $adgine/geo-reports to generate an HTML GEO report for my project."
+  short_description: "Generate GEO and competitor reports with clickable HTML delivery"
+  default_prompt: "Use $adgine/geo-reports to generate an HTML GEO or competitor report for my project."

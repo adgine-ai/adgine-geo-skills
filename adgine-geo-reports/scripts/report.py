@@ -4,6 +4,7 @@
 import argparse
 import copy
 import json
+import math
 import os
 import re
 import sys
@@ -33,7 +34,10 @@ DATE_KEYS = ("date", "day", "timestamp", "occurred_at", "created_at", "analyzed_
 PREFERRED_COLUMNS = (
     "name", "title", "content", "path", "page_path", "landing_page", "platform",
     "source", "channel", "status", "type", "traffic_type", "bot_name",
-    "visibility_score", "share_of_voice", "average_position", "current", "change",
+    "visibility_rank", "visibility_score", "share_of_voice", "average_position",
+    "visibility_rank_change", "visibility_score_change", "share_of_voice_change",
+    "average_position_change", "prompt_count", "executions", "positive", "neutral",
+    "negative", "current", "change",
     "requests", "sessions", "active_users", "page_views", "visits",
     "conversion_rate", "score", "rank", "created_at", "updated_at",
 )
@@ -67,6 +71,10 @@ SOURCE_UNITS = {
     "subscription": "subscription state",
     "plans": "plan catalog",
     "account": "account profile fields",
+    "competitor_rankings": "percent / rank",
+    "competitor_overview": "percent / rank",
+    "competitor_topics": "percent / rank",
+    "competitor_prompts": "percent / rank",
 }
 
 DEFAULT_PAGE_SIZE = 40
@@ -244,6 +252,46 @@ def _resolve_topic(client, reference, analytics_params):
     return topic
 
 
+def _normalized_domain(value):
+    value = str(value or "").strip().casefold()
+    value = re.sub(r"^[a-z][a-z0-9+.-]*://", "", value)
+    value = value.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
+    return value[4:] if value.startswith("www.") else value
+
+
+def _resolve_competitor(client, args):
+    explicit_id = str(args.competitor_id or "").strip()
+    reference = str(args.competitor or "").strip()
+    if explicit_id:
+        return {
+            "id": explicit_id,
+            "name": reference or t(args.locale, "selected_competitor"),
+        }, t(args.locale, "resolution_competitor_explicit_id")
+    if _looks_like_uuid(reference):
+        return {
+            "id": reference,
+            "name": t(args.locale, "selected_competitor"),
+        }, t(args.locale, "resolution_competitor_reference_id")
+    payload = client.get(f"/api/projects/{client.project_id}/competitors") or {}
+    items = _first_list(payload, ("items", "competitors"))
+    lowered = reference.casefold()
+    domain = _normalized_domain(reference)
+    matches = [
+        item for item in items
+        if str(item.get("name") or "").strip().casefold() == lowered
+        or (domain and _normalized_domain(item.get("domain")) == domain)
+    ]
+    if not matches:
+        raise ValueError(f"Competitor not found: {reference}")
+    if len(matches) > 1:
+        raise ValueError(f"Competitor name/domain is ambiguous; use --competitor-id: {reference}")
+    competitor = matches[0]
+    competitor["id"] = competitor.get("id") or competitor.get("competitor_id")
+    if not competitor.get("id"):
+        raise ValueError(f"Competitor has no usable ID: {reference}")
+    return competitor, t(args.locale, "resolution_competitor_catalog")
+
+
 def _resolve_prompt(client, args, analytics_params):
     if args.prompt_id:
         return {
@@ -307,6 +355,11 @@ def _request_params(spec, args, start, end, values):
         params = _analytics_params(args, start, end)
         if not spec.accepts_platform:
             params.pop("platform", None)
+    elif spec.date_style == "competitor":
+        params = {"date_from": start, "date_to": end}
+        platforms = _platforms(args.platform)
+        if spec.accepts_platform and platforms:
+            params["platform"] = platforms
     elif spec.date_style == "traffic":
         params = _traffic_params(args, start, end, spec.accepts_platform)
     elif spec.date_style == "dashboard-period":
@@ -317,6 +370,16 @@ def _request_params(spec, args, start, end, values):
         params[key] = _replace_query_values(value, values)
     if args.metric and spec.alias == "matrix":
         params["metric"] = "share_of_voice" if args.metric in ("sov", "share_of_voice") else "visibility_score"
+    if spec.alias in ("competitor_topics", "competitor_prompts"):
+        params["types"] = _platforms(args.prompt_type) or ["visibility"]
+        tags = _platforms(args.tag_id)
+        if tags:
+            params["tags"] = tags
+    if spec.alias == "competitor_overview":
+        if values.get("filter_topic_ids"):
+            params["topic_id"] = values["filter_topic_ids"]
+        if values.get("filter_prompt_ids"):
+            params["prompt_id"] = values["filter_prompt_ids"]
     if spec.paging == "page":
         params.update({"page": args.page, "limit": args.limit})
     elif spec.paging == "page_size":
@@ -647,6 +710,93 @@ def _normalize_cloudflare_ai(payload):
 
 def _presentation_payloads(payloads, scenario):
     cleaned = _drop_hidden_presentation_fields(copy.deepcopy(payloads))
+    if scenario.name == "competitor-rankings":
+        payload = cleaned.get("competitor_rankings") or {}
+        rows = [
+            {
+                "rank": item.get("rank"),
+                "name": item.get("name"),
+                "domain": item.get("domain"),
+                "visibility_score": item.get("current"),
+                "is_our_brand": item.get("is_our_brand"),
+            }
+            for item in payload.get("competitors") or []
+            if isinstance(item, dict)
+        ]
+        own = next((item for item in rows if item.get("is_our_brand")), None)
+        metrics = {"brand_count": len(rows)}
+        if own:
+            metrics.update({
+                "our_visibility_rank": own.get("rank"),
+                "our_visibility_score": own.get("visibility_score"),
+            })
+        return {"competitor_rankings": {"metrics": metrics, "items": rows}}
+    if scenario.name == "competitor-overview":
+        payload = cleaned.get("competitor_overview") or {}
+        competitor = payload.get("competitor") or {}
+        ours = payload.get("our_brand") or {}
+        visibility = payload.get("visibility") or {}
+        competitor_visibility = visibility.get("competitor") or {}
+        our_visibility = visibility.get("ours") or {}
+        metrics = {
+            "competitor_visibility_score": competitor_visibility.get("visibility_score"),
+            "our_visibility_score": our_visibility.get("visibility_score"),
+            "competitor_share_of_voice": competitor_visibility.get("share_of_voice"),
+            "our_share_of_voice": our_visibility.get("share_of_voice"),
+        }
+        comparison = [
+            {
+                "name": competitor.get("name") or t("en-US", "selected_competitor"),
+                "visibility_score": competitor_visibility.get("visibility_score"),
+                "share_of_voice": competitor_visibility.get("share_of_voice"),
+            },
+            {
+                "name": ours.get("name") or "Our brand",
+                "visibility_score": our_visibility.get("visibility_score"),
+                "share_of_voice": our_visibility.get("share_of_voice"),
+                "is_our_brand": True,
+            },
+        ]
+        topic_rankings = []
+        for item in payload.get("topic_rankings") or []:
+            competitor_result = item.get("competitor") or {}
+            our_result = item.get("ours") or {}
+            topic_rankings.append({
+                "name": item.get("topic_name"),
+                "prompt_count": item.get("prompt_count"),
+                "competitor_rank": competitor_result.get("rank"),
+                "competitor_score": competitor_result.get("score"),
+                "our_rank": our_result.get("rank"),
+                "our_score": our_result.get("score"),
+            })
+        sentiment = payload.get("sentiment") or {}
+        competitor_sentiment = sentiment.get("competitor") or {}
+        our_sentiment = sentiment.get("ours") or {}
+        metrics.update({
+            "competitor_classified_count": competitor_sentiment.get("classified_count"),
+            "competitor_unclassified_count": competitor_sentiment.get("unclassified_count"),
+            "our_classified_count": our_sentiment.get("classified_count"),
+            "our_unclassified_count": our_sentiment.get("unclassified_count"),
+        })
+        return {
+            "competitor_overview": {
+                "metrics": metrics,
+                "comparison": comparison,
+                "topic_rankings": topic_rankings,
+            },
+            "competitor_sentiment": {
+                "sentiment_distribution": {
+                    key: competitor_sentiment.get(key)
+                    for key in ("positive", "neutral", "negative")
+                },
+            },
+            "our_sentiment": {
+                "sentiment_distribution": {
+                    key: our_sentiment.get(key)
+                    for key in ("positive", "neutral", "negative")
+                },
+            },
+        }
     if scenario.name not in AI_TRAFFIC_PRESENTATION_SCENARIOS:
         return cleaned
 
@@ -871,7 +1021,7 @@ def _scatter_chart(rows, title, locale="en-US"):
     if len(points) < 3:
         return None
     x_label, y_label = _label(x_key, locale), _label(y_key, locale)
-    return {
+    chart = {
         "type": "scatter_plot",
         "title": t(locale, "chart_relationship", x=x_label, y=y_label),
         "description": t(locale, "chart_desc_scatter"),
@@ -881,6 +1031,21 @@ def _scatter_chart(rows, title, locale="en-US"):
         "y_format": _format_for(y_key),
         "points": points[:40],
     }
+    bounded_percent_keys = {
+        "visibility_score", "share_of_voice", "citation_rate", "recommendation_rate",
+        "first_recommendation_rate", "top3_rate",
+    }
+    lower_is_better_keys = {"average_position", "rank", "visibility_rank", "citation_rank"}
+    for axis, key in (("x", x_key), ("y", y_key)):
+        if key in bounded_percent_keys:
+            chart[f"{axis}_min"] = 0
+            chart[f"{axis}_max"] = 100
+        if key in lower_is_better_keys:
+            values = [_numeric(point.get(axis)) for point in points]
+            chart[f"{axis}_min"] = 1
+            chart[f"{axis}_max"] = max(2, math.ceil(max(value for value in values if value is not None)))
+            chart[f"{axis}_reverse"] = True
+    return chart
 
 
 def _timeline_chart(rows, title, scenario, locale="en-US"):
@@ -1155,6 +1320,7 @@ def _collect_charts(payloads, scenario, locale="en-US"):
         ranked_keys = {
             "items", "rows", "topics", "prompts", "pages", "results",
             "citation_sources", "platforms", "executions", "jobs", "publications", "events",
+            "comparison", "topic_rankings",
             "funnel", "stages", "pipeline_stages", "conversion_funnel",
         }
         for key, rows in _payload_lists(payload):
@@ -1449,6 +1615,10 @@ def _next_actions(scenario, args, locale="en-US"):
         "page-detail": ["next_generate_page_opportunities", "next_page_logs", "next_related_pages"],
         "content-pipeline": ["next_failed_content", "next_latest_content", "next_publish_readiness"],
         "account-info": ["next_projects", "next_integration_health"],
+        "competitor-rankings": ["next_competitor_overview", "next_compare_platform", "next_other_window"],
+        "competitor-overview": ["next_competitor_topics", "next_compare_platform", "next_other_window"],
+        "competitor-topics": ["next_competitor_prompts", "next_compare_platform", "next_other_window"],
+        "competitor-prompts": ["next_compare_platform", "next_other_window", "next_competitor_topics"],
     }
     keys = actions.get(
         scenario.name,
@@ -1463,6 +1633,7 @@ def _mask_path(path, show_ids=False):
     value = str(path)
     patterns = (
         (r"(/projects/)[^/?]+", r"\1<project>"),
+        (r"(/competitors/)(?!visibility-rankings(?:[/?]|$))[^/?]+", r"\1<competitor>"),
         (r"(/topics/)[^/?]+", r"\1<topic>"),
         (r"(/prompts/)[^/?]+", r"\1<prompt>"),
         (r"(/opportunities/)[^/?]+", r"\1<opportunity>"),
@@ -1504,6 +1675,15 @@ def _load_project_name(client, args, project_scoped):
 
 
 def _entity_display_name(scenario, args, entity, payloads, locale):
+    if scenario.name.startswith("competitor-"):
+        for payload in payloads.values():
+            if not isinstance(payload, dict):
+                continue
+            competitor = payload.get("competitor")
+            if isinstance(competitor, dict) and competitor.get("name"):
+                return str(competitor["name"])
+        if getattr(args, "competitor", None):
+            return str(args.competitor)
     if isinstance(entity, dict):
         value = entity.get("name") or entity.get("content") or entity.get("title") or entity.get("path")
         if value:
@@ -1530,6 +1710,12 @@ def _user_facing_title(scenario, locale, project_name, entity_name):
         return t(locale, "title_prompt_analysis", entity=entity_name)
     if entity_name and scenario.name in ("page-detail", "page-health", "page-opportunities"):
         return t(locale, "title_page_analysis", entity=entity_name)
+    if entity_name and scenario.name == "competitor-overview":
+        return t(locale, "title_competitor_analysis", entity=entity_name)
+    if entity_name and scenario.name == "competitor-topics":
+        return t(locale, "title_competitor_topic_analysis", entity=entity_name)
+    if entity_name and scenario.name == "competitor-prompts":
+        return t(locale, "title_competitor_prompt_analysis", entity=entity_name)
     if project_name:
         project_title = str(project_name)
         if locale == "zh-CN":
@@ -1566,7 +1752,9 @@ def build_report(
     scenario, args, client, payloads, errors, start, end, entity=None,
     resolution=None, native_metadata=None, workflow_warning=None, project_name=None,
 ):
-    locale = normalize_locale(args.locale, args.topic, args.prompt)
+    locale = normalize_locale(
+        args.locale, args.topic, args.prompt, getattr(args, "competitor", None),
+    )
     entity_name = _entity_display_name(scenario, args, entity, payloads, locale)
     title = _user_facing_title(scenario, locale, project_name, entity_name)
     subtitle = _user_facing_subtitle(scenario, locale, project_name, entity_name)
@@ -1597,6 +1785,13 @@ def build_report(
         context.append({
             "label": t(locale, "entity"),
             "value": entity_name,
+        })
+    if scenario.name == "competitor-prompts" and (
+        getattr(args, "topic", None) or getattr(args, "topic_id", None)
+    ):
+        context.append({
+            "label": _label("topic", locale),
+            "value": getattr(args, "topic", None) or args.topic_id,
         })
     presentation_payloads = _presentation_payloads(payloads, scenario)
     metric_limit = 12 if scenario.name in AI_TRAFFIC_PRESENTATION_SCENARIOS else 8
@@ -1707,18 +1902,28 @@ def build_report(
 
 def _validate_requirements(scenario, args):
     for requirement in scenario.requires:
-        if requirement == "topic" and not args.topic:
-            raise ValueError(f"{scenario.name} requires --topic <ID or exact name>")
+        if requirement == "topic":
+            has_topic = bool(args.topic) or (
+                scenario.name == "competitor-prompts" and bool(args.topic_id)
+            )
+            if not has_topic:
+                raise ValueError(
+                    f"{scenario.name} requires --topic-id or --topic <ID or exact name>"
+                )
         if requirement == "prompt" and not (args.prompt_id or args.prompt or args.topic):
             raise ValueError(f"{scenario.name} requires --prompt-id, --prompt, or --topic")
         if requirement == "path" and not args.path:
             raise ValueError(f"{scenario.name} requires --path /page/path")
         if requirement == "resource-id" and not args.resource_id:
             raise ValueError(f"{scenario.name} requires --resource-id")
+        if requirement == "competitor" and not (args.competitor_id or args.competitor):
+            raise ValueError(
+                f"{scenario.name} requires --competitor-id or --competitor <exact name/domain>"
+            )
 
 
 def run_report(args, client=None):
-    args.locale = normalize_locale(args.locale, args.topic, args.prompt)
+    args.locale = normalize_locale(args.locale, args.topic, args.prompt, args.competitor)
     scenario = get_scenario(args.scenario)
     _validate_requirements(scenario, args)
     if args.page < 1 or args.limit < 1:
@@ -1734,6 +1939,9 @@ def run_report(args, client=None):
         "project_id": client.project_id,
         "topic_id": "",
         "prompt_id": "",
+        "competitor_id": "",
+        "filter_topic_ids": [],
+        "filter_prompt_ids": [],
         "resource_id": quote(args.resource_id or "", safe=""),
         "page_path": args.path or "",
     }
@@ -1756,13 +1964,34 @@ def run_report(args, client=None):
             project_name=project_name,
         )
     workflow_warning = native.get("warning") if native else None
-    if "topic" in scenario.requires:
+    if "competitor" in scenario.requires:
+        entity, resolution = _resolve_competitor(client, args)
+        values["competitor_id"] = quote(str(entity["id"]), safe="")
+    if "topic" in scenario.requires and scenario.name == "competitor-prompts":
+        if args.topic_id:
+            values["topic_id"] = quote(str(args.topic_id), safe="")
+        else:
+            topic = _resolve_topic(client, args.topic, analytics_params)
+            values["topic_id"] = quote(str(topic["id"]), safe="")
+    elif "topic" in scenario.requires:
         entity = _resolve_topic(client, args.topic, analytics_params)
         values["topic_id"] = quote(str(entity["id"]), safe="")
         resolution = t(args.locale, "resolution_topic_legacy")
     if "prompt" in scenario.requires:
         entity, resolution = _resolve_prompt(client, args, analytics_params)
         values["prompt_id"] = quote(str(entity.get("id") or entity.get("prompt_id")), safe="")
+    if scenario.name == "competitor-overview":
+        topic_filters = _platforms(args.filter_topic_id)
+        if args.topic_id:
+            topic_filters.append(str(args.topic_id))
+        elif args.topic:
+            topic = _resolve_topic(client, args.topic, analytics_params)
+            topic_filters.append(str(topic["id"]))
+        prompt_filters = _platforms(args.filter_prompt_id)
+        if args.prompt_id:
+            prompt_filters.append(str(args.prompt_id))
+        values["filter_topic_ids"] = list(dict.fromkeys(topic_filters))
+        values["filter_prompt_ids"] = list(dict.fromkeys(prompt_filters))
     payloads, errors = _fetch_scenario(client, scenario, args, start, end, values)
     return build_report(
         scenario, args, client, payloads, errors, start, end, entity, resolution,
@@ -1793,12 +2022,12 @@ def emit_report(report, args):
         print(f"\nREPORT_TITLE: {report.get('title')}")
         print(f"REPORT_FILE: {path}")
         print(f"REPORT_PREVIEW: {path}")
-        print(f"REPORT_LINK: [{link_label}](<{path}>)")
         for finding in (report.get("insights") or [])[:3]:
             text = finding.get("body") if isinstance(finding, dict) else finding
             print(f"REPORT_FINDING: {' '.join(str(text).split())}")
         for action in (report.get("next_actions") or [])[:3]:
             print(f"REPORT_NEXT: {' '.join(str(action).split())}")
+        print(f"REPORT_LINK: [{link_label}](<{path}>)")
     return path
 
 
@@ -1816,8 +2045,15 @@ def parse_args(argv=None):
     parser.add_argument("--granularity", choices=["day", "week", "month"], default="day")
     parser.add_argument("--platform", action="append", help="Platform code; repeat or use comma-separated values")
     parser.add_argument("--topic", help="Topic ID or exact name")
+    parser.add_argument("--topic-id", help="Explicit Topic ID (fastest for competitor reports)")
     parser.add_argument("--prompt", help="Prompt ID or text")
     parser.add_argument("--prompt-id", help="Explicit Prompt ID (fastest)")
+    parser.add_argument("--filter-topic-id", action="append", help="Optional Topic ID filter for competitor overview; repeat or comma-separate")
+    parser.add_argument("--filter-prompt-id", action="append", help="Optional Prompt ID filter for competitor overview; repeat or comma-separate")
+    parser.add_argument("--competitor", help="Competitor ID, exact name, or exact domain")
+    parser.add_argument("--competitor-id", help="Explicit competitor relation ID (fastest)")
+    parser.add_argument("--type", dest="prompt_type", action="append", help="Prompt type filter; repeat or comma-separate (defaults to visibility)")
+    parser.add_argument("--tag-id", action="append", help="Topic tag UUID filter; repeat or comma-separate")
     parser.add_argument("--prompt-index", type=int, default=1, help="Stable 1-based index within Topic")
     parser.add_argument("--path", help="Exact website path beginning with /")
     parser.add_argument("--resource-id", help="Opportunity/content/task identifier")

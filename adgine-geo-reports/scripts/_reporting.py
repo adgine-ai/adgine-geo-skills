@@ -278,30 +278,58 @@ def _render_scatter(chart, locale="en-US"):
     ]
     if not points:
         return f'<div class="empty">{_escape(t(locale, "no_data_section"))}</div>'
-    width, height = 760, 340
-    left, right, top, bottom = 64, 28, 24, 58
+    width, height = 760, 360
+    left, right, top, bottom = 78, 28, 24, 72
     xs = [_number(item.get("x")) for item in points]
     ys = [_number(item.get("y")) for item in points]
-    x_low, x_high, y_low, y_high = min(xs), max(xs), min(ys), max(ys)
-    if math.isclose(x_low, x_high):
-        x_low -= 1
-        x_high += 1
-    if math.isclose(y_low, y_high):
-        y_low -= 1
-        y_high += 1
+
+    def axis_bounds(values, minimum, maximum):
+        data_low, data_high = min(values), max(values)
+        low, high = _number(minimum), _number(maximum)
+        low_explicit, high_explicit = low is not None, high is not None
+        low = data_low if low is None else low
+        high = data_high if high is None else high
+        if math.isclose(low, high):
+            padding = max(abs(low) * .08, 1)
+            low -= padding
+            high += padding
+        else:
+            padding = (high - low) * .08
+            if not low_explicit:
+                low -= padding
+            if not high_explicit:
+                high += padding
+        return low, high
+
+    x_low, x_high = axis_bounds(xs, chart.get("x_min"), chart.get("x_max"))
+    y_low, y_high = axis_bounds(ys, chart.get("y_min"), chart.get("y_max"))
+    x_reverse, y_reverse = bool(chart.get("x_reverse")), bool(chart.get("y_reverse"))
     x_span, y_span = width - left - right, height - top - bottom
-    grid = []
+    grid, ticks = [], []
     for index in range(5):
-        x = left + index / 4 * x_span
-        y = top + index / 4 * y_span
+        ratio = index / 4
+        x = left + ratio * x_span
+        y = top + ratio * y_span
+        x_value = x_high - ratio * (x_high - x_low) if x_reverse else x_low + ratio * (x_high - x_low)
+        y_value = y_low + ratio * (y_high - y_low) if y_reverse else y_high - ratio * (y_high - y_low)
         grid.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{height-bottom}" class="grid-line" />')
         grid.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" class="grid-line" />')
+        ticks.append(
+            f'<text x="{x:.1f}" y="{height-bottom+20}" text-anchor="middle" class="svg-value axis-tick x-tick">'
+            f'{_escape(format_value(x_value, chart.get("x_format"), locale))}</text>'
+        )
+        ticks.append(
+            f'<text x="{left-10}" y="{y+4:.1f}" text-anchor="end" class="svg-value axis-tick y-tick">'
+            f'{_escape(format_value(y_value, chart.get("y_format"), locale))}</text>'
+        )
     dots = []
     colors = ["#2f6bf3", "#6558f5", "#38a9f5", "#14b8a6", "#f59e0b"]
     for index, item in enumerate(points):
         x_value, y_value = _number(item.get("x")), _number(item.get("y"))
-        x = left + (x_value - x_low) / (x_high - x_low) * x_span
-        y = top + (y_high - y_value) / (y_high - y_low) * y_span
+        x_ratio = (x_high - x_value) / (x_high - x_low) if x_reverse else (x_value - x_low) / (x_high - x_low)
+        y_ratio = (y_value - y_low) / (y_high - y_low) if y_reverse else (y_high - y_value) / (y_high - y_low)
+        x = left + x_ratio * x_span
+        y = top + y_ratio * y_span
         label = str(item.get("label") or index + 1)
         dots.append(
             f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="{colors[index % len(colors)]}" opacity=".82">'
@@ -311,10 +339,10 @@ def _render_scatter(chart, locale="en-US"):
     axes = (
         f'<line x1="{left}" y1="{top}" x2="{left}" y2="{height-bottom}" class="axis" />'
         f'<line x1="{left}" y1="{height-bottom}" x2="{width-right}" y2="{height-bottom}" class="axis" />'
-        f'<text x="{left+x_span/2:.1f}" y="{height-14}" text-anchor="middle" class="svg-label">{_escape(chart.get("x_label"))}</text>'
+        f'<text x="{left+x_span/2:.1f}" y="{height-12}" text-anchor="middle" class="svg-label">{_escape(chart.get("x_label"))}</text>'
         f'<text x="17" y="{top+y_span/2:.1f}" text-anchor="middle" class="svg-label" transform="rotate(-90 17 {top+y_span/2:.1f})">{_escape(chart.get("y_label"))}</text>'
     )
-    return f'<svg class="scatter-chart" viewBox="0 0 {width} {height}" role="img">{"".join(grid)}{axes}{"".join(dots)}</svg>'
+    return f'<svg class="scatter-chart" viewBox="0 0 {width} {height}" role="img">{"".join(grid)}{axes}{"".join(ticks)}{"".join(dots)}</svg>'
 
 
 def _treemap_layout(items, x, y, width, height):

@@ -52,6 +52,19 @@ class ContractRegistryTests(unittest.TestCase):
         self.assertEqual(request.path.rsplit("/", 1)[-1], "health")
         self.assertNotIn("refresh", request.path)
 
+    def test_competitor_reports_match_existing_geo_api_routes(self):
+        expected = {
+            "competitor-rankings": "/competitors/visibility-rankings",
+            "competitor-overview": "/competitors/{competitor_id}/overview",
+            "competitor-topics": "/competitors/{competitor_id}/topics",
+            "competitor-prompts": "/competitors/{competitor_id}/topics/{topic_id}/prompts",
+        }
+        for scenario_name, suffix in expected.items():
+            with self.subTest(scenario=scenario_name):
+                request = SCENARIOS[scenario_name].requests[0]
+                self.assertTrue(request.path.endswith(suffix))
+                self.assertEqual(request.date_style, "competitor")
+
     def test_report_data_feature_surface_matches_backend_v1(self):
         expected = {
             "executive_overview",

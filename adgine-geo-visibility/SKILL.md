@@ -3,7 +3,7 @@ name: adgine/geo-visibility
 description: Reads and analyzes already-collected AI visibility data for a GEO
   project — Visibility Score, Share of Voice, Average Position, competitor matrix,
   historical AI executions, full AI responses, brand mentions, cited URLs.
-  Use when the user wants to READ analytics results: AI visibility / 可见性得分 /
+  Use for low-level debugging of analytics results: AI visibility / 可见性得分 /
   Visibility Score / 声量份额 / Share of Voice / 平均排名 / 竞品对比 / 平台矩阵 /
   AI 回答历史 / prompt 历史测试 / AI 具体怎么回复的 / 品牌提及 / 引用链接.
   NOT for running new citation tests (向 AI 平台发请求测试是否引用) — use
@@ -14,6 +14,7 @@ description: Reads and analyzes already-collected AI visibility data for a GEO
 # GEO Visibility (Analytics)
 
 > 强制交接：用户侧的查看、查询、分析和报告请求必须立即使用 `adgine/geo-reports` 按场景默认格式执行；默认 HTML 的场景须在本轮生成并交付报告链接。本 Skill 的读取脚本仅用于低层排障。
+> 竞争对手排名、某一竞争对手与我方对比、按 Topic/Prompt 查看竞争对手表现，分别使用 `adgine/geo-reports` 的 `competitor-rankings`、`competitor-overview`、`competitor-topics`、`competitor-prompts`。
 
 Deep analytics over `/api/projects/{id}/analytics/*` — 11 endpoints covering
 the AI visibility funnel from brand-level single metrics down to individual

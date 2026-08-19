@@ -11,6 +11,10 @@ def read(relative):
 
 
 class ExistingSkillContractTests(unittest.TestCase):
+    def test_competitor_list_accepts_current_items_envelope(self):
+        source = read("adgine-geo-projects/scripts/manage_competitors.py")
+        self.assertIn('(data or {}).get("items")', source)
+
     def test_visibility_analytics_uses_date_from_to(self):
         for relative in (
             "adgine-geo-visibility/scripts/get_topic_metrics.py",

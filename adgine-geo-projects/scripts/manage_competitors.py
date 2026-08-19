@@ -28,7 +28,12 @@ from _client import (
 def cmd_list(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/competitors", key, base)
     data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("competitors", [])
+    if isinstance(data, list):
+        items = data
+    elif isinstance((data or {}).get("items"), list):
+        items = data["items"]
+    else:
+        items = (data or {}).get("competitors") or []
 
     if args.json:
         print_json(items)

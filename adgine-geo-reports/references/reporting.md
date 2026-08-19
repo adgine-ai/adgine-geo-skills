@@ -29,9 +29,9 @@ After writing HTML, emit these WorkBuddy-compatible lines:
 REPORT_TITLE: <title>
 REPORT_FILE: <absolute path>
 REPORT_PREVIEW: <absolute path>
-REPORT_LINK: <localized Markdown link to the absolute path>
 REPORT_FINDING: <deterministic finding, at most 3>
 REPORT_NEXT: <contextual next question, at most 3>
+REPORT_LINK: <localized Markdown link to the absolute path; always the final marker>
 ```
 
 Consume these markers directly. Do not perform another API query merely to restate the result.
@@ -41,9 +41,10 @@ Consume these markers directly. Do not perform another API query merely to resta
 - Treat `REPORT_FILE` as the file-existence source of truth.
 - Treat `REPORT_PREVIEW` as a hint for an optional WorkBuddy presentation
   facility. Printing the marker does not prove that the UI opened a panel.
-- Treat `REPORT_LINK` as mandatory final-reply content. Copy it before the
-  findings so users always have a visible entry point independent of native UI
-  rendering.
+- Treat `REPORT_LINK` as mandatory final-reply content. Copy it after the
+  findings and next actions, as the final line of the reply, so the analysis
+  reads naturally while retaining a visible entry point independent of native
+  UI rendering.
 - Keep the artifact under the current task workspace. When the report command
   is invoked from an installed Skill directory, pass an explicit
   `--output-dir <task-workspace>/adgine-reports`.
@@ -54,7 +55,8 @@ Consume these markers directly. Do not perform another API query merely to resta
   `[打开 HTML 报告](</absolute/path/report.html>)` for Chinese or
   `[Open HTML report](</absolute/path/report.html>)` for English.
 - Do not omit the link because the final answer also contains findings or next
-  actions. Do not expose a nonexistent link when generation failed.
+  actions. Do not add text after it, and do not expose a nonexistent link when
+  generation failed.
 
 ## Report schema
 
@@ -132,7 +134,7 @@ Map data deterministically:
 - True parts-of-whole distributions → `pie_chart`; never use it for arbitrary rankings.
 - Bounded quality scores → `gauge`; bounded shares/rates/progress → `progress_bar`.
 - Explicit ordered, non-increasing stages → `funnel`; mutually exclusive status counts remain `pie_chart`.
-- Paired numeric records → `scatter_plot` when at least three complete points exist.
+- Paired numeric records → `scatter_plot` when at least three complete points exist. Always show formatted numeric ticks on both axes. Use a stable `0–100` domain for bounded scores and percentages, and reverse position/rank axes so lower, better values appear toward the top or left.
 - Additive top-source/page contributions → `treemap`; non-additive rankings remain `bar_chart`.
 - Dated jobs/executions/publications/events → `timeline`.
 - Flow links → `bar_chart` plus a link table.

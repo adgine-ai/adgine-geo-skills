@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 class RequestSpec:
     alias: str
     path: str
-    date_style: str = "none"  # none | analytics | traffic | dashboard-period
+    date_style: str = "none"  # none | analytics | competitor | traffic | dashboard-period
     accepts_platform: bool = False
     paging: str = "none"  # none | page | page_size | offset
     required: bool = True
@@ -106,6 +106,29 @@ SCENARIOS = {
     "sentiment": Scenario(
         "sentiment", "P1", "Brand Sentiment", "品牌情感分析", "analysis",
         (_r("sentiment", "/api/projects/{project_id}/analytics/sentiment", "analytics", platform=True),),
+    ),
+    "competitor-rankings": Scenario(
+        "competitor-rankings", "P1", "Competitor Visibility Rankings", "竞争对手可见性排名", "analysis",
+        (_r("competitor_rankings", "/api/projects/{project_id}/competitors/visibility-rankings", "competitor", platform=True),),
+        description="All competitors returned by GEO-Api, ranked by visibility score for the selected period.",
+    ),
+    "competitor-overview": Scenario(
+        "competitor-overview", "P1", "Competitor Comparison", "竞争对手对比", "analysis",
+        (_r("competitor_overview", "/api/projects/{project_id}/competitors/{competitor_id}/overview", "competitor", platform=True),),
+        requires=("competitor",),
+        description="One competitor compared with our brand across visibility, share of voice, sentiment, and Topic rankings.",
+    ),
+    "competitor-topics": Scenario(
+        "competitor-topics", "P1", "Competitor Topic Performance", "竞争对手 Topic 表现", "analysis",
+        (_r("competitor_topics", "/api/projects/{project_id}/competitors/{competitor_id}/topics", "competitor", platform=True),),
+        requires=("competitor",),
+        description="One competitor's AI visibility metrics by Topic.",
+    ),
+    "competitor-prompts": Scenario(
+        "competitor-prompts", "P1", "Competitor Prompt Performance", "竞争对手 Prompt 表现", "analysis",
+        (_r("competitor_prompts", "/api/projects/{project_id}/competitors/{competitor_id}/topics/{topic_id}/prompts", "competitor", platform=True),),
+        requires=("competitor", "topic"),
+        description="One competitor's AI visibility metrics by Prompt inside a Topic.",
     ),
 
     # P2: acquisition, crawlers, humans, pages, and flows.

@@ -6,7 +6,7 @@ description: >
   WordPress 发布、GA4/Cloudflare 集成、域名管理、项目管理、账单查询、使用手册等。
   触发词：GEO / Adgine / AI visibility / AI citation / 生成式引擎优化 / AI 可见性 /
   引用测试 / 内容生成 / 网站审计 / 品牌画像 / WordPress 发布 / 流量分析 /
-  AI 爬虫追踪 / 优化机会 / 页面健康度 / HTML 报告 / 我的账号信息 / 姓名 / 手机号 /
+  AI 爬虫追踪 / 竞争对手分析 / 竞品排名 / 优化机会 / 页面健康度 / HTML 报告 / 我的账号信息 / 姓名 / 手机号 /
   邮箱 / 域名 / 账单 / 积分 / 项目管理.
 ---
 
@@ -81,6 +81,8 @@ Worker 部署、单个 SaaS 任务和单个机会等小结果默认直接在对�
 
 用户询问“我的账号、账号基本信息、创建时间、姓名、手机号、邮箱”时，使用
 `adgine/geo-reports account-info`。所有分页查询默认每页 40 条；下一页继续使用 40 条页长。
+用户询问竞争对手列表、排名、某一竞品概览、按 Topic/Prompt 查看竞品表现时，使用
+`adgine/geo-reports` 的四个 `competitor-*` 只读场景；竞争对手的新增和删除仍使用 `adgine/geo-projects`。
 高频 Topic、Prompt、综合流量、页面、内容与运营报告优先使用 GEO-Api `/report-data` 聚合接口；
 仅 capabilities 在本地缓存 2 小时，报表业务数据不缓存；只有接口缺失/未启用/版本不兼容时才回退旧读取接口。
 根据用户本轮提问的主要语言显式传入 `--locale zh-CN` 或 `--locale en-US`；用户明确指定语言时优先服从。
@@ -93,11 +95,11 @@ HTML、Markdown、JSON 和 WorkBuddy 摘要标记使用同一种报告语言，T
 | 子技能 | 用于 |
 |---|---|
 | adgine/geo-reports | **所有只读数据查询的默认门面**：账号基本信息、场景化分析、目录/详情/状态报告、GA4/Cloudflare/AI Bot/页面机会、场景感知的 inline/离线 HTML 输出；项目列表默认 inline |
-| adgine/geo-projects | 创建/列出/切换项目、管理竞争对手、配置 API Key（`GEO_API_KEY`）、验证鉴权 |
+| adgine/geo-projects | 创建/列出/切换项目、增删/配置竞争对手、配置 API Key（`GEO_API_KEY`）、验证鉴权 |
 | adgine/geo-dashboard | 项目总览快照、7 天趋势、集成连接状态（首页指标 / Dashboard 概览） |
 | adgine/geo-analytics | GA4 流量概览、活跃用户、AI 引荐汇总（不含爬虫明细） |
 | adgine/geo-aiagent | AI 爬虫深度追踪：GPTBot / ClaudeBot / PerplexityBot、Sankey 流图、原始日志、页面级下钻 |
-| adgine/geo-visibility | 读取 AI 可见性得分、Share of Voice、平均排名、竞品矩阵、历史 AI 回答 |
+| adgine/geo-visibility | 底层排障读取 AI 可见性得分、Share of Voice、平均排名、竞品矩阵、历史 AI 回答；用户侧竞品报告走 `geo-reports` |
 | adgine/geo-citation | 向 ChatGPT / Perplexity / Google AIO / Gemini 提交真实提示，测量品牌引用率 |
 | adgine/geo-brand | 查看/生成/编辑 AI 品牌画像（ICP / 竞品分析 / 语气风格 / 写作规范）及生成任务管理 |
 | adgine/geo-topics | 创建主题、批量生成 AI 搜索提示词、管理主题-提示词结构 |
