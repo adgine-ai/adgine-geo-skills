@@ -1,6 +1,6 @@
 ---
 name: adgine/geo-reports
-description: Generate stable, auditable Adgine GEO data reports as standalone offline HTML, Markdown, or JSON. Use this facade for every read-only data query, dashboard, analysis, inventory, status review, or report request across account information, AI visibility, Topics, Prompts, citations, sentiment, GA4, Cloudflare, AI bots, AI-driven human traffic, pages, PageSpeed health, opportunities, content, publishing, integrations, projects, domains, SaaS, and billing. Trigger for requests such as “查询我的账号信息 / my account information / my profile / my name, phone or email”, “this prompt/topic in the last week or half month”, “show my GEO data”, “generate a report”, “which pages have opportunities”, “GA4/Cloudflare/AI bot performance”, and “export HTML”.
+description: Generate stable, auditable Adgine GEO data reports as localized English or Simplified Chinese standalone offline HTML, Markdown, or JSON. Use this facade for every read-only data query, dashboard, analysis, inventory, status review, or report request across account information, AI visibility, Topics, Prompts, citations, sentiment, GA4, Cloudflare, AI bots, AI-driven human traffic, pages, PageSpeed health, opportunities, content, publishing, integrations, projects, domains, SaaS, and billing. Trigger for requests such as “查询我的账号信息 / my account information / my profile / my name, phone or email”, “this prompt/topic in the last week or half month”, “show my GEO data”, “generate a report”, “which pages have opportunities”, “GA4/Cloudflare/AI bot performance”, and “export HTML”.
 ---
 
 # Adgine GEO Reports
@@ -10,28 +10,33 @@ Use `scripts/report.py` as the default entry point for all platform data reads. 
 ## Required workflow
 
 1. Resolve the active project from `--project-id` or `GEO_PROJECT_ID` when the scenario is project-scoped.
-2. Translate natural-language windows to explicit options:
+2. Match the report language to the user's latest request and always pass it explicitly:
+   - Primarily Chinese request → `--locale zh-CN`
+   - Primarily English request → `--locale en-US`
+   - An explicit request such as “用英文输出” overrides automatic choice.
+   - Detect the language from the user's instruction, not only the Topic/Prompt entity text. The script's `auto` mode is a fallback for Chinese Topic/Prompt text when the caller omits this step.
+3. Translate natural-language windows to explicit options:
    - 最近一周 / last week → `--period 7d`
    - 最近半个月 / last half month → `--period 14d`
    - 最近一个月 / last month → `--period 30d`
    - Exact dates → `--start YYYY-MM-DD --end YYYY-MM-DD`
-3. Prefer an explicit Prompt/Topic ID when supplied. Otherwise pass the exact text; supported GEO-Api versions resolve it inside the single report-data business request.
-4. Run exactly one report command. Do not repeat the same query with a specialist script to create a summary.
-5. Return the generated artifact from `REPORT_FILE` / `REPORT_PREVIEW`, then summarize up to three `REPORT_FINDING` lines and offer the `REPORT_NEXT` prompts.
-6. Use 40 rows per page by default. For “next page / 下一页”, increment `--page` and keep `--limit 40`.
+4. Prefer an explicit Prompt/Topic ID when supplied. Otherwise pass the exact text; supported GEO-Api versions resolve it inside the single report-data business request.
+5. Run exactly one report command. Do not repeat the same query with a specialist script to create a summary.
+6. Return the generated artifact from `REPORT_FILE` / `REPORT_PREVIEW`, then summarize up to three `REPORT_FINDING` lines and offer the `REPORT_NEXT` prompts.
+7. Use 40 rows per page by default. For “next page / 下一页”, increment `--page` and keep `--limit 40`.
 
-Default to offline HTML. Use JSON only when the user asks for raw or machine-readable data.
+Use the scenario's default output policy. Analysis, trend, inventory, and multi-source reports default to offline HTML. Small single-record results (`account-info`, `worker-deployment`, `saas-task`, and `opportunity-detail`) default to inline Markdown. An explicit user request for HTML, inline output, or raw JSON always overrides the scenario default.
 
 ```bash
-python3 <skill-dir>/scripts/report.py visibility --project-id <id> --period 7d
-python3 <skill-dir>/scripts/report.py topic-detail --project-id <id> --topic "Topic name" --period 14d
-python3 <skill-dir>/scripts/report.py prompt-performance --project-id <id> --prompt "exact prompt text" --period 7d
-python3 <skill-dir>/scripts/report.py page-opportunities --project-id <id> --path /blog/example --period 30d
-python3 <skill-dir>/scripts/report.py ga4-overview --project-id <id> --period 30d
-python3 <skill-dir>/scripts/report.py traffic-overview --project-id <id> --period 14d
-python3 <skill-dir>/scripts/report.py data-freshness --project-id <id>
-python3 <skill-dir>/scripts/report.py operations-overview --project-id <id>
-python3 <skill-dir>/scripts/report.py account-info
+python3 <skill-dir>/scripts/report.py visibility --project-id <id> --period 7d --locale en-US
+python3 <skill-dir>/scripts/report.py topic-detail --project-id <id> --topic "主题名称" --period 14d --locale zh-CN
+python3 <skill-dir>/scripts/report.py prompt-performance --project-id <id> --prompt "exact prompt text" --period 7d --locale en-US
+python3 <skill-dir>/scripts/report.py page-opportunities --project-id <id> --path /blog/example --period 30d --locale en-US
+python3 <skill-dir>/scripts/report.py ga4-overview --project-id <id> --period 30d --locale en-US
+python3 <skill-dir>/scripts/report.py traffic-overview --project-id <id> --period 14d --locale en-US
+python3 <skill-dir>/scripts/report.py data-freshness --project-id <id> --locale en-US
+python3 <skill-dir>/scripts/report.py operations-overview --project-id <id> --locale en-US
+python3 <skill-dir>/scripts/report.py account-info --locale en-US
 ```
 
 ## Scenario routing
@@ -65,16 +70,22 @@ Read `references/reporting.md` before changing output behavior, templates, schem
 ## Output controls
 
 ```bash
-# Default standalone HTML under ./adgine-reports/
+# Scenario default: standalone HTML for analysis and inventory reports
 python3 <skill-dir>/scripts/report.py executive-overview --project-id <id> --period 30d
 
+# Scenario default: inline Markdown for small single-record results
+python3 <skill-dir>/scripts/report.py account-info
+
 # Alternative representations
+python3 <skill-dir>/scripts/report.py account-info --format html
 python3 <skill-dir>/scripts/report.py topics --project-id <id> --format markdown
 python3 <skill-dir>/scripts/report.py topics --project-id <id> --format json
 python3 <skill-dir>/scripts/report.py topics --project-id <id> --format both
 
-# Internationalized title/context
+# Fully localized Chinese report chrome, labels, findings, and actions
 python3 <skill-dir>/scripts/report.py visibility --project-id <id> --locale zh-CN --timezone Asia/Shanghai
 ```
+
+Support deterministic `en-US` and `zh-CN` presentation. Keep raw Topic/Prompt names, URLs, API values, and user content unchanged; localize only report UI labels and deterministic narrative text. Unsupported locales fall back to `en-US`.
 
 Keep `assets/report-template.html` standalone: no CDN, remote font, remote script, or network dependency.

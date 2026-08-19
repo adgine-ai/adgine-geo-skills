@@ -3,7 +3,7 @@
 
 Usage:
   python3 scripts/list_content.py [--project-id <id>] [--status draft|outline|article]
-                                 [--publish-status unpublished|published]
+                                 [--publish-status unpublished|published|partial]
                                  [--topic-id <id>] [--page 1] [--limit 40] [--json]
 """
 import sys
@@ -17,8 +17,8 @@ parser = argparse.ArgumentParser(description="List GEO content items")
 parser.add_argument("--project-id", help="Project ID (or set GEO_PROJECT_ID env var)")
 parser.add_argument("--status",   choices=["draft", "outline", "article"],
                     help="Filter by content status")
-parser.add_argument("--publish-status", choices=["unpublished", "published"],
-                    help="Filter by WordPress publish status")
+parser.add_argument("--publish-status", choices=["unpublished", "published", "partial"],
+                    help="Filter by aggregate article-version publish status")
 parser.add_argument("--topic-id", help="Filter by topic ID")
 parser.add_argument("--page",  type=int, default=1,  help="Page number (default: 1)")
 parser.add_argument("--limit", type=int, default=40, help="Results per page (default: 40)")

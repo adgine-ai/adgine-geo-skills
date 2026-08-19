@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from _client import ApiError, api_get, get_api_config, get_project_id, print_json  # noqa: E402
 from _capabilities import discover_capabilities, supports  # noqa: E402
 from _contracts import SCENARIOS, get_scenario, scenario_rows  # noqa: E402
+from _i18n import label as display_label, localize_unit, normalize_locale, t  # noqa: E402
 from _reporting import now_iso, render_markdown, write_html  # noqa: E402
 
 
@@ -214,10 +215,16 @@ def _resolve_topic(client, reference, analytics_params):
 
 def _resolve_prompt(client, args, analytics_params):
     if args.prompt_id:
-        return {"id": args.prompt_id, "content": args.prompt or "Selected prompt"}, "explicit ID"
+        return {
+            "id": args.prompt_id,
+            "content": args.prompt or t(args.locale, "selected_prompt"),
+        }, t(args.locale, "resolution_explicit_id")
     reference = (args.prompt or "").strip()
     if reference and re.fullmatch(r"[0-9a-fA-F-]{32,36}", reference):
-        return {"id": reference, "content": "Selected prompt"}, "ID in --prompt"
+        return {
+            "id": reference,
+            "content": t(args.locale, "selected_prompt"),
+        }, t(args.locale, "resolution_id_in_prompt")
     if args.topic:
         topic = _resolve_topic(client, args.topic, analytics_params)
         payload = client.fetch_all(
@@ -231,11 +238,19 @@ def _resolve_prompt(client, args, analytics_params):
             matches = exact or partial
             if len(matches) != 1:
                 raise ValueError(f"Prompt text matched {len(matches)} records; provide --prompt-id")
-            return matches[0], f"resolved within Topic {topic.get('name')}"
+            return matches[0], t(
+                args.locale,
+                "resolution_within_topic",
+                topic=topic.get("name"),
+            )
         ordered = sorted(items, key=lambda item: (str(item.get("created_at") or ""), str(item.get("id") or "")))
         if args.prompt_index < 1 or args.prompt_index > len(ordered):
             raise ValueError(f"--prompt-index is out of range (1..{len(ordered)})")
-        return ordered[args.prompt_index - 1], f"Topic prompt #{args.prompt_index}, created_at ASC"
+        return ordered[args.prompt_index - 1], t(
+            args.locale,
+            "resolution_topic_prompt_index",
+            index=args.prompt_index,
+        )
     if not reference:
         raise ValueError("Prompt reports require --prompt-id, --prompt, or --topic with --prompt-index")
     payload = client.fetch_all(
@@ -247,7 +262,7 @@ def _resolve_prompt(client, args, analytics_params):
     matches = exact or partial
     if len(matches) != 1:
         raise ValueError(f"Prompt text matched {len(matches)} records; provide --prompt-id")
-    return matches[0], "resolved from project prompt catalog"
+    return matches[0], t(args.locale, "resolution_project_catalog")
 
 
 def _replace_query_values(value, values):
@@ -327,10 +342,10 @@ def _native_params(scenario, args, start, end, client, analytics_params):
     if scenario.name in ("topic-detail", "topic-lifecycle"):
         if _looks_like_uuid(args.topic):
             params["topic_id"] = args.topic.strip()
-            resolution = "Topic ID sent directly to /report-data/topic-performance"
+            resolution = t(args.locale, "resolution_topic_report_id")
         else:
             params["q"] = args.topic.strip()
-            resolution = "exact Topic name resolved by /report-data/topic-performance"
+            resolution = t(args.locale, "resolution_topic_report_name")
         params.update({"limit": args.limit, "offset": (args.page - 1) * args.limit})
         if scenario.name == "topic-lifecycle":
             params["include_lifecycle"] = True
@@ -342,13 +357,13 @@ def _native_params(scenario, args, start, end, client, analytics_params):
             reference = resolved.get("id") or resolved.get("prompt_id")
             entity = resolved
         else:
-            entity = {"content": args.prompt or "Selected prompt"}
+            entity = {"content": args.prompt or t(args.locale, "selected_prompt")}
         if _looks_like_uuid(reference):
             params["prompt_id"] = str(reference).strip()
-            resolution = resolution or "Prompt ID sent directly to /report-data/prompt-performance"
+            resolution = resolution or t(args.locale, "resolution_prompt_report_id")
         else:
             params["q"] = str(reference).strip()
-            resolution = "exact Prompt text resolved by /report-data/prompt-performance"
+            resolution = t(args.locale, "resolution_prompt_report_text")
         params["include_executions"] = scenario.name == "prompt-executions"
         params.update({"execution_limit": args.limit, "execution_offset": (args.page - 1) * args.limit})
     if scenario.name == "ai-pages":
@@ -377,10 +392,10 @@ def _try_report_data(client, scenario, args, start, end, analytics_params):
     mapping = REPORT_DATA_SCENARIOS.get(scenario.name)
     if not mapping:
         return None
-    capabilities, warning = discover_capabilities(client)
+    capabilities, warning = discover_capabilities(client, locale=args.locale)
     feature, endpoint = mapping
     if not supports(capabilities, feature):
-        fallback = warning or f"Report-data feature {feature} is disabled; legacy API workflow used."
+        fallback = warning or t(args.locale, "warning_feature_disabled", feature=feature)
         return {"used": False, "warning": fallback}
     params, entity, resolution = _native_params(
         scenario, args, start, end, client, analytics_params,
@@ -394,13 +409,13 @@ def _try_report_data(client, scenario, args, start, end, analytics_params):
         if exc.status_code in (404, 501) and business_code not in (40405, 40406):
             return {
                 "used": False,
-                "warning": f"Report-data route {endpoint} is unavailable; legacy API workflow used.",
+                "warning": t(args.locale, "warning_route_unavailable", endpoint=endpoint),
             }
         raise
     if data.get("schema_version") != "1.0":
         return {
             "used": False,
-            "warning": "Report-data business response has an unsupported schema; legacy API workflow used.",
+            "warning": t(args.locale, "warning_schema_unsupported"),
         }
     return {
         "used": True,
@@ -412,13 +427,8 @@ def _try_report_data(client, scenario, args, start, end, analytics_params):
     }
 
 
-def _label(key):
-    special = {
-        "ai": "AI", "ga4": "GA4", "sov": "Share of Voice", "avg": "Average",
-        "pct": "%", "kpi": "KPI", "url": "URL", "utm": "UTM",
-    }
-    parts = str(key).replace("-", "_").split("_")
-    return " ".join(special.get(part.lower(), part.capitalize()) for part in parts)
+def _label(key, locale="en-US"):
+    return display_label(key, locale)
 
 
 def _format_for(key, value=None):
@@ -454,19 +464,19 @@ def _numeric(value):
         return None
 
 
-def _comparison_metric(key, value):
+def _comparison_metric(key, value, locale="en-US"):
     current = value.get("current")
     change = value.get("change")
     if change is None:
         change = value.get("delta_pct") if value.get("delta_pct") is not None else value.get("delta")
     return {
-        "label": _label(key), "value": current, "change": change,
+        "label": _label(key, locale), "value": current, "change": change,
         "format": _format_for(key, current), "direction": _direction(key, change),
-        "note": value.get("unit"),
+        "note": localize_unit(value.get("unit"), locale),
     }
 
 
-def _collect_metrics(payloads, limit=8):
+def _collect_metrics(payloads, limit=8, locale="en-US"):
     metrics, seen = [], set()
 
     def add(key, value):
@@ -475,9 +485,9 @@ def _collect_metrics(payloads, limit=8):
         if key in INTERNAL_KEYS or str(key).endswith("_id"):
             return
         if isinstance(value, dict) and "current" in value:
-            metric = _comparison_metric(key, value)
+            metric = _comparison_metric(key, value, locale)
         elif _numeric(value) is not None:
-            metric = {"label": _label(key), "value": value, "format": _format_for(key, value)}
+            metric = {"label": _label(key, locale), "value": value, "format": _format_for(key, value)}
         else:
             return
         seen.add(key)
@@ -506,7 +516,7 @@ def _collect_metrics(payloads, limit=8):
     return metrics
 
 
-def _series_from_list(name, points, color=None):
+def _series_from_list(name, points, color=None, locale="en-US"):
     if not isinstance(points, list) or not points:
         return []
     numeric_keys = []
@@ -522,11 +532,11 @@ def _series_from_list(name, points, color=None):
                 continue
             x = next((point.get(date_key) for date_key in DATE_KEYS if point.get(date_key) is not None), index + 1)
             data.append({"x": x, "y": point.get(key)})
-        output.append({"name": f"{name} · {_label(key)}", "points": data, "color": color})
+        output.append({"name": f"{name} · {_label(key, locale)}", "points": data, "color": color})
     return output
 
 
-def _collect_charts(payloads, scenario):
+def _collect_charts(payloads, scenario, locale="en-US"):
     charts = []
     matrix = payloads.get("matrix")
     if isinstance(matrix, dict):
@@ -534,7 +544,7 @@ def _collect_charts(payloads, scenario):
         competitors = matrix.get("competitors") or matrix.get("rows") or []
         if platforms and competitors:
             charts.append({
-                "type": "heatmap", "title": "Cross-platform comparison",
+                "type": "heatmap", "title": t(locale, "cross_platform_comparison"),
                 "columns": [item.get("code") or item.get("name") if isinstance(item, dict) else item for item in platforms],
                 "rows": [
                     {
@@ -557,29 +567,41 @@ def _collect_charts(payloads, scenario):
                 metric_trend = None
             if isinstance(metric_trend, list) and metric_trend:
                 points = [{"x": item.get("date"), "y": item.get("value")} for item in metric_trend]
-                comparison_series.append({"name": _label(key), "points": points})
+                comparison_series.append({"name": _label(key, locale), "points": points})
         if comparison_series:
-            charts.append({"type": "line", "title": f"{_label(alias)} trend", "series": comparison_series})
+            charts.append({
+                "type": "line",
+                "title": t(locale, "trend", name=_label(alias, locale)),
+                "series": comparison_series,
+            })
         kpi_series = []
         for item in payload.get("kpis") or []:
             if not isinstance(item, dict):
                 continue
-            metric_name = item.get("label") or item.get("key") or "KPI"
-            kpi_series.extend(_series_from_list(str(metric_name), item.get("daily"))[:1])
+            metric_name = item.get("label") or _label(item.get("key") or "kpi", locale)
+            kpi_series.extend(_series_from_list(str(metric_name), item.get("daily"), locale=locale)[:1])
             if len(kpi_series) >= 4:
                 break
         if kpi_series and len(charts) < 5:
-            charts.append({"type": "line", "title": f"{_label(alias)} KPI trend", "series": kpi_series[:4]})
+            charts.append({
+                "type": "line",
+                "title": t(locale, "kpi_trend", name=_label(alias, locale)),
+                "series": kpi_series[:4],
+            })
         for key in ("daily", "trend", "prev_daily"):
             points = payload.get(key)
-            series = _series_from_list(_label(alias), points)
+            series = _series_from_list(_label(alias, locale), points, locale=locale)
             if series and len(charts) < 5:
-                charts.append({"type": "line", "title": f"{_label(alias)} · {_label(key)}", "series": series})
+                charts.append({
+                    "type": "line",
+                    "title": f"{_label(alias, locale)} · {_label(key, locale)}",
+                    "series": series,
+                })
         links = payload.get("links")
         if isinstance(links, list) and links and len(charts) < 5:
             items = sorted(links, key=lambda item: _numeric(item.get("value")) or 0, reverse=True)[:15]
             charts.append({
-                "type": "bar", "title": f"{_label(alias)} · top flows",
+                "type": "bar", "title": t(locale, "top_flows", name=_label(alias, locale)),
                 "items": [{"label": f"{item.get('source')} → {item.get('target')}", "value": item.get("value")} for item in items],
                 "format": "integer",
             })
@@ -612,12 +634,12 @@ def _public_keys(rows, show_ids=False):
     return keys[:10]
 
 
-def _table(title, rows, show_ids=False, note=None):
+def _table(title, rows, show_ids=False, note=None, locale="en-US"):
     rows = [_sanitize(item, show_ids) for item in rows if isinstance(item, dict)]
     keys = _public_keys(rows, show_ids)
     columns = [
         {
-            "key": key, "label": _label(key), "format": _format_for(key),
+            "key": key, "label": _label(key, locale), "format": _format_for(key),
             "align": "right" if any(_numeric(row.get(key)) is not None for row in rows) else "left",
         }
         for key in keys
@@ -655,7 +677,7 @@ def _payload_lists(payload):
     return output
 
 
-def _catalog_tables(payloads, show_ids):
+def _catalog_tables(payloads, show_ids, locale="en-US"):
     topics = _first_list(payloads.get("topics") or {}, ("items", "topics"))
     prompts = _first_list(payloads.get("prompts") or {}, ("items", "prompts"))
     topic_map = {str(item.get("id") or item.get("topic_id")): item.get("name") for item in topics}
@@ -666,11 +688,14 @@ def _catalog_tables(payloads, show_ids):
         topic_id = str(item.get("topic_id") or "")
         counters[topic_id] = counters.get(topic_id, 0) + 1
         item["ordinal"] = counters[topic_id]
-        item["topic"] = topic_map.get(topic_id) or "Unknown topic"
-    return [_table("Topics", topics, show_ids), _table("Prompts", prompts, show_ids)]
+        item["topic"] = topic_map.get(topic_id) or t(locale, "unknown_topic")
+    return [
+        _table(t(locale, "topics"), topics, show_ids, locale=locale),
+        _table(t(locale, "prompts"), prompts, show_ids, locale=locale),
+    ]
 
 
-def _lifecycle_table(payloads, show_ids):
+def _lifecycle_table(payloads, show_ids, locale="en-US"):
     metadata = _first_list(payloads.get("prompt_metadata") or {}, ("items", "prompts"))
     analytics = _first_list(payloads.get("prompts") or {}, ("items", "prompts"))
     meta = {str(item.get("id") or item.get("prompt_id")): item for item in metadata}
@@ -682,36 +707,47 @@ def _lifecycle_table(payloads, show_ids):
     rows.sort(key=lambda row: (str(row.get("created_at") or ""), str(row.get("prompt_id") or row.get("id") or "")))
     pivot = max(1, (len(rows) + 1) // 2)
     for index, row in enumerate(rows):
-        row["cohort"] = "Initial" if index < pivot else "Later"
+        row["cohort"] = t(locale, "cohort_initial") if index < pivot else t(locale, "cohort_later")
         row["ordinal"] = index + 1
-    return _table("Prompt lifecycle cohorts", rows, show_ids, "Cohorts are deterministic halves ordered by created_at ASC; they are not causal attribution.")
+    return _table(
+        t(locale, "prompt_lifecycle_cohorts"),
+        rows,
+        show_ids,
+        t(locale, "lifecycle_note"),
+        locale,
+    )
 
 
-def _account_table(payloads, show_ids):
+def _account_table(payloads, show_ids, locale="en-US"):
     account = payloads.get("account") or {}
     rows = [
-        {"field": "Created at", "value": account.get("created_at")},
-        {"field": "Account name", "value": account.get("name")},
-        {"field": "Phone", "value": account.get("phone")},
-        {"field": "Email", "value": account.get("email")},
+        {"field": t(locale, "created_at"), "value": account.get("created_at")},
+        {"field": t(locale, "account_name"), "value": account.get("name")},
+        {"field": t(locale, "phone"), "value": account.get("phone")},
+        {"field": t(locale, "email"), "value": account.get("email")},
     ]
-    return _table("Account information", rows, show_ids)
+    return _table(t(locale, "account_information"), rows, show_ids, locale=locale)
 
 
-def _collect_tables(payloads, scenario, show_ids=False):
+def _collect_tables(payloads, scenario, show_ids=False, locale="en-US"):
     if scenario.name == "catalog":
-        return _catalog_tables(payloads, show_ids)
+        return _catalog_tables(payloads, show_ids, locale)
     if scenario.name == "topic-lifecycle":
-        return [_lifecycle_table(payloads, show_ids)]
+        return [_lifecycle_table(payloads, show_ids, locale)]
     if scenario.name == "account-info":
-        return [_account_table(payloads, show_ids)]
+        return [_account_table(payloads, show_ids, locale)]
     tables = []
     for alias, payload in payloads.items():
         payload_tables = _payload_lists(payload)
         for key, rows in payload_tables:
             if key == "kpis":
                 continue
-            tables.append(_table(f"{_label(alias)} · {_label(key)}", rows[:100], show_ids))
+            tables.append(_table(
+                f"{_label(alias, locale)} · {_label(key, locale)}",
+                rows[:100],
+                show_ids,
+                locale=locale,
+            ))
             if len(tables) >= 10:
                 return tables
         if scenario.density in ("detail", "status") and isinstance(payload, dict):
@@ -724,13 +760,18 @@ def _collect_tables(payloads, scenario, show_ids=False):
                     continue
                 if isinstance(value, dict) and len(json.dumps(value, ensure_ascii=False, default=str)) > 500:
                     continue
-                scalar_rows.append({"field": _label(key), "value": value})
+                scalar_rows.append({"field": _label(key, locale), "value": value})
             if scalar_rows:
-                tables.insert(0, _table(f"{_label(alias)} · summary", scalar_rows, show_ids))
+                tables.insert(0, _table(
+                    t(locale, "summary", name=_label(alias, locale)),
+                    scalar_rows,
+                    show_ids,
+                    locale=locale,
+                ))
     return tables
 
 
-def _page_opportunity_rules(payloads):
+def _page_opportunity_rules(payloads, locale="en-US"):
     findings, rows = [], []
     health = payloads.get("health") or {}
     report = health.get("report") if isinstance(health, dict) else None
@@ -740,36 +781,66 @@ def _page_opportunity_rules(payloads):
         performance_score = report.get("performance")
     score = _numeric(performance_score)
     if score is None:
-        rows.append({"priority": "Medium", "area": "Performance", "recommendation": "Generate or refresh PageSpeed data explicitly before prioritizing Core Web Vitals work."})
+        rows.append({
+            "priority": t(locale, "priority_medium"),
+            "area": t(locale, "area_performance"),
+            "recommendation": t(locale, "recommend_pagespeed_missing"),
+        })
     elif score < 50:
-        rows.append({"priority": "High", "area": "Performance", "recommendation": "Improve critical rendering and Core Web Vitals; cached performance score is below 50."})
+        rows.append({
+            "priority": t(locale, "priority_high"),
+            "area": t(locale, "area_performance"),
+            "recommendation": t(locale, "recommend_performance_low"),
+        })
     elif score < 90:
-        rows.append({"priority": "Medium", "area": "Performance", "recommendation": "Review PageSpeed opportunities; cached performance score is below 90."})
+        rows.append({
+            "priority": t(locale, "priority_medium"),
+            "area": t(locale, "area_performance"),
+            "recommendation": t(locale, "recommend_performance_medium"),
+        })
     kpi = payloads.get("kpi") or {}
     values = kpi.get("kpis") if isinstance(kpi, dict) else {}
     values = values if isinstance(values, dict) else {}
     citation = values.get("ai_citation")
     citation = citation.get("current") if isinstance(citation, dict) else citation
     if _numeric(citation) == 0:
-        rows.append({"priority": "High", "area": "AI citations", "recommendation": "Strengthen answer-ready claims, evidence, entity clarity, and internal links; no AI citation events were observed in the selected period."})
+        rows.append({
+            "priority": t(locale, "priority_high"),
+            "area": t(locale, "area_ai_citations"),
+            "recommendation": t(locale, "recommend_citations"),
+        })
     training = values.get("ai_training")
     training = training.get("current") if isinstance(training, dict) else training
     if _numeric(training) == 0:
-        rows.append({"priority": "Medium", "area": "Crawler access", "recommendation": "Check robots directives, crawlable HTML, sitemaps, and server responses for training crawlers."})
+        rows.append({
+            "priority": t(locale, "priority_medium"),
+            "area": t(locale, "area_crawler_access"),
+            "recommendation": t(locale, "recommend_crawler"),
+        })
     opportunities = _first_list(payloads.get("opportunities") or {}, ("items", "opportunities"))
-    findings.append(f"{len(rows)} deterministic page checks produced an action; {len(opportunities)} backend opportunities were available before path filtering.")
+    findings.append(t(
+        locale,
+        "page_checks",
+        actions=len(rows),
+        opportunities=len(opportunities),
+    ))
     return rows, findings
 
 
-def _insights(metrics, tables, errors, scenario):
+def _insights(metrics, tables, errors, scenario, locale="en-US"):
     if scenario.name == "account-info":
-        return ["The authenticated account profile was loaded from GEO-Api."]
+        return [t(locale, "account_loaded")]
     output = []
     comparable = [item for item in metrics if _numeric(item.get("value")) is not None]
     changed = [item for item in comparable if _numeric(item.get("change")) not in (None, 0)]
     if changed:
         item = max(changed, key=lambda row: abs(_numeric(row.get("change"))))
-        output.append(f"{item['label']} has the largest displayed period change ({item.get('change')}).")
+        output.append(t(
+            locale,
+            "largest_change",
+            label=item["label"],
+            change=item.get("change"),
+        ))
     for table in tables:
         rows = table.get("rows") or []
         columns = table.get("columns") or []
@@ -780,26 +851,36 @@ def _insights(metrics, tables, errors, scenario):
             candidates = [row for row in rows if _numeric(row.get(key)) is not None]
             if candidates:
                 leader = max(candidates, key=lambda row: _numeric(row.get(key)))
-                output.append(f"{leader.get(label_cols[0]['key'])} leads {table.get('title')} on {numeric[0].get('label')}.")
+                output.append(t(
+                    locale,
+                    "table_leader",
+                    name=leader.get(label_cols[0]["key"]),
+                    table=table.get("title"),
+                    metric=numeric[0].get("label"),
+                ))
                 break
     if errors:
-        output.append(f"The report is partial: {', '.join(errors)} unavailable.")
+        output.append(t(locale, "report_partial", sources=", ".join(errors)))
     if not output:
-        output.append("The selected window contains insufficient comparable data for a deterministic trend finding.")
+        output.append(t(locale, "insufficient_data"))
     return output[:3]
 
 
-def _next_actions(scenario, args):
+def _next_actions(scenario, args, locale="en-US"):
     actions = {
-        "visibility": ["Compare visibility by AI platform", "Review the weakest Topic", "Inspect citation sources"],
-        "topics": ["Open the lowest-visibility Topic", "Compare Topic prompt performance", "Review Topic citation sources"],
-        "prompt-performance": ["Show this Prompt's execution history", "Compare this Prompt by platform", "Inspect its cited URLs"],
-        "ai-pages": ["Open the leading page detail", "Show page-level optimization opportunities", "Compare bot and human traffic separately"],
-        "page-detail": ["Generate deterministic opportunities for this page", "Inspect exact page event logs", "Compare related pages"],
-        "content-pipeline": ["Inspect failed content jobs", "Open the latest content item", "Review WordPress publish readiness"],
-        "account-info": ["Review my subscription and credits", "List my projects", "Show integration health"],
+        "visibility": ["next_compare_platform", "next_weakest_topic", "next_citation_sources"],
+        "topics": ["next_lowest_topic", "next_topic_prompts", "next_topic_citations"],
+        "prompt-performance": ["next_prompt_history", "next_prompt_platform", "next_prompt_urls"],
+        "ai-pages": ["next_leading_page", "next_page_opportunities", "next_bot_human"],
+        "page-detail": ["next_generate_page_opportunities", "next_page_logs", "next_related_pages"],
+        "content-pipeline": ["next_failed_content", "next_latest_content", "next_publish_readiness"],
+        "account-info": ["next_subscription", "next_projects", "next_integration_health"],
     }
-    return actions.get(scenario.name, ["Compare a different time window", "Narrow the report by platform", "Open the most important row in detail"])[:3]
+    keys = actions.get(
+        scenario.name,
+        ["next_other_window", "next_narrow_platform", "next_important_row"],
+    )
+    return [t(locale, key) for key in keys[:3]]
 
 
 def _mask_path(path, show_ids=False):
@@ -836,37 +917,52 @@ def build_report(
     scenario, args, client, payloads, errors, start, end, entity=None,
     resolution=None, native_metadata=None, workflow_warning=None,
 ):
-    title = scenario.title_zh if args.locale.lower().startswith("zh") else scenario.title
+    locale = normalize_locale(args.locale, args.topic, args.prompt)
+    title = scenario.title_zh if locale == "zh-CN" else scenario.title
+    description_key = f"description_{scenario.name}"
+    subtitle = (
+        t(locale, description_key)
+        if scenario.description
+        else t(locale, f"subtitle_{scenario.density}")
+    )
     project_scoped = any("{project_id}" in spec.path for spec in scenario.requests)
     context = [
         {
-            "label": "Project" if project_scoped else "Account",
+            "label": t(locale, "project") if project_scoped else t(locale, "account"),
             "value": (
                 client.project_id if project_scoped and args.show_ids
-                else "Current project" if project_scoped
-                else "Current account"
+                else t(locale, "current_project") if project_scoped
+                else t(locale, "current_account")
             ),
         },
-        {"label": "Range", "value": f"{start} → {end}"},
-        {"label": "Period", "value": args.period},
+        {"label": t(locale, "range"), "value": f"{start} → {end}"},
+        {"label": t(locale, "period"), "value": args.period},
     ]
     platforms = _platforms(args.platform)
     if platforms:
-        context.append({"label": "Platform", "value": ", ".join(platforms)})
+        context.append({"label": t(locale, "platform"), "value": ", ".join(platforms)})
     if any(spec.paging != "none" for spec in scenario.requests):
         context.extend([
-            {"label": "Page", "value": args.page},
-            {"label": "Page size", "value": args.limit},
+            {"label": t(locale, "page"), "value": args.page},
+            {"label": t(locale, "page_size"), "value": args.limit},
         ])
     if entity:
-        context.append({"label": "Entity", "value": entity.get("name") or entity.get("content") or args.path or "Selected entity"})
-    metrics = _collect_metrics(payloads)
-    charts = _collect_charts(payloads, scenario)
-    tables = _collect_tables(payloads, scenario, args.show_ids)
+        context.append({
+            "label": t(locale, "entity"),
+            "value": entity.get("name") or entity.get("content") or args.path or t(locale, "selected_entity"),
+        })
+    metrics = _collect_metrics(payloads, locale=locale)
+    charts = _collect_charts(payloads, scenario, locale)
+    tables = _collect_tables(payloads, scenario, args.show_ids, locale)
     extra_insights = []
     if scenario.name == "page-opportunities":
-        rows, extra_insights = _page_opportunity_rules(payloads)
-        tables.insert(0, _table("Deterministic recommendations", rows, args.show_ids))
+        rows, extra_insights = _page_opportunity_rules(payloads, locale)
+        tables.insert(0, _table(
+            t(locale, "deterministic_recommendations"),
+            rows,
+            args.show_ids,
+            locale=locale,
+        ))
     warnings = [f"{alias}: {message}" for alias, message in errors.items()]
     if workflow_warning:
         warnings.append(workflow_warning)
@@ -879,19 +975,22 @@ def build_report(
         else:
             warnings.append(str(item))
     if len(scenario.requests) > 1 or scenario.name in ("ai-overview", "page-detail"):
-        warnings.append("GA4 sessions/users, Cloudflare requests, Worker events, and AI Agent event counts use different units and are displayed separately; they are never added together.")
+        warnings.append(t(locale, "warning_mixed_units"))
     if scenario.name in ("page-health", "page-detail", "page-opportunities"):
-        warnings.append("Page health uses cached data only. This report never triggers the blocking PageSpeed refresh endpoint.")
+        warnings.append(t(locale, "warning_cached_pagespeed"))
     sources = []
     if native_metadata:
         for source in native_metadata.get("sources") or []:
             units = source.get("units") or {}
             sources.append({
-                "name": source.get("name"),
+                "name": _label(source.get("name"), locale),
                 "status": source.get("status"),
                 "as_of": source.get("as_of"),
                 "units": units,
-                "unit": ", ".join(f"{key}: {value}" for key, value in units.items()) or "records",
+                "unit": ", ".join(
+                    f"{_label(key, locale)}: {localize_unit(value, locale)}"
+                    for key, value in units.items()
+                ) or localize_unit("records", locale),
                 "effective_range": source.get("effective_range"),
                 "available_days": source.get("available_days"),
                 "expected_days": source.get("expected_days"),
@@ -903,37 +1002,37 @@ def build_report(
         for spec in scenario.requests:
             status = "error" if spec.alias in errors else ("partial" if payloads.get(spec.alias) in (None, {}, []) else "ok")
             sources.append({
-                "name": spec.alias, "status": status, "as_of": end,
-                "unit": SOURCE_UNITS.get(spec.alias, "records"),
+                "name": _label(spec.alias, locale), "status": status, "as_of": end,
+                "unit": localize_unit(SOURCE_UNITS.get(spec.alias, "records"), locale),
             })
     audit_fields = [
-        {"label": "Scenario", "value": scenario.name},
-        {"label": "Density", "value": scenario.density},
-        {"label": "Locale", "value": args.locale},
-        {"label": "Timezone", "value": args.timezone},
-        {"label": "Concurrency limit", "value": "4"},
+        {"label": t(locale, "scenario"), "value": scenario.name},
+        {"label": t(locale, "density"), "value": _label(scenario.density, locale)},
+        {"label": t(locale, "locale"), "value": locale},
+        {"label": t(locale, "timezone"), "value": args.timezone},
+        {"label": t(locale, "concurrency_limit"), "value": "4"},
     ]
     if any(spec.paging != "none" for spec in scenario.requests):
         audit_fields.extend([
-            {"label": "Page", "value": args.page},
-            {"label": "Page size", "value": args.limit},
+            {"label": t(locale, "page"), "value": args.page},
+            {"label": t(locale, "page_size"), "value": args.limit},
         ])
     if resolution:
-        audit_fields.append({"label": "Entity resolution", "value": resolution})
+        audit_fields.append({"label": t(locale, "entity_resolution"), "value": resolution})
     report = {
         "schema_version": "1.0",
         "report_type": scenario.name,
         "title": title,
-        "subtitle": scenario.description or f"Read-only {scenario.density} report with explicit coverage and source units.",
+        "subtitle": subtitle,
         "generated_at": now_iso(),
-        "locale": args.locale,
+        "locale": locale,
         "timezone": args.timezone,
         "context": context,
         "metrics": metrics,
         "charts": charts,
         "tables": tables,
-        "insights": (extra_insights + _insights(metrics, tables, errors, scenario))[:3],
-        "next_actions": _next_actions(scenario, args),
+        "insights": (extra_insights + _insights(metrics, tables, errors, scenario, locale))[:3],
+        "next_actions": _next_actions(scenario, args, locale),
         "coverage": {
             "requested_range": (native_metadata or {}).get("requested_range") or {"from": start, "to": end},
             "effective_range": (native_metadata or {}).get("effective_range") or {"from": start, "to": end},
@@ -966,6 +1065,7 @@ def _validate_requirements(scenario, args):
 
 
 def run_report(args, client=None):
+    args.locale = normalize_locale(args.locale, args.topic, args.prompt)
     scenario = get_scenario(args.scenario)
     _validate_requirements(scenario, args)
     if args.page < 1 or args.limit < 1:
@@ -1004,7 +1104,7 @@ def run_report(args, client=None):
     if "topic" in scenario.requires:
         entity = _resolve_topic(client, args.topic, analytics_params)
         values["topic_id"] = quote(str(entity["id"]), safe="")
-        resolution = "exact Topic ID/name match via /analytics/topics"
+        resolution = t(args.locale, "resolution_topic_legacy")
     if "prompt" in scenario.requires:
         entity, resolution = _resolve_prompt(client, args, analytics_params)
         values["prompt_id"] = quote(str(entity.get("id") or entity.get("prompt_id")), safe="")
@@ -1015,8 +1115,16 @@ def run_report(args, client=None):
     )
 
 
+def _resolve_output_format(args):
+    if args.json:
+        return "json"
+    if args.format != "auto":
+        return args.format
+    return get_scenario(args.scenario).default_format
+
+
 def emit_report(report, args):
-    output_format = "json" if args.json else args.format
+    output_format = _resolve_output_format(args)
     if output_format == "json":
         print_json(report)
         return None
@@ -1037,7 +1145,9 @@ def emit_report(report, args):
 
 
 def parse_args(argv=None):
-    parser = argparse.ArgumentParser(description="Adgine GEO scenario reports (offline HTML by default)")
+    parser = argparse.ArgumentParser(
+        description="Adgine GEO scenario reports (scenario-aware HTML or inline output)"
+    )
     parser.add_argument("scenario", nargs="?", choices=sorted(SCENARIOS), help="Report scenario")
     parser.add_argument("--list-scenarios", action="store_true", help="List all P1-P3 report scenarios")
     parser.add_argument("--project-id", help="Project ID, or use GEO_PROJECT_ID")
@@ -1055,9 +1165,18 @@ def parse_args(argv=None):
     parser.add_argument("--metric", choices=["visibility", "visibility_score", "sov", "share_of_voice"])
     parser.add_argument("--page", type=int, default=1, help="1-based result page")
     parser.add_argument("--limit", type=int, default=DEFAULT_PAGE_SIZE, help="Rows per page (default: 40)")
-    parser.add_argument("--locale", default=os.environ.get("GEO_REPORT_LOCALE", "en-US"))
+    parser.add_argument(
+        "--locale",
+        default=os.environ.get("GEO_REPORT_LOCALE", "auto"),
+        help="Report language: auto, en-US, or zh-CN (default: auto)",
+    )
     parser.add_argument("--timezone", default=os.environ.get("GEO_REPORT_TIMEZONE", "UTC"))
-    parser.add_argument("--format", choices=["html", "markdown", "json", "both"], default="html")
+    parser.add_argument(
+        "--format",
+        choices=["auto", "html", "markdown", "json", "both"],
+        default="auto",
+        help="Output format; auto uses the scenario default",
+    )
     parser.add_argument("--json", action="store_true", help="Alias for --format json")
     parser.add_argument("--output", help="Exact HTML output path")
     parser.add_argument("--output-dir", help="HTML output directory")

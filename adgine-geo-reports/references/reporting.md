@@ -8,13 +8,17 @@
 - Coverage and unit rules
 - Entity resolution and performance
 - Audit, privacy, and empty values
+- Locale selection and bilingual output
 - Template maintenance
 
 ## Output modes and markers
 
 Use `scripts/report.py` for all read-only GEO reports.
 
-- `html` is the default and writes a standalone file under the caller's `adgine-reports/` directory.
+- `auto` is the CLI default. It resolves to the scenario's declared `default_format`.
+- Analysis, trend, inventory, and multi-source scenarios normally resolve to `html` and write a standalone file under the caller's `adgine-reports/` directory.
+- Small single-record scenarios (`account-info`, `worker-deployment`, `saas-task`, and `opportunity-detail`) resolve to inline `markdown`.
+- An explicit `--format html|markdown|json|both` always overrides the scenario default.
 - `markdown` prints a fixed narrative/table representation.
 - `json` prints the stable report contract.
 - `both` prints Markdown and writes HTML.
@@ -51,6 +55,19 @@ Every representation derives from one dictionary with `schema_version=1.0`:
 | `audit` | Resolution rule, API paths/timings, warnings, and quality caveats. |
 
 The HTML embeds the public report JSON in `#adgine-report-data`. Never embed raw API responses, credentials, or hidden identifiers.
+
+## Locale selection and bilingual output
+
+Support `en-US` and `zh-CN` across HTML, Markdown, JSON, and WorkBuddy markers. Localize report titles, subtitles, context labels, metric and table labels, chart headings, deterministic findings, next actions, coverage, audit headings, empty states, Boolean values, and template chrome.
+
+Apply this priority:
+
+1. Explicit language requested by the user.
+2. Primary language of the user's latest instruction, passed by the agent as `--locale zh-CN` or `--locale en-US`.
+3. `GEO_REPORT_LOCALE` when configured.
+4. `auto` fallback detection from supplied Topic/Prompt text, then `en-US`.
+
+Do not infer solely from an entity name: a Chinese request may analyze an English Topic, and an explicit English report may analyze Chinese content. Do not translate raw Topic/Prompt names, URLs, source values, error codes, or API payload content. Unsupported locales fall back to `en-US` without adding a dependency or an LLM translation call.
 
 ## Density and visual mapping
 

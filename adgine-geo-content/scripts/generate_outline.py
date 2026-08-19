@@ -10,6 +10,8 @@ Usage:
     [--project-id <id>] [--title "Your Article Title"] \
     [--reference-urls "https://url1,https://url2"] \
     [--instructions "Target CMO audience, emphasize ROI"] \
+    [--article-type authoritative|listicle|comparison] \
+    [--article-strategy "Why this title/format fits"] \
     [--json]
 """
 import sys
@@ -19,7 +21,7 @@ import argparse
 sys.path.insert(0, os.path.dirname(__file__))
 from _client import (
     get_api_config, get_project_id,
-    api_post, extract_data, poll_job, print_json,
+    api_get, api_post, extract_data, poll_job, print_json,
 )
 
 parser = argparse.ArgumentParser(description="Generate GEO article outline")
@@ -29,6 +31,9 @@ parser.add_argument("--project-id",     help="Project ID (or set GEO_PROJECT_ID 
 parser.add_argument("--title",          help="Article title (auto-generated if omitted)")
 parser.add_argument("--reference-urls", help="Comma-separated reference/competitor URLs")
 parser.add_argument("--instructions",   help="Additional AI guidance (audience, tone, focus)")
+parser.add_argument("--article-type", choices=["authoritative", "listicle", "comparison"],
+                    help="Article format (GEO-Api defaults to authoritative)")
+parser.add_argument("--article-strategy", help="Title/format strategy description")
 parser.add_argument("--json", action="store_true", help="Output raw job result as JSON")
 args = parser.parse_args()
 
@@ -50,12 +55,17 @@ if args.reference_urls:
     body["reference_urls"] = [u.strip() for u in args.reference_urls.split(",") if u.strip()]
 if args.instructions:
     body["custom_instructions"] = args.instructions
+if args.article_type:
+    body["article_type"] = args.article_type
+if args.article_strategy:
+    body["article_strategy"] = args.article_strategy
 
 print(f"Starting outline generation...")
 print(f"  Topic     : {args.topic_id}")
 print(f"  Prompts   : {len(prompt_ids)}")
 if args.title:
     print(f"  Title     : {args.title}")
+print(f"  Type      : {args.article_type or 'authoritative (GEO-Api default)'}")
 print()
 
 result = api_post(f"/api/projects/{pid}/content/generate-outline", key, base, body)
@@ -90,10 +100,15 @@ if status == "failed":
     print(f"ERROR: Outline generation failed — {final_job.get('error', 'unknown error')}")
     sys.exit(1)
 
-output = final_job.get("output") or {}
-content_id = output.get("content_id") or content_id
-title      = output.get("article_title") or args.title or "(auto-generated)"
-outline    = output.get("page_outline") or ""
+content_id = final_job.get("content_id") or content_id
+if not content_id:
+    print("ERROR: completed outline job did not identify its content item")
+    print_json(final_job)
+    sys.exit(1)
+content_result = api_get(f"/api/projects/{pid}/content/{content_id}", key, base)
+content = extract_data(content_result) or {}
+title = content.get("article_title") or args.title or "(auto-generated)"
+outline = content.get("page_outline") or ""
 
 print(f"\nOutline generation completed!")
 print(f"  Content ID : {content_id}")

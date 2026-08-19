@@ -6,9 +6,9 @@ task_id until it reaches a terminal state.
 
 Usage:
   python3 scripts/create_website.py --subdomain mysite \\
-      --brand-name "My Site" --industry "SaaS" \\
+      --brand-name "My Site" \\
       --description "An AI-first content platform" \\
-      --language English [--json]
+      --language English [--theme-id adgine-01] [--json]
 """
 import sys
 import os
@@ -20,22 +20,24 @@ from _client import get_api_config, api_post, extract_data, print_json
 
 def main():
     parser = argparse.ArgumentParser(description="Create a SaaS-hosted website")
-    parser.add_argument("--subdomain", required=True, help="Subdomain (e.g. mysite)")
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--subdomain", help="Subdomain (e.g. mysite, hosted under adgine.net)")
+    target.add_argument("--domain", help="Registered custom domain (e.g. example.com)")
     parser.add_argument("--brand-name", required=True, help="Brand name")
-    parser.add_argument("--industry", required=True, help="Industry")
     parser.add_argument("--description", required=True, help="Short brand description")
-    parser.add_argument("--language", default="English", help="Content language")
+    parser.add_argument("--language", default="English", help="Content language (default: English)")
+    parser.add_argument("--theme-id", default="adgine-01", help="Theme ID (default: adgine-01)")
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
     args = parser.parse_args()
 
     key, base = get_api_config()
     body = {
-        "subdomain": args.subdomain,
         "brand_name": args.brand_name,
-        "industry": args.industry,
         "description": args.description,
         "language": args.language,
+        "theme_id": args.theme_id,
     }
+    body["subdomain" if args.subdomain else "domain"] = args.subdomain or args.domain
     result = api_post("/api/saas/websites", key, base, body=body)
     data = extract_data(result) or {}
 

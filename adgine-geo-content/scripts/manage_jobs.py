@@ -1,183 +1,141 @@
 #!/usr/bin/env python3
-"""List, inspect and retry content generation jobs (outline + article workflows).
+"""List, inspect, or retry unified GEO content workflow jobs.
 
-Subcommands:
-  list-outline                          — list outline-generation jobs
-  list-article                          — list article-generation jobs
-  list-workflow                         — list combined workflow jobs (jobs)
-  get-outline   --job-id <id>           — outline-jobs/{id}
-  get-article   --job-id <id>           — article-jobs/{id}
-  get-workflow  --job-id <id>           — jobs/{id}  (overall workflow)
-  retry         --job-id <id>           — retry a failed workflow job
+GEO-Api now exposes one job collection for outline, article, refine, and cover
+workflows. The legacy command names remain as aliases, but all of them call
+``/content/jobs``.
 
-Usage examples:
-  python3 scripts/manage_jobs.py list-outline
-  python3 scripts/manage_jobs.py get-article --job-id <id>
+Examples:
+  python3 scripts/manage_jobs.py list --workflow-type outline
+  python3 scripts/manage_jobs.py get --job-id <id>
   python3 scripts/manage_jobs.py retry --job-id <id>
 """
-import sys
-import os
 import argparse
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from _client import (
-    get_api_config, get_project_id,
-    api_get, api_post,
-    extract_data, print_json, truncate,
-    pad,
+from _client import (  # noqa: E402
+    api_get,
+    api_post,
+    extract_data,
+    get_api_config,
+    get_project_id,
+    print_json,
 )
 
 
-def _norm_status(s):
-    s = (s or "").lower()
-    if s in ("completed", "complete", "success", "done"):
-        return "Completed"
-    if s in ("failed", "error"):
-        return "Failed"
-    if s in ("running", "generating", "in_progress"):
-        return "Generating"
-    if s in ("pending", "queued", "created"):
-        return "Pending"
-    return s.title() if s else "--"
+def _short(value):
+    text = str(value or "")
+    return f"{text[:8]}…" if len(text) > 8 else (text or "—")
 
 
-def _print_list(items, args, title):
-    if args.json:
-        print_json(items)
-        return
-    print(f"{title}  (page {args.page}, limit {args.limit})")
-    print()
-    if not items:
-        print("No jobs found.")
-        return
-    print("```")
-    print("┌──────────────────────────────────────┬──────────────┬──────────────────────┐")
-    print("│ Job ID                               │ Status       │ Created at           │")
-    print("├──────────────────────────────────────┼──────────────┼──────────────────────┤")
-    for j in items:
-        jid = truncate(j.get("id") or j.get("job_id"), 36)
-        st = _norm_status(j.get("status"))
-        created = truncate(j.get("created_at") or "--", 20)
-        print(f"│ {pad(jid, 36)} │ {pad(st, 12)} │ {pad(created, 20)} │")
-    print("└──────────────────────────────────────┴──────────────┴──────────────────────┘")
-    print("```")
-
-
-def _print_detail(data, args, title):
+def _print_list(data, args, workflow_type):
     if args.json:
         print_json(data)
         return
-    print(f"{title}: {args.job_id}")
-    print()
-    print("```")
-    print("┌────────────────────┬──────────────────────────────────────┐")
-    print("│ Field              │ Value                                │")
-    print("├────────────────────┼──────────────────────────────────────┤")
-    for k in ("status", "current_phase", "progress", "content_id",
-              "topic_id", "created_at", "started_at", "completed_at",
-              "error_message"):
-        if k in data:
-            val = data.get(k)
-            if k == "status":
-                val = _norm_status(val)
-            print(f"│ {pad(k, 18)} │ {pad(truncate(val, 36), 36)} │")
-    print("└────────────────────┴──────────────────────────────────────┘")
-    print("```")
+    items = data if isinstance(data, list) else (data or {}).get("items") or []
+    total = (data or {}).get("total", len(items)) if isinstance(data, dict) else len(items)
+    label = workflow_type or "all"
+    print(f"Content workflow jobs: {len(items)} of {total} (type={label}, page={args.page})")
+    for index, job in enumerate(items, 1):
+        print(
+            f"  {index:>2}. {_short(job.get('id'))}  "
+            f"{job.get('workflow_type') or '—'}  {job.get('status') or '—'}  "
+            f"{job.get('progress', 0)}%"
+        )
 
 
-def cmd_list_outline(args, key, base, pid):
-    result = api_get(f"/api/projects/{pid}/content/outline-jobs", key, base,
-                     params={"page": args.page, "limit": args.limit})
-    data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("jobs") or (data or {}).get("items", [])
-    _print_list(items, args, "Outline jobs")
-
-
-def cmd_list_article(args, key, base, pid):
-    result = api_get(f"/api/projects/{pid}/content/article-jobs", key, base,
-                     params={"page": args.page, "limit": args.limit})
-    data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("jobs") or (data or {}).get("items", [])
-    _print_list(items, args, "Article jobs")
-
-
-def cmd_list_workflow(args, key, base, pid):
-    result = api_get(f"/api/projects/{pid}/content/jobs", key, base,
-                     params={"page": args.page, "limit": args.limit})
-    data = extract_data(result)
-    items = data if isinstance(data, list) else (data or {}).get("jobs") or (data or {}).get("items", [])
-    _print_list(items, args, "Workflow jobs")
-
-
-def cmd_get_outline(args, key, base, pid):
-    result = api_get(f"/api/projects/{pid}/content/outline-jobs/{args.job_id}", key, base)
-    data = extract_data(result) or {}
-    _print_detail(data, args, "Outline job")
-
-
-def cmd_get_article(args, key, base, pid):
-    result = api_get(f"/api/projects/{pid}/content/article-jobs/{args.job_id}", key, base)
-    data = extract_data(result) or {}
-    _print_detail(data, args, "Article job")
-
-
-def cmd_get_workflow(args, key, base, pid):
-    result = api_get(f"/api/projects/{pid}/content/jobs/{args.job_id}", key, base)
-    data = extract_data(result) or {}
-    _print_detail(data, args, "Workflow job")
-
-
-def cmd_retry(args, key, base, pid):
-    result = api_post(f"/api/projects/{pid}/content/jobs/{args.job_id}/retry", key, base)
-    data = extract_data(result)
-    if args.json:
-        print_json(data if data is not None else {"ok": True})
+def _print_detail(data, raw_json=False):
+    if raw_json:
+        print_json(data)
         return
-    print(f"Retried job: {args.job_id}")
-    if isinstance(data, dict) and data.get("status"):
-        print(f"  Status: {_norm_status(data.get('status'))}")
+    print(f"Content task {_short(data.get('id'))}")
+    print(f"  Type      : {data.get('workflow_type') or '—'}")
+    print(f"  Status    : {data.get('status') or '—'}")
+    print(f"  Progress  : {data.get('progress', 0)}%")
+    print(f"  Content   : {_short(data.get('content_id'))}")
+    print(f"  Topic     : {_short(data.get('topic_id'))}")
+    if data.get("cover_image_url"):
+        print(f"  Cover URL : {data.get('cover_image_url')}")
+        print(f"  Cover alt : {data.get('cover_image_alt') or '—'}")
+    if data.get("error"):
+        print(f"  Error     : {data.get('error')}")
+    print(f"  Created   : {data.get('created_at') or '—'}")
+    print(f"  Completed : {data.get('completed_at') or '—'}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Manage content generation jobs")
-    parser.add_argument("--project-id", help="Project ID (or set GEO_PROJECT_ID env var)")
+    parser = argparse.ArgumentParser(description="Manage unified content workflow jobs")
+    parser.add_argument("--project-id", help="Project ID (or set GEO_PROJECT_ID)")
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    for sub_name, _path, _title in [
-        ("list-outline",  "/content/outline-jobs", "Outline jobs"),
-        ("list-article",  "/content/article-jobs", "Article jobs"),
-        ("list-workflow", "/content/jobs",         "Workflow jobs"),
-    ]:
-        p = sub.add_parser(sub_name)
-        p.add_argument("--page", type=int, default=1)
-        p.add_argument("--limit", type=int, default=40)
+    def add_trailing_common(item):
+        item.add_argument(
+            "--project-id", dest="project_id", default=argparse.SUPPRESS,
+            help="Project ID (may also appear before the command)",
+        )
+        item.add_argument(
+            "--json", action="store_true", default=argparse.SUPPRESS,
+            help="Output raw JSON (may also appear before the command)",
+        )
 
-    for sub_name, _path, _title in [
-        ("get-outline",  "/content/outline-jobs", "Outline job"),
-        ("get-article",  "/content/article-jobs", "Article job"),
-        ("get-workflow", "/content/jobs",         "Workflow job"),
-    ]:
-        p = sub.add_parser(sub_name)
-        p.add_argument("--job-id", required=True)
+    list_commands = ("list", "list-workflow", "list-outline", "list-article")
+    for command in list_commands:
+        item = sub.add_parser(command)
+        add_trailing_common(item)
+        item.add_argument("--page", type=int, default=1)
+        item.add_argument("--limit", type=int, default=40)
+        item.add_argument("--topic-id", help="Filter by Topic ID")
+        if command in ("list", "list-workflow"):
+            item.add_argument(
+                "--workflow-type",
+                choices=["outline", "article", "refine", "cover_image"],
+                help="Filter by workflow type",
+            )
 
-    p_retry = sub.add_parser("retry", help="Retry a failed workflow job")
-    p_retry.add_argument("--job-id", required=True)
+    for command in ("get", "get-workflow", "get-outline", "get-article"):
+        item = sub.add_parser(command)
+        add_trailing_common(item)
+        item.add_argument("--job-id", required=True)
+
+    retry = sub.add_parser("retry", help="Retry a failed workflow job")
+    add_trailing_common(retry)
+    retry.add_argument("--job-id", required=True)
 
     args = parser.parse_args()
     key, base = get_api_config()
-    pid = get_project_id(args.project_id)
+    project_id = get_project_id(args.project_id)
+    root = f"/api/projects/{project_id}/content/jobs"
 
-    handlers = {
-        "list-outline": cmd_list_outline,
-        "list-article": cmd_list_article,
-        "list-workflow": cmd_list_workflow,
-        "get-outline": cmd_get_outline,
-        "get-article": cmd_get_article,
-        "get-workflow": cmd_get_workflow,
-        "retry": cmd_retry,
-    }
-    handlers[args.command](args, key, base, pid)
+    if args.command in list_commands:
+        workflow_type = {
+            "list-outline": "outline",
+            "list-article": "article",
+        }.get(args.command, getattr(args, "workflow_type", None))
+        params = {
+            "page": args.page,
+            "limit": args.limit,
+            "workflow_type": workflow_type,
+            "topic_id": args.topic_id,
+        }
+        data = extract_data(api_get(root, key, base, params=params)) or {}
+        _print_list(data, args, workflow_type)
+        return
+
+    if args.command.startswith("get"):
+        data = extract_data(api_get(f"{root}/{args.job_id}", key, base)) or {}
+        _print_detail(data, raw_json=args.json)
+        return
+
+    data = extract_data(api_post(f"{root}/{args.job_id}/retry", key, base)) or {}
+    if args.json:
+        print_json(data)
+    else:
+        print(f"Retried content task {_short(args.job_id)}")
+        print(f"  Status   : {data.get('status') or '—'}")
+        print(f"  Progress : {data.get('progress', 0)}%")
 
 
 if __name__ == "__main__":

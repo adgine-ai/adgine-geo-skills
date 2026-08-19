@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 
 os.environ.setdefault("GEO_SKIP_VERSION_CHECK", "1")
 SCRIPTS = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts"))
@@ -10,14 +11,16 @@ if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
 
 from _reporting import render_html, render_markdown, write_html  # noqa: E402
-from _contracts import get_scenario  # noqa: E402
-from report import _collect_charts, _sanitize, _table  # noqa: E402
+from _contracts import SCENARIOS, get_scenario  # noqa: E402
+from _i18n import label, normalize_locale  # noqa: E402
+from report import _collect_charts, _sanitize, _table, build_report  # noqa: E402
 
 
 def sample_report():
     return {
         "schema_version": "1.0",
         "report_type": "visibility",
+        "locale": "en-US",
         "title": "Visibility <Report>",
         "subtitle": "Offline & auditable",
         "generated_at": "2026-08-19T10:00:00+08:00",
@@ -48,6 +51,62 @@ class RenderingTests(unittest.TestCase):
             path = write_html(sample_report(), output_dir=directory)
             self.assertTrue(os.path.isfile(path))
             self.assertTrue(path.startswith(directory))
+
+    def test_chinese_html_localizes_shared_report_chrome(self):
+        report = sample_report()
+        report.update({
+            "locale": "zh-CN",
+            "title": "AI 可见性分析",
+            "subtitle": "只读分析报告",
+            "context": [{"label": "日期范围", "value": "2026-08-01 → 2026-08-07"}],
+            "metrics": [{
+                "label": "AI 可见性得分", "value": 42.5, "change": 3.2,
+                "format": "percent", "direction": "good",
+            }],
+            "insights": ["AI 可见性得分有所提升。"],
+        })
+        rendered = render_html(report)
+        self.assertIn('<html lang="zh-CN">', rendered)
+        self.assertIn("Adgine GEO · 国际版报告", rendered)
+        self.assertIn("较上一周期 +3.2%", rendered)
+        self.assertIn("核心发现", rendered)
+        self.assertIn("数据覆盖情况", rendered)
+        self.assertIn("查询审计与数据质量", rendered)
+        self.assertNotIn("Key findings", rendered)
+
+    def test_locale_auto_and_field_labels_support_chinese_and_english(self):
+        self.assertEqual(normalize_locale("auto", "主题最近一周表现"), "zh-CN")
+        self.assertEqual(normalize_locale("auto", "Topic performance last week"), "en-US")
+        self.assertEqual(normalize_locale("en-US", "中文请求"), "en-US")
+        self.assertEqual(label("visibility_score", "zh-CN"), "AI 可见性得分")
+        self.assertEqual(label("visibility_score", "en-US"), "Visibility Score")
+
+    def test_all_scenarios_build_in_both_supported_languages(self):
+        client = SimpleNamespace(project_id="project-id", calls=[])
+        base_args = {
+            "topic": None,
+            "prompt": None,
+            "show_ids": False,
+            "platform": [],
+            "page": 1,
+            "limit": 40,
+            "path": None,
+            "period": "7d",
+            "timezone": "UTC",
+        }
+        for scenario in SCENARIOS.values():
+            for locale in ("en-US", "zh-CN"):
+                with self.subTest(scenario=scenario.name, locale=locale):
+                    args = SimpleNamespace(locale=locale, **base_args)
+                    report = build_report(
+                        scenario, args, client, {}, {}, "2026-08-01", "2026-08-07",
+                    )
+                    expected_title = scenario.title_zh if locale == "zh-CN" else scenario.title
+                    self.assertEqual(report["title"], expected_title)
+                    self.assertEqual(report["locale"], locale)
+                    rendered = render_html(report)
+                    self.assertIn(f'<html lang="{locale}">', rendered)
+                    self.assertNotIn("{{", rendered)
 
     def test_markdown_uses_same_contract(self):
         rendered = render_markdown(sample_report())

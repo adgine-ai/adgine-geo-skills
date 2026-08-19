@@ -1,226 +1,165 @@
 ---
 name: adgine/geo-content
-description: Generates AI-optimized article outlines and full articles for GEO content strategy, manages the content library, and inspects/retries the underlying outline and article generation jobs. Supports generating title suggestions, producing a keyword-optimized outline (async), writing a complete article from an approved outline (async), listing/editing/deleting content items (with optional publish-status filter), and managing the workflow / outline / article job lists with detail inspection and retry. Use when the user wants to create an article (写文章 / generate article), generate an outline (生成大纲 / outline), write GEO-optimized content, check content status, review generated articles, filter by publish status (已发布/未发布, published/unpublished), manage their content pipeline, check job progress (任务进度 / job status), or retry a failed content job (重试失败任务 / retry job). Intent synonyms: article generation, outline generation, content jobs, content workflow, retry failed job, 内容生成任务, 已发布文章, 未发布文章.
+description: Generates and manages international GEO article titles, outlines, article versions, refinements, covers, metadata, media, publish status, and unified workflow jobs. Use for 写文章, 生成大纲, 标题推荐, 内容编辑, 文章版本, 微调文章, 生成封面, 上传封面, 发布状态, article generation, outline generation, content jobs, and retrying failed content tasks.
 ---
 
 # GEO Content
 
-> 用户侧的内容库/任务查看和报告默认使用 `adgine/geo-reports` 生成 HTML；标题、大纲、文章生成和内容修改继续使用本 Skill。
+Use this Skill for content mutations and individual content/job inspection. Use `adgine/geo-reports` for content-pipeline overviews and larger read-only datasets that benefit from an HTML report.
 
-## Output rules — IDs (apply to every reply)
+Scripts load `GEO_API_KEY` from the repository `.env`. If it is missing, use
+the repository `setup.py` flow; never place or print the literal key in a shell
+command, Skill file, or user-facing output.
 
-These rules apply to **every list, table, and confirmation message** in this skill. Their goal: keep user-facing output friendly while preserving the IDs the agent needs internally.
+## Interaction defaults
 
-1. **Lists & tables — never show raw UUIDs in cells.** Use a 1-based `#` index column instead. Keep a private mental mapping of `#N → actual UUID` so that follow-up commands like *"delete #3"*, *"run citation test on #1 #2"*, *"show details of the 2nd one"* resolve to the right entity.
-   - Index numbers restart from 1 in each new list — they are not stable across calls.
-   - If the user references *"the topic about X"* / *"that Poki vs CrazyGames prompt"*, match by visible content (name / title / domain / prompt text), not by ID.
-
-2. **Single-item operations — prefer a human name over an ID.**
-   - ✅ *"Project **Poki vs Competitors** deleted."*
-   - ✅ *"Topic **Brand mentions in 2024** updated — name → 'Brand mentions 2025'."*
-   - ❌ *"Project `a4305b57-1c79-4cec-a17c-16eb1d959ea6` deleted."*
-   - If the entity has **no human-readable name** (e.g. an anonymous prompt or a job), use a short 8-character prefix: *"Prompt `2a2a8f4f…` deleted."* Never paste the full UUID.
-
-3. **Always exception: `--json` mode.** When the user passes `--json` to a script or explicitly asks for raw JSON / debug output, print the script output verbatim — do not strip IDs.
-
-4. **Internally, the agent still uses full UUIDs** for every API call (`--project-id`, `--topic-id`, `--prompt-id`, etc.). The display rules only affect what is shown back to the user.
-
----
-
-## Step 1: Make sure GEO_API_KEY is configured
-
-Scripts auto-load `GEO_API_KEY` from `<skills-root>/.env` on import — **no `export` needed, no shell restart needed**. To check the configuration, run any script (it prints the exact `.env` path if the key is missing).
-
-- ✅ Key already in `<skills-root>/.env` → proceed.
-- ❌ Key missing, or user just gave you a new key → go to the **adgine-geo-projects** skill, **Step 0**, which runs `python3 <skills-root>/setup.py <KEY>` to write the key into the correct `.env` file. **Never** write the key to `~/.zshrc`, `~/.bashrc`, Hermes global config, or any user-secrets store.
-
-> ⚠️ **IMPORTANT:** In all shell/exec commands, always reference the key as `$GEO_API_KEY` (the environment variable). Never hardcode the key value or use placeholder strings like `API_KEY=***` or `API_KEY=geo_sk_live_xxx` directly in a command — this will cause authentication failures.
-
-
-## Project selection
-
-```bash
-export GEO_PROJECT_ID=<project-id>   # session shortcut — resets when terminal closes
-# Run python3 scripts/list_projects.py from adgine-geo-projects skill to find your IDs
-```
+- Treat omitted update fields as “keep the current value.” Send only fields the user changes.
+- When an operation needs `version_id` and the user omits it, fetch the content and use `selected_version_id`; fall back to the highest `version_no`.
+- Let GEO-Api inherit/default values when appropriate: Prompt language for article generation and `authoritative` for outline article type.
+- Render a single job status inline. Do not generate HTML for one task unless the user explicitly requests HTML.
+- Use `--json` only when raw IDs/debug data are needed. Otherwise refer to content by title and jobs/versions by an 8-character ID prefix.
 
 ## Content lifecycle
 
-```
-Prompts selected → generate-titles → generate-outline (async) → approve outline → generate-article (async) → article ready → publish to WordPress
+```text
+select Topic + Prompts
+  → recommend titles (title + type + strategy)
+  → generate outline
+  → review/edit outline
+  → generate article version
+  → edit or refine version
+  → generate/upload cover
+  → set version publish status
 ```
 
-Content items progress through statuses: `draft` → `outline` → `article`.
-Each item also has a `publish_status`:
-- `unpublished` — article not yet pushed to WordPress (default after generation)
-- `published`   — article successfully published to WordPress
-
----
+Content stage is `draft`, `outline`, or `article`. Publish state is version-level `unpublished` or `published`; it is changed through the dedicated publish-status endpoint, not by editing content stage.
 
 ## Commands
 
-### List content items
+Run commands from this Skill directory. Supply `--project-id` or set `GEO_PROJECT_ID`.
+
+### Read content
+
 ```bash
-python3 scripts/list_content.py [--project-id <id>] [--status draft|outline|article] \
-  [--publish-status unpublished|published] [--topic-id <id>] [--page 1] [--limit 40] [--json]
+python3 scripts/list_content.py [--status draft|outline|article] \
+  [--publish-status unpublished|published|partial] [--topic-id <id>] \
+  [--page 1] [--limit 40] [--json]
+
+python3 scripts/manage_content.py get --content-id <id> [--version-id <id>] [--json]
+python3 scripts/manage_content.py versions --content-id <id> [--json]
+python3 scripts/manage_content.py get-version --content-id <id> [--version-id <id>] [--json]
 ```
 
-### Suggest article titles (quick, sync)
+`get-version` automatically selects the current/latest version if `--version-id` is omitted.
+
+### Recommend titles
+
 ```bash
-python3 scripts/generate_titles.py --topic-id <tid> --prompt-ids <id1,id2,...> \
-  [--project-id <id>]
-```
-Returns 5–10 AI-suggested article titles for the given topic and prompts.
-
-### Generate article outline (async, ~10–15 min)
-```bash
-python3 scripts/generate_outline.py --topic-id <tid> --prompt-ids <id1,id2,...> \
-  [--project-id <id>] [--title "Your chosen title"] \
-  [--reference-urls "https://url1,https://url2"] \
-  [--instructions "Additional guidance for the AI"]
-```
-Creates a content item with status `outline` once complete.
-
-> ⏳ **Expected duration: 10–15 minutes.** The script polls automatically (interval 10 s, timeout 20 min). Do NOT cancel early — this is a large LLM job.
-
-### Generate full article from outline (async, ~5–10 min)
-```bash
-python3 scripts/generate_article.py --content-id <cid> [--project-id <id>]
-```
-Content item must have status `outline`. Produces the full article.
-
-> ⏳ **Expected duration: 5–10 minutes.** The script polls automatically (interval 10 s, timeout 15 min). Do NOT cancel early.
-
-### Inspect & retry generation jobs
-
-The content pipeline runs three job types: the combined **workflow** job, the
-**outline** job, and the **article** job. They each have their own list/detail
-endpoints. Use `manage_jobs.py` to inspect or retry them.
-
-List jobs:
-```bash
-python3 scripts/manage_jobs.py list-workflow [--page 1] [--limit 40] [--json]
-python3 scripts/manage_jobs.py list-outline  [--page 1] [--limit 40] [--json]
-python3 scripts/manage_jobs.py list-article  [--page 1] [--limit 40] [--json]
+python3 scripts/generate_titles.py --topic-id <id> --prompt-ids <id1,id2,...>
 ```
 
-Get job detail:
+Use the returned `title`, `type`, and `strategy` together when generating the outline.
+
+### Generate an outline
+
 ```bash
-python3 scripts/manage_jobs.py get-workflow --job-id <id>
-python3 scripts/manage_jobs.py get-outline  --job-id <id>
-python3 scripts/manage_jobs.py get-article  --job-id <id>
+python3 scripts/generate_outline.py --topic-id <id> --prompt-ids <id1,id2,...> \
+  [--title "Chosen title"] \
+  [--article-type authoritative|listicle|comparison] \
+  [--article-strategy "Why this format fits"] \
+  [--reference-urls "https://a.example,https://b.example"] \
+  [--instructions "Audience, tone, and constraints"] [--json]
 ```
 
-Retry a failed workflow job:
+Omit `--title` to let GEO-Api generate one. Omit `--article-type` to use `authoritative`.
+
+### Generate an article version
+
 ```bash
+python3 scripts/generate_article.py --content-id <id> [--language zh] \
+  [--show-article] [--json]
+```
+
+Omit `--language` to inherit the first selected Prompt’s language.
+
+### Partially edit content
+
+```bash
+python3 scripts/manage_content.py edit --content-id <id> \
+  [--version-id <id>] [--title "New title"] [--outline-file outline.md] \
+  [--body-file article.md] [--meta-title "SEO title"] \
+  [--meta-description "Summary"] [--meta-slug "url-slug"] \
+  [--schema-file schema.json] [--cover-image-url https://...] \
+  [--cover-image-alt "Description"]
+```
+
+Map files/arguments to the current GEO-Api schema:
+
+- `--body-file` → `full_content`
+- `--outline-file` → `page_outline`
+- `--schema-file` → validated JSON serialized as `schema_markup`
+- cover/meta/body fields → the selected/latest version
+- title/outline/slug → the shared content record
+
+Never send the obsolete mutation fields `article_body` or `status`.
+
+### Refine an article
+
+```bash
+python3 scripts/refine_article.py --content-id <id> \
+  (--instructions "Make the tone more concise" | --instructions-file request.txt) \
+  [--version-id <id>] [--show-article] [--json]
+```
+
+The backend refines the selected version in place through a unified workflow job.
+
+### Manage covers and media
+
+```bash
+python3 scripts/generate_cover.py --content-id <id> [--version-id <id>] \
+  [--prompt "Visual direction"] [--include-title] [--include-summary] [--include-body]
+
+python3 scripts/manage_media.py list [--q "article title"] [--source content] \
+  [--page 1] [--limit 40] [--json]
+
+python3 scripts/manage_media.py upload --file cover.png \
+  [--content-id <id>] [--version-id <id>] [--alt "Accessible description"] [--json]
+```
+
+Uploads accept JPG, JPEG, PNG, WebP, or GIF up to 5 MB. With `--content-id`, the script automatically selects a version, sets the cover, and lets GEO-Api register it in project media. Alt text defaults to the article title, then the filename.
+
+### Set publish status and delete
+
+```bash
+python3 scripts/manage_content.py publish-status --content-id <id> \
+  --status unpublished|published [--version-id <id>]
+
+python3 scripts/manage_content.py delete-version --content-id <id> \
+  [--version-id <id>] --yes
+
+python3 scripts/manage_content.py delete --content-id <id> --yes
+```
+
+These commands manage GEO content state only. Publishing to WordPress remains a separate integration flow and is outside this change.
+
+### Inspect and retry jobs
+
+GEO-Api uses one job collection for `outline`, `article`, `refine`, and `cover_image`.
+
+```bash
+python3 scripts/manage_jobs.py list [--workflow-type outline|article|refine|cover_image] \
+  [--topic-id <id>] [--page 1] [--limit 40]
+python3 scripts/manage_jobs.py get --job-id <id>
 python3 scripts/manage_jobs.py retry --job-id <id>
 ```
 
-## Workflow
+Legacy command aliases (`list-outline`, `list-article`, `get-outline`, `get-article`, and workflow variants) still work, but all call `/content/jobs`.
 
-See `WORKFLOW.md` for the detailed step-by-step content creation flow.
+## Output
 
-## Output Format
+- Keep small mutation confirmations and individual job/version details inline.
+- Use human titles and numbered rows for lists; do not expose full UUIDs unless raw JSON was requested.
+- After an async operation completes, state the content title, resulting stage/status, selected version, and the natural next action.
+- Do not claim that a GEO publish-status change published an article to an external CMS.
 
-> ⚠️ **CRITICAL — Table cell content rule (must follow exactly):**
-> Tables use fenced code blocks with box-drawing borders. They only align correctly when **every cell contains ASCII characters exclusively**.
-> - **NEVER** put emoji inside table cells. They are 2 display units wide but count as 1 character, permanently misaligning all following columns.
-> - Emoji go ONLY on the label line **above** the ` ``` ` fence.
-> - Status in cells: `Draft` / `Outline` / `Article` (NOT 📝/📋/✅)
-
----
-
-### When listing content (`list_content.py`)
-
-> 📄 **Content Library** — (Page 1 / N)
-
-📚 Items
-```
-┌────┬──────────┬───────┬────────────┬──────────────────────────────────────┐
-│  # │ Status   │ Words │ Pub.Status │ Title                                │
-├────┼──────────┼───────┼────────────┼──────────────────────────────────────┤
-│  1 │ Draft    │    —  │ Unpub      │ How to Improve Your SEO in 2025      │
-│  2 │ Outline  │    —  │ Unpub      │ Top 10 GEO Strategies for SaaS       │
-│  3 │ Article  │ 1,200 │ Published  │ What is Generative Engine Optimi...  │
-│  4 │ Article  │   850 │ Unpub      │ AI Search Trends for Marketers       │
-└────┴──────────┴───────┴────────────┴──────────────────────────────────────┘
-```
-- `Status`: content generation stage (`Draft` / `Outline` / `Article`)
-- `Words`: word count (`—` if not available)
-- `Pub.Status`: WordPress publish status (`Unpub` / `Published` / `—` if unknown)
-- Truncate long titles to ~36 chars with `...`.
-
----
-
-### When suggesting titles (`generate_titles.py`)
-
-> 💡 **Suggested Titles** — pick one to generate an outline:
-
-💡 Title Options
-```
-┌────┬──────────────────────────────────────────────────────┐
-│  # │ Title                                                │
-├────┼──────────────────────────────────────────────────────┤
-│  1 │ How to Dominate AI Search in 2025                    │
-│  2 │ The Complete Guide to GEO for SaaS Companies         │
-│  3 │ Why Traditional SEO Is Not Enough Anymore            │
-└────┴──────────────────────────────────────────────────────┘
-```
-*Which title would you like to use for the outline?*
-
----
-
-### When generating an outline (`generate_outline.py`)
-
-- Progress: `⏳ **Generating outline…** (~10–15 min)`
-- On completion, show the outline as a nested numbered list, then:
-
-✅ Outline Ready
-```
-┌────────────┬────────────────────────────────────┐
-│ Content ID │ <id>                               │
-│ Sections   │ 6                                  │
-│ Next step  │ generate_article.py -c <id>        │
-└────────────┴────────────────────────────────────┘
-```
-
----
-
-### When generating an article (`generate_article.py`)
-
-- Progress: `⏳ **Writing article…** (~5–10 min)`
-- On completion:
-
-✅ Article Complete
-```
-┌────────────────┬────────────────────────────────────┐
-│ Title          │ <title>                            │
-│ Content ID     │ <id>                               │
-│ Word Count     │ ~1,200                             │
-│ Status         │ Article                            │
-│ Publish Status │ Unpub                              │
-└────────────────┴────────────────────────────────────┘
-```
-
-Then the **full article text** with `##`/`###` headings and bullet lists — never wrap article body in a code fence.
-
----
-
-## Post-task recommendations
-
-After content operations, guide the user to the next stage:
-
-| You just… | → use skill (agent-internal) |
-|---|---|
-| Generated an outline | Review outline, then 生成完整文章 *(→ adgine-geo-content)*|
-| Generated a full article | 发布文章到 WordPress *(→ adgine-geo-wordpress)*|
-| Listed content items | 选择一篇生成 outline 或 article *(→ adgine-geo-content)*|
-| Checked job status / retried | 继续管理内容管线 *(→ adgine-geo-content)*|
-| Article published-ready | 检查文章页面的 AI 优化健康度 *(→ adgine-geo-performance)*|
-| Multiple articles ready | 对文章主题运行引用测试，验证效果 *(→ adgine-geo-citation)*|
-
-**⚠️ Output rule:** Do NOT write skill names (e.g. `adgine-geo-xxx`) in user-facing suggestions. Each suggestion must be phrased as a natural-language prompt the user can copy and send directly to the agent.
-
-> 💡 **建议下一步：**
-> 1. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
-> 2. **[行动标题]** — *"[可直接发送给 AI 的自然语言提示词]"*
+See `WORKFLOW.md` for the recommended end-to-end sequence.

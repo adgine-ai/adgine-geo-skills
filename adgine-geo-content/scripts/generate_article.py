@@ -5,7 +5,7 @@ The content item must have status='outline' and a completed outline.
 Polls until the article is done (~5–10 min), then prints a summary.
 
 Usage:
-  python3 scripts/generate_article.py --content-id <cid> [--project-id <id>] [--json]
+  python3 scripts/generate_article.py --content-id <cid> [--language zh] [--project-id <id>] [--json]
 """
 import sys
 import os
@@ -22,6 +22,7 @@ parser = argparse.ArgumentParser(description="Generate a full article from outli
 parser.add_argument("--content-id", required=True,
                     help="Content item ID (must have status=outline)")
 parser.add_argument("--project-id", help="Project ID (or set GEO_PROJECT_ID env var)")
+parser.add_argument("--language", help="Article language; defaults to the first selected Prompt's language")
 parser.add_argument("--json", action="store_true", help="Output raw job result as JSON")
 parser.add_argument("--show-article", action="store_true",
                     help="Print the full article text (can be long)")
@@ -46,6 +47,8 @@ print(f"  Content ID : {args.content_id}")
 print()
 
 body = {"content_id": args.content_id}
+if args.language:
+    body["language"] = args.language
 result = api_post(f"/api/projects/{pid}/content/generate-article", key, base, body)
 job_data = extract_data(result)
 

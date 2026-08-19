@@ -28,6 +28,7 @@ class Scenario:
     requests: tuple[RequestSpec, ...]
     requires: tuple[str, ...] = ()
     description: str = ""
+    default_format: str = "html"  # html | markdown
 
 
 def _r(alias, endpoint_path, date_style="none", *, platform=False, paging="none",
@@ -146,6 +147,7 @@ SCENARIOS = {
     "worker-deployment": Scenario(
         "worker-deployment", "P2", "Cloudflare Worker Deployment", "Worker 部署状态", "status",
         (_r("worker_deployment", "/api/projects/{project_id}/integrations/cloudflare/worker/deploy-status"),),
+        default_format="markdown",
     ),
     "ai-overview": Scenario(
         "ai-overview", "P2", "AI Traffic Overview", "AI 流量总览", "analysis",
@@ -218,6 +220,7 @@ SCENARIOS = {
         "opportunity-detail", "P3", "Opportunity Detail", "优化机会详情", "detail",
         (_r("opportunity", "/api/projects/{project_id}/opportunities/{resource_id}"),),
         requires=("resource-id",),
+        default_format="markdown",
     ),
     "content-pipeline": Scenario(
         "content-pipeline", "P3", "Content Pipeline", "内容生产管线", "status",
@@ -288,6 +291,7 @@ SCENARIOS = {
         "account-info", "P3", "My Account Information", "我的账号信息", "detail",
         (_r("account", "/api/auth/me"),),
         description="Authenticated account creation time, name, phone number, and email address.",
+        default_format="markdown",
     ),
     "projects": Scenario(
         "projects", "P3", "Project Catalog", "项目目录", "inventory",
@@ -301,6 +305,7 @@ SCENARIOS = {
         "saas-task", "P3", "SaaS Deployment Status", "SaaS 部署状态", "status",
         (_r("task", "/api/saas/task/{resource_id}"),),
         requires=("resource-id",),
+        default_format="markdown",
     ),
 }
 
@@ -320,6 +325,7 @@ def scenario_rows():
             "title": item.title,
             "title_zh": item.title_zh,
             "density": item.density,
+            "default_format": item.default_format,
             "requires": list(item.requires),
             "api_calls": len(item.requests),
         }

@@ -43,9 +43,15 @@ titles = data.get("titles") or (data if isinstance(data, list) else [])
 print(f"Suggested titles ({len(titles)}):")
 print()
 for i, title in enumerate(titles, 1):
-    print(f"  {i:>2}. {title}")
+    if isinstance(title, dict):
+        print(f"  {i:>2}. {title.get('title') or '(untitled)'}")
+        print(f"      Type     : {title.get('type') or 'authoritative'}")
+        print(f"      Strategy : {title.get('strategy') or '—'}")
+    else:
+        print(f"  {i:>2}. {title}")
 
 print()
 print("Use a title with generate_outline.py:")
 print(f"  python3 scripts/generate_outline.py --topic-id {args.topic_id} \\")
-print(f"    --prompt-ids {args.prompt_ids} --title \"<chosen title>\"")
+print(f"    --prompt-ids {args.prompt_ids} --title \"<chosen title>\" \\")
+print("    --article-type <chosen type> --article-strategy \"<chosen strategy>\"")

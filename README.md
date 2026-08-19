@@ -109,7 +109,7 @@ Users can trigger a version check or update with natural language:
 
 | Skill | What it does |
 |---|---|
-| [`adgine-geo-reports`](adgine-geo-reports/) | Default read-only facade — account profile, scenario analytics, and standalone offline HTML reports across visibility, traffic, bots, pages, opportunities, content, integrations, and account data |
+| [`adgine-geo-reports`](adgine-geo-reports/) | Default read-only facade — inline small-result views plus standalone offline HTML reports across account, visibility, traffic, bots, pages, opportunities, content, and integrations |
 | [`adgine-geo-projects`](adgine-geo-projects/) | List, create, update, delete projects; manage competitors; verify auth; configure API key |
 | [`adgine-geo-dashboard`](adgine-geo-dashboard/) | Project snapshot — visibility score, aggregate metrics, 7-day trend, integration health |
 | [`adgine-geo-analytics`](adgine-geo-analytics/) | Traffic overview — GA4 sessions, active users, source breakdown, AI referral summary |
@@ -134,11 +134,12 @@ Each skill is self-contained in its own folder with a `SKILL.md` file containing
 
 ### Default data-report workflow
 
-Read-only data questions route through `adgine/geo-reports` and generate a standalone offline HTML artifact by default. For example:
+Read-only data questions route through `adgine/geo-reports`. Analysis and inventory scenarios generate a standalone offline HTML artifact by default; small single-record results such as account information and deployment-task status stay inline unless HTML is explicitly requested. Reports support deterministic English (`en-US`) and Simplified Chinese (`zh-CN`) presentation; agents should match the user's latest request language. For example:
 
 ```bash
-python3 adgine-geo-reports/scripts/report.py visibility --project-id <id> --period 7d
-python3 adgine-geo-reports/scripts/report.py prompt-performance --project-id <id> --prompt "exact prompt text" --period 14d
+python3 adgine-geo-reports/scripts/report.py visibility --project-id <id> --period 7d --locale en-US
+python3 adgine-geo-reports/scripts/report.py topic-detail --project-id <id> --topic "数独游戏网站" --period 7d --locale zh-CN
+python3 adgine-geo-reports/scripts/report.py prompt-performance --project-id <id> --prompt "exact prompt text" --period 14d --locale en-US
 python3 adgine-geo-reports/scripts/report.py traffic-overview --project-id <id> --period 14d
 python3 adgine-geo-reports/scripts/report.py data-freshness --project-id <id>
 python3 adgine-geo-reports/scripts/report.py page-opportunities --project-id <id> --path /blog/example --period 30d

@@ -3,13 +3,14 @@
 
 Usage:
   python3 scripts/manage_project.py get    --project-id <id> [--json]
-  python3 scripts/manage_project.py create --url https://example.com [--description "text"]
-  python3 scripts/manage_project.py update --project-id <id> [--name "Name"] [--url "url"] [--description "text"]
+  python3 scripts/manage_project.py create --url https://example.com [--description "text"] [--metadata-file metadata.json]
+  python3 scripts/manage_project.py update --project-id <id> --name "Name"
   python3 scripts/manage_project.py delete --project-id <id>
 """
 import sys
 import os
 import argparse
+import json
 
 sys.path.insert(0, os.path.dirname(__file__))
 from _client import get_api_config, get_project_id, api_get, api_post, api_put, api_delete, extract_data, print_json
@@ -20,6 +21,7 @@ parser.add_argument("--project-id", help="Project ID (or set GEO_PROJECT_ID env 
 parser.add_argument("--url",         help="Website URL (required for create)")
 parser.add_argument("--name",        help="Project name")
 parser.add_argument("--description", help="Project description")
+parser.add_argument("--metadata-file", help="(create) JSON object with metadata overrides")
 parser.add_argument("--json",        action="store_true", help="Output raw JSON")
 args = parser.parse_args()
 
@@ -49,8 +51,23 @@ elif args.action == "create":
     body = {"url": args.url}
     if args.description:
         body["description"] = args.description
+    if args.metadata_file:
+        try:
+            with open(args.metadata_file, "r", encoding="utf-8") as fh:
+                metadata = json.load(fh)
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"ERROR: could not read --metadata-file as JSON — {exc}")
+            sys.exit(1)
+        if not isinstance(metadata, dict):
+            print("ERROR: --metadata-file must contain a JSON object")
+            sys.exit(1)
+        body["metadata_override"] = metadata
     result = api_post("/api/projects", key, base, body)
     p = extract_data(result)
+    if args.name and p.get("id"):
+        p = extract_data(api_put(
+            f"/api/projects/{p.get('id')}", key, base, {"name": args.name}
+        )) or p
     if args.json:
         print_json(p)
         sys.exit(0)
@@ -58,25 +75,31 @@ elif args.action == "create":
     print(f"  ID     : {p.get('id')}")
     print(f"  Name   : {p.get('name') or p.get('url')}")
     print(f"  Domain : {p.get('domain') or '—'}")
+    if args.name:
+        print("  Name was applied automatically after project creation.")
     print()
     print(f"To set as active: export GEO_PROJECT_ID={p.get('id')}")
 
 # ── UPDATE ───────────────────────────────────────────────────────────────────
 elif args.action == "update":
     pid = get_project_id(args.project_id)
-    body = {}
-    if args.name:        body["name"]        = args.name
-    if args.url:         body["url"]         = args.url
-    if args.description: body["description"] = args.description
-    if not body:
-        print("ERROR: Provide at least one of --name, --url, --description")
+    if args.url or args.description or args.metadata_file:
+        print("ERROR: GEO-Api only allows changing a project's name after creation")
+        print("  URL, description, and metadata overrides can only be supplied during create.")
         sys.exit(1)
+    if not args.name:
+        print("ERROR: --name is required for update; all other project fields remain unchanged")
+        sys.exit(1)
+    current = extract_data(api_get(f"/api/projects/{pid}", key, base)) or {}
+    body = {"name": args.name}
     result = api_put(f"/api/projects/{pid}", key, base, body)
     p = extract_data(result)
     if args.json:
         print_json(p)
         sys.exit(0)
-    print(f"✓ Project updated: {p.get('name') or p.get('url')}")
+    old_name = current.get("name") or current.get("url") or "(unnamed)"
+    print(f"✓ Project updated: {old_name} -> {p.get('name') or args.name}")
+    print("  URL, description, and metadata were retained unchanged.")
 
 # ── DELETE ───────────────────────────────────────────────────────────────────
 elif args.action == "delete":

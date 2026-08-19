@@ -6,7 +6,7 @@ the generated prompts.
 
 Usage:
   python3 scripts/generate_prompts.py --topic-id <id> [--project-id <id>] \
-    [--count 10] [--language "English (en-US)"] [--region US] \
+    [--count 10] [--language English] [--region US] \
     [--platforms "openai,perplexity,google_aio"] \
     [--instructions "Focus on enterprise buyers"] [--json]
 """
@@ -22,20 +22,17 @@ from _client import (
     extract_data, print_json,
 )
 
-DEFAULT_PLATFORMS = ["openai", "google_aio", "perplexity"]
-
 parser = argparse.ArgumentParser(description="AI-generate prompts for a GEO topic")
 parser.add_argument("--topic-id", required=True, help="Topic ID to generate prompts for")
 parser.add_argument("--project-id", help="Project ID (or set GEO_PROJECT_ID env var)")
 parser.add_argument("--count", type=int, default=10,
                     help="Number of prompts to generate, 1–50 (default: 10)")
-parser.add_argument("--language", default="English (en-US)",
-                    help="Language for generated prompts (default: English (en-US))")
-parser.add_argument("--region", default="US",
-                    help="Target region code (default: US)")
+parser.add_argument("--language",
+                    help="Language for generated prompts (default: inherit from Topic)")
+parser.add_argument("--region",
+                    help="Target region code (default: inherit from Topic)")
 parser.add_argument("--platforms",
-                    help=f"Comma-separated platform IDs (default: {', '.join(DEFAULT_PLATFORMS)}). "
-                         "Valid values: openai, google_aio, perplexity")
+                    help="Comma-separated platform IDs (default: GEO-Api current default)")
 parser.add_argument("--instructions",
                     help="Additional instructions to guide prompt generation")
 parser.add_argument("--json", action="store_true", help="Output raw JSON task result")
@@ -44,9 +41,7 @@ args = parser.parse_args()
 key, base = get_api_config()
 pid = get_project_id(args.project_id)
 
-platforms = DEFAULT_PLATFORMS
-if args.platforms:
-    platforms = [p.strip() for p in args.platforms.split(",") if p.strip()]
+platforms = [p.strip() for p in (args.platforms or "").split(",") if p.strip()]
 
 if not (1 <= args.count <= 50):
     print("ERROR: --count must be between 1 and 50")
@@ -54,16 +49,19 @@ if not (1 <= args.count <= 50):
 
 print(f"Starting AI prompt generation for topic: {args.topic_id}")
 print(f"  Count     : {args.count}")
-print(f"  Language  : {args.language}  |  Region: {args.region}")
-print(f"  Platforms : {', '.join(platforms)}")
+print(f"  Language  : {args.language or 'Topic default'}  |  Region: {args.region or 'Topic default'}")
+print(f"  Platforms : {', '.join(platforms) if platforms else 'GEO-Api default'}")
 print()
 
 body = {
     "count":    args.count,
-    "language": args.language,
-    "region":   args.region,
-    "platforms": platforms,
 }
+if args.language:
+    body["language"] = args.language
+if args.region:
+    body["region"] = args.region
+if platforms:
+    body["platforms"] = platforms
 if args.instructions:
     body["additional_instructions"] = args.instructions
 

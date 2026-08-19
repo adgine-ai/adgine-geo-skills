@@ -10,6 +10,7 @@ import time
 from pathlib import Path
 
 from _client import ApiError
+from _i18n import t
 
 
 SCHEMA_VERSION = "1.0"
@@ -79,7 +80,7 @@ def _legacy(reason, warning):
     }, warning
 
 
-def discover_capabilities(client, now=None):
+def discover_capabilities(client, now=None, locale="en-US"):
     """Return ``(capabilities, warning)`` using a two-hour disk cache by default.
 
     Authentication/authorization failures are always raised. A discovery outage may
@@ -100,24 +101,24 @@ def discover_capabilities(client, now=None):
         if exc.status_code in (404, 501):
             return _legacy(
                 "capability_endpoint_unavailable",
-                "Report-data capability endpoint is unavailable; legacy API workflow used.",
+                t(locale, "warning_capability_unavailable"),
             )
         if cached:
-            return cached["data"], "Capability discovery failed; stale cached capabilities used."
+            return cached["data"], t(locale, "warning_capability_stale")
         return _legacy(
             "capability_discovery_failed",
-            "Capability discovery failed with no cache; legacy API workflow used.",
+            t(locale, "warning_capability_failed"),
         )
 
     if data.get("schema_version") != SCHEMA_VERSION:
         return _legacy(
             "unsupported_schema_version",
-            f"Unsupported report-data schema {data.get('schema_version')!r}; legacy API workflow used.",
+            t(locale, "warning_capability_schema", schema=repr(data.get("schema_version"))),
         )
     if not isinstance(data.get("features"), dict):
         return _legacy(
             "invalid_capability_response",
-            "Invalid capability response; legacy API workflow used.",
+            t(locale, "warning_capability_invalid"),
         )
     _write_cache(path, data, saved_at=now)
     return data, None

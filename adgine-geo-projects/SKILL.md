@@ -138,13 +138,21 @@ python3 scripts/manage_project.py get --project-id <id>
 
 ### Create a new project
 ```bash
-python3 scripts/manage_project.py create --url https://example.com [--description "My site"]
+python3 scripts/manage_project.py create --url https://example.com \
+  [--name "Brand Name"] [--description "My site"] [--metadata-file metadata.json]
 ```
+
+`--metadata-file` must contain a JSON object for `metadata_override`. If
+`--name` is supplied, the script creates the URL-based project first and then
+applies the name through the supported update endpoint automatically.
 
 ### Update a project
 ```bash
-python3 scripts/manage_project.py update --project-id <id> [--name "New Name"] [--url https://new.com]
+python3 scripts/manage_project.py update --project-id <id> --name "New Name"
 ```
+
+The current GEO-Api update contract only accepts `name`. URL, description, and
+metadata remain unchanged; never offer them as editable project fields.
 
 ### Delete a project
 ```bash

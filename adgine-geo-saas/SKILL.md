@@ -55,11 +55,16 @@ python3 scripts/check_domain.py --subdomain mysite [--json]
 ```bash
 python3 scripts/create_website.py --subdomain mysite \
     --brand-name "My Site" \
-    --industry "SaaS" \
     --description "An AI-first content platform" \
     --language English \
+    [--theme-id adgine-01] \
     [--json]
 ```
+
+Use exactly one deployment target: `--subdomain mysite` or
+`--domain example.com`. Language defaults to `English` and theme defaults to
+`adgine-01`, so omit either unless the user asks to change it. The current API
+does not accept an `industry` field.
 
 Returns a `task_id`. Pass it to the next step.
 

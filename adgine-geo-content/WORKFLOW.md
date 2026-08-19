@@ -1,100 +1,94 @@
 # Content Generation Workflow
 
-This guide walks through the complete GEO content creation pipeline, from prompts to a published-ready article.
+## 1. Select the source Topic and Prompts
 
----
+Use the Topics Skill to list Topics and Prompts. Keep their full IDs internally, but show numbered, human-readable options to the user.
 
-## Prerequisites
-
-- **API key configured** — See [SETUP.md](../SETUP.md)
-- **Prompts** — You need prompt IDs. Generate them first with the **adgine-geo-topics** skill.
-- **Brand profile** — For best quality, ensure your brand profile is complete via the **adgine-geo-brand** skill.
-
----
-
-## Step-by-step
-
-### Step 1 — Get topic and prompt IDs
-
-Use the **adgine-geo-topics** skill to list topics and prompts:
-
-```bash
-# From adgine-geo-topics/ skill directory:
-python3 scripts/manage_topics.py list
-python3 scripts/manage_prompts.py list --topic-id <topic-id>
-```
-
-Note: gather the `topic_id` and the prompt `id` values you want to use.
-
----
-
-### Step 2 — (Optional) Suggest article titles
+## 2. Recommend a title, type, and strategy
 
 ```bash
 python3 scripts/generate_titles.py \
-  --topic-id <tid> \
-  --prompt-ids "prompt-id-1,prompt-id-2,prompt-id-3"
+  --topic-id <topic-id> --prompt-ids <prompt-id-1,prompt-id-2>
 ```
 
-Returns AI-suggested titles. Pick one or write your own.
+Each recommendation contains a `title`, `type`, and `strategy`. If the user chooses one, pass all three to outline generation. If they provide only a title, let article type default to `authoritative`.
 
----
-
-### Step 3 — Generate article outline
+## 3. Generate the outline
 
 ```bash
 python3 scripts/generate_outline.py \
-  --topic-id <tid> \
-  --prompt-ids "prompt-id-1,prompt-id-2,prompt-id-3" \
-  --title "Your Chosen Article Title" \
-  --instructions "Emphasize cost-saving benefits, target CMO audience"
+  --topic-id <topic-id> --prompt-ids <prompt-id-1,prompt-id-2> \
+  --title "Chosen title" --article-type comparison \
+  --article-strategy "Compare decision criteria for buyers"
 ```
 
-This creates a content item (status: `outline`) and polls until complete (~30–90 s).
-The script prints the outline on completion and shows the `content_id`.
+The script starts an async workflow, polls `/content/jobs/{job_id}`, then fetches the resulting content record to show the actual title and outline.
 
----
-
-### Step 4 — Review the outline
+## 4. Review or edit the outline
 
 ```bash
-python3 scripts/list_content.py --status outline
+python3 scripts/manage_content.py get --content-id <content-id>
+python3 scripts/manage_content.py edit --content-id <content-id> --outline-file revised-outline.md
 ```
 
-Review the generated outline. If needed, you can edit it:
-- Contact your geo-platform dashboard to edit outline content
-- Or proceed to article generation using the existing outline
+Only send changed fields. Omitted title, outline, metadata, body, schema, and cover values remain unchanged.
 
----
-
-### Step 5 — Generate the full article
+## 5. Generate an article version
 
 ```bash
 python3 scripts/generate_article.py --content-id <content-id>
 ```
 
-Polls until the article is complete (~60–180 s). Prints the article on completion.
+The article language inherits from the first selected Prompt. Pass `--language` only when the user explicitly wants a different language/version.
 
----
+## 6. Edit or refine the article
 
-### Step 6 — Review the article
+For deterministic replacement fields:
 
 ```bash
-python3 scripts/list_content.py --status article
+python3 scripts/manage_content.py edit --content-id <content-id> \
+  --body-file revised.md --meta-title "SEO title" --schema-file schema.json
 ```
 
-The full article is ready in `full_content` (Markdown format). It includes:
-- Article body
-- FAQ section
-- Citation opportunities analysis
-- SEO metadata (title, description, slug)
-- Word count
+For AI-guided changes:
 
----
+```bash
+python3 scripts/refine_article.py --content-id <content-id> \
+  --instructions "Shorten the introduction and preserve all citations"
+```
 
-## Tips
+Both commands automatically use the selected/latest version unless `--version-id` is supplied.
 
-- **Multiple articles**: Run steps 3–5 in parallel with different topics/prompts.
-- **Re-generation**: Delete a content item with status `draft` or `outline` and start over.
-- **Custom instructions**: Use `--instructions` in `generate_outline.py` to guide tone, audience, and structure.
-- **Reference URLs**: Pass competitor or reference URLs via `--reference-urls` for better-informed outlines.
+## 7. Add a cover
+
+Generate one:
+
+```bash
+python3 scripts/generate_cover.py --content-id <content-id> \
+  --include-title --include-summary
+```
+
+Or upload a local image:
+
+```bash
+python3 scripts/manage_media.py upload --file cover.webp \
+  --content-id <content-id> --alt "Accessible cover description"
+```
+
+## 8. Set GEO publish status
+
+```bash
+python3 scripts/manage_content.py publish-status --content-id <content-id> \
+  --status published
+```
+
+This updates the selected article version’s GEO state. It does not push content to WordPress or another CMS.
+
+## 9. Recover failed jobs
+
+```bash
+python3 scripts/manage_jobs.py get --job-id <job-id>
+python3 scripts/manage_jobs.py retry --job-id <job-id>
+```
+
+Render one task inline. Use an HTML content-pipeline report only for multi-record analysis or when the user explicitly requests a report.

@@ -4,7 +4,7 @@
 Usage:
   python3 scripts/manage_topics.py list   [--project-id <id>] [--page 1] [--limit 40] [--json]
   python3 scripts/manage_topics.py create --name "Product Reviews" [--description "..."]
-  python3 scripts/manage_topics.py batch  --names "Topic A,Topic B,Topic C"
+  python3 scripts/manage_topics.py batch  --names "Topic A,Topic B,Topic C" [--language English] [--region US]
   python3 scripts/manage_topics.py update --topic-id <id> [--name "..."] [--description "..."]
   python3 scripts/manage_topics.py delete --topic-id <id>
 """
@@ -26,6 +26,8 @@ parser.add_argument("--topic-id",    help="Topic ID (required for update/delete)
 parser.add_argument("--name",        help="Topic name")
 parser.add_argument("--description", help="Topic description")
 parser.add_argument("--names",       help="Comma-separated names for batch create")
+parser.add_argument("--language",    help="Batch Topic language; omitted values inherit the brand profile")
+parser.add_argument("--region",      help="Batch Topic region; omitted values inherit the brand profile")
 parser.add_argument("--page",  type=int, default=1,  help="Page number (list only)")
 parser.add_argument("--limit", type=int, default=40, help="Results per page (list only; default: 40)")
 parser.add_argument("--json", action="store_true", help="Output raw JSON")
@@ -106,6 +108,10 @@ elif args.action == "batch":
         print("ERROR: --names must contain at least one topic name")
         sys.exit(1)
     body = {"topics": [{"name": n} for n in name_list]}
+    if args.language:
+        body["language"] = args.language
+    if args.region:
+        body["region"] = args.region
     result = api_post(f"/api/projects/{pid}/topics/batch", key, base, body)
     created = extract_data(result)
     if args.json:

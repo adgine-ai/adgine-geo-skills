@@ -66,7 +66,8 @@ python3 scripts/manage_topics.py create --name "Product Reviews" [--description 
 
 ### Batch-create topics
 ```bash
-python3 scripts/manage_topics.py batch --names "Topic A,Topic B,Topic C"
+python3 scripts/manage_topics.py batch --names "Topic A,Topic B,Topic C" \
+  [--language English] [--region US]
 ```
 
 ### Update a topic
@@ -97,17 +98,40 @@ python3 scripts/manage_prompts.py list-all [--project-id <id>] [--page 1] [--lim
 ```bash
 python3 scripts/manage_prompts.py create --topic-id <tid> \
   --content "What is the best GEO tool?" \
-  [--language "English (en-US)"] [--region US] \
+  [--language English] [--region US] \
   [--platforms "openai,perplexity,google_aio"]
 ```
+
+Omit language, region, or platforms to let GEO-Api inherit the Topic/brand
+settings and current platform defaults. Do not force English/US in the Skill.
 
 **Platform IDs:** `openai` · `google_aio` · `perplexity`
 
 ### Update a prompt
 ```bash
 python3 scripts/manage_prompts.py update --topic-id <tid> --prompt-id <pid> \
-  --content "Updated prompt text"
+  [--content "Updated prompt text"] [--language English] [--region US] \
+  [--platforms "openai,perplexity"] [--types "visibility,sentiment"] \
+  [--tag-ids "<tag-id-1>,<tag-id-2>"]
 ```
+
+Send only changed fields; all omitted fields retain their current values. Use
+`--clear-types` or `--clear-tags` for an intentional clear. Manual Prompt
+creation does not accept `types` or tags, so create first and update afterward.
+
+### Manage Prompt tags and project-wide batch deletion
+
+```bash
+python3 scripts/manage_prompt_tags.py list
+python3 scripts/manage_prompt_tags.py create --name "Purchase intent"
+python3 scripts/manage_prompt_tags.py update --tag "Purchase intent" --name "Commercial"
+python3 scripts/manage_prompt_tags.py assign --tag "Commercial" --prompt-ids <id1,id2>
+python3 scripts/manage_prompt_tags.py delete --tag "Commercial" --yes
+python3 scripts/manage_prompt_tags.py batch-delete --prompt-ids <id1,id2> --yes
+```
+
+Resolve `--tag` by exact tag name or ID so the user normally only needs to
+provide the visible name.
 
 ### Delete a prompt
 ```bash

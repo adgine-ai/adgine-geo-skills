@@ -73,13 +73,17 @@ _notice: {"update": {"current": "1.1.5", "latest": "1.2.0", "message": "..."}}
 ## 数据查询门面（必须优先）
 
 凡是“查看、查询、分析、对比、盘点、状态、趋势、报告、导出”等只读数据请求，优先路由到
-`adgine/geo-reports`，并由它生成离线 HTML 报告。专项技能中的读取脚本仅用于低层排障，
-不得在报告完成后重复调用同一批接口做二次摘要。
+`adgine/geo-reports`。分析、趋势、目录和多数据源场景默认生成离线 HTML；账号信息、Worker
+部署、单个 SaaS 任务和单个机会等小结果默认直接在对话中输出。用户明确指定 HTML、inline
+或 JSON 时始终服从用户。专项技能中的读取脚本仅用于低层排障，不得在报告完成后重复调用
+同一批接口做二次摘要。
 
 用户询问“我的账号、账号基本信息、创建时间、姓名、手机号、邮箱”时，使用
 `adgine/geo-reports account-info`。所有分页查询默认每页 40 条；下一页继续使用 40 条页长。
 高频 Topic、Prompt、综合流量、页面、内容与运营报告优先使用 GEO-Api `/report-data` 聚合接口；
 仅 capabilities 在本地缓存 2 小时，报表业务数据不缓存；只有接口缺失/未启用/版本不兼容时才回退旧读取接口。
+根据用户本轮提问的主要语言显式传入 `--locale zh-CN` 或 `--locale en-US`；用户明确指定语言时优先服从。
+HTML、Markdown、JSON 和 WorkBuddy 摘要标记使用同一种报告语言，Topic、Prompt、URL 等原始数据不翻译。
 
 创建、修改、删除、连接、同步、刷新、生成、发布、部署等写操作仍路由到对应专项技能。
 
@@ -87,7 +91,7 @@ _notice: {"update": {"current": "1.1.5", "latest": "1.2.0", "message": "..."}}
 
 | 子技能 | 用于 |
 |---|---|
-| adgine/geo-reports | **所有只读数据查询的默认门面**：账号基本信息、场景化分析、目录/详情/状态报告、GA4/Cloudflare/AI Bot/页面机会、离线 HTML 输出 |
+| adgine/geo-reports | **所有只读数据查询的默认门面**：账号基本信息、场景化分析、目录/详情/状态报告、GA4/Cloudflare/AI Bot/页面机会、场景感知的 inline/离线 HTML 输出 |
 | adgine/geo-projects | 创建/列出/切换项目、管理竞争对手、配置 API Key（`GEO_API_KEY`）、验证鉴权 |
 | adgine/geo-dashboard | 项目总览快照、7 天趋势、集成连接状态（首页指标 / Dashboard 概览） |
 | adgine/geo-analytics | GA4 流量概览、活跃用户、AI 引荐汇总（不含爬虫明细） |

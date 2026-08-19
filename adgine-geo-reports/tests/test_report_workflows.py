@@ -8,7 +8,7 @@ SCRIPTS = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts
 if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
 
-from report import parse_args, run_report  # noqa: E402
+from report import _resolve_output_format, parse_args, run_report  # noqa: E402
 from _client import ApiError  # noqa: E402
 from _reporting import render_html  # noqa: E402
 
@@ -122,6 +122,24 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(report["report_type"], "visibility")
         self.assertNotIn("project-secret-id", str(report))
 
+    def test_scenario_defaults_choose_inline_only_for_small_results(self):
+        for scenario in ("account-info", "worker-deployment", "saas-task", "opportunity-detail"):
+            with self.subTest(scenario=scenario):
+                args = parse_args([scenario])
+                self.assertEqual(_resolve_output_format(args), "markdown")
+        self.assertEqual(
+            _resolve_output_format(parse_args(["visibility"])),
+            "html",
+        )
+
+    def test_explicit_format_overrides_scenario_default(self):
+        args = parse_args(["account-info", "--format", "html"])
+        self.assertEqual(_resolve_output_format(args), "html")
+        args = parse_args(["visibility", "--format", "markdown"])
+        self.assertEqual(_resolve_output_format(args), "markdown")
+        args = parse_args(["account-info", "--json"])
+        self.assertEqual(_resolve_output_format(args), "json")
+
     def test_prompt_id_uses_capability_plus_one_business_call(self):
         client = FakeClient()
         prompt_id = "11111111-1111-4111-8111-111111111111"
@@ -145,6 +163,33 @@ class WorkflowTests(unittest.TestCase):
         html = render_html(report)
         self.assertIn("Coffee", html)
         self.assertIn("citation_tests", html)
+
+    def test_chinese_topic_auto_generates_fully_localized_report(self):
+        client = FakeClient()
+        args = parse_args([
+            "topic-detail", "--topic", "数独游戏网站", "--period", "7d",
+            "--locale", "auto",
+        ])
+        report = run_report(args, client=client)
+        self.assertEqual(report["locale"], "zh-CN")
+        self.assertEqual(report["title"], "Topic 详细分析")
+        self.assertEqual(report["context"][0]["label"], "项目")
+        self.assertEqual(report["metrics"][0]["label"], "AI 可见性得分")
+        self.assertIn("对比", report["next_actions"][0])
+        html = render_html(report)
+        for expected in ("核心发现", "数据覆盖情况", "查询审计与数据质量", "生成时间"):
+            self.assertIn(expected, html)
+        self.assertNotIn("Key findings", html)
+
+    def test_explicit_english_overrides_chinese_entity_text(self):
+        client = FakeClient()
+        args = parse_args([
+            "topic-detail", "--topic", "数独游戏网站", "--locale", "en-US",
+        ])
+        report = run_report(args, client=client)
+        self.assertEqual(report["locale"], "en-US")
+        self.assertEqual(report["title"], "Topic Detail")
+        self.assertEqual(report["context"][0]["label"], "Project")
 
     def test_report_data_5xx_does_not_fall_back(self):
         client = FailingReportDataClient(ApiError("down", status_code=503, payload={"code": 50304}))

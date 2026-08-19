@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{HTML_LANG}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -77,11 +77,11 @@
 <body>
   <main class="shell">
     <header class="hero">
-      <div class="eyebrow">Adgine GEO · International Report</div>
+      <div class="eyebrow">{{EYEBROW}}</div>
       <h1>{{TITLE}}</h1>
       <p class="subtitle">{{SUBTITLE}}</p>
       <div class="context">{{CONTEXT}}</div>
-      <div class="generated">Generated {{GENERATED_AT}}</div>
+      <div class="generated">{{GENERATED_LABEL}} {{GENERATED_AT}}</div>
     </header>
     <section class="metric-grid">{{METRICS}}</section>
     {{CHARTS}}
@@ -89,7 +89,7 @@
     {{INSIGHTS}}
     {{COVERAGE}}
     {{AUDIT}}
-    <div class="footer">Standalone offline report · schema {{SCHEMA_VERSION}} · platform.adgine.ai</div>
+    <div class="footer">{{FOOTER}}</div>
   </main>
   <script type="application/json" id="adgine-report-data">{{EMBEDDED_JSON}}</script>
 </body>
