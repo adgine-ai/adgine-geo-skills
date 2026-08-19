@@ -24,8 +24,8 @@ The call counts below describe business data calls. A project-scoped report also
 | One Prompt by text | `prompt-performance` | 1 aggregate (+ capability on cold cache) |
 | AI citation / sentiment | `citations` / `sentiment` | 1 |
 | GA4 / Cloudflare | matching P2 scenario | 1 |
-| Bot/human multiview | `ai-bots` / `ai-humans` | 3 concurrent |
-| Cross-source traffic | `traffic-overview` | 1 aggregate (+ capability on cold cache) |
+| Bot/human multiview | `ai-bots` / `ai-humans` | 1 / 3 concurrent |
+| Cross-source traffic | `traffic-overview` | 1 aggregate + 1 existing Cloudflare AI endpoint (+ capability on cold cache) |
 | One page | `page-detail` | 1 aggregate (+ capability on cold cache) |
 | Page recommendations | `page-opportunities` | 1 aggregate (+ capability on cold cache) |
 | Content operations | `content-pipeline` | 1 aggregate (+ capability on cold cache) |
@@ -55,19 +55,19 @@ The call counts below describe business data calls. A project-scoped report also
 
 | Scenario | Scope | Notes |
 |---|---|---|
-| `ga4-overview` | All-site GA4 traffic and channels | GA4 units only. |
-| `ga4-referrals` | AI referral sessions/users by source | Do not equate sessions with Worker events. |
+| `ga4-overview` | GA4 AI referral sessions, users, and rate | Uses the existing AI-referrals endpoint only. |
+| `ga4-referrals` | GA4 AI referral sessions, users, and rate | Do not equate sessions with Cloudflare requests. |
 | `ga4-pages` | Top GA4 pages | Uses `offset` + `limit`. |
-| `cloudflare-overview` | Requests, bandwidth, threats, page views, visitors | Cloudflare Analytics units. |
-| `cloudflare-bots` | Bot category/name traffic | Uses local Cloudflare data. |
+| `cloudflare-overview` | AI assistant, AI search, AI training, and platform distribution | Uses the existing AI Agent KPI endpoint backed by Cloudflare data. |
+| `cloudflare-bots` | AI assistant, AI search, AI training, and platform distribution | Excludes AI Agent/all-bot totals from customer presentation. |
 | `cloudflare-pages` | Bot requests by page | Uses `offset` + `limit`. |
 | `worker-traffic` | Worker-captured AI event mix | Event/request units. |
 | `worker-pages` | Worker events by page | Uses `offset` + `limit`. |
 | `worker-events` | Read-only raw Worker event inventory | Uses `page` + `limit`. |
 | `worker-deployment` | Worker deployment and routes | Status only; never deploys or removes a Worker. |
-| `ai-overview` | Site AI KPI facade | Keep source units visible. |
-| `traffic-overview` | GA4 + Cloudflare API + Worker + derived AI KPI | Sections remain source-separated; no grand total. |
-| `ai-bots` | KPI + platform + User-Agent | Three concurrent reads. |
+| `ai-overview` | Cloudflare-backed AI assistant/search/training overview | Includes the existing per-metric platform leaderboards. |
+| `traffic-overview` | GA4 AI referrals + Cloudflare AI activity | Sections remain source-separated; no grand total. |
+| `ai-bots` | AI assistant/search/training KPI + platform distribution | One existing KPI endpoint. |
 | `ai-humans` | KPI + platform + page | Three concurrent reads. |
 | `ai-pages` | Five-dimension page table | One aggregate call. |
 | `ai-flow` | AI platform → page | Flow links rendered as bars/table. |

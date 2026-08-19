@@ -34,8 +34,8 @@ PREFERRED_COLUMNS = (
     "name", "title", "content", "path", "page_path", "landing_page", "platform",
     "source", "channel", "status", "type", "traffic_type", "bot_name",
     "visibility_score", "share_of_voice", "average_position", "current", "change",
-    "requests", "sessions", "active_users", "page_views", "visits", "revenue",
-    "transactions", "conversion_rate", "score", "rank", "created_at", "updated_at",
+    "requests", "sessions", "active_users", "page_views", "visits",
+    "conversion_rate", "score", "rank", "created_at", "updated_at",
 )
 SOURCE_UNITS = {
     "visibility": "percent / rank",
@@ -46,8 +46,10 @@ SOURCE_UNITS = {
     "citations": "citations / percent",
     "sentiment": "responses / percent",
     "ga4": "sessions / users / page views",
+    "ga4_ai": "AI referral sessions / users / percent",
     "referrals": "sessions / users / page views",
     "cloudflare": "HTTP requests / bytes",
+    "cloudflare_ai": "AI assistant / search / training HTTP requests",
     "bots": "HTTP requests",
     "worker": "Worker events",
     "worker_pages": "Worker events by page",
@@ -72,6 +74,27 @@ SUPPORTED_CHART_TYPES = (
     "bar_chart", "line_chart", "pie_chart", "gauge", "funnel",
     "scatter_plot", "treemap", "heatmap_table", "progress_bar", "timeline",
 )
+PREFERRED_TREND_METRICS = {
+    "ga4": ("sessions", "active_users", "page_views"),
+    "ga4_ai": ("sessions", "active_users"),
+    "ai_referrals": ("sessions", "active_users"),
+    "referrals": ("sessions", "active_users"),
+    "cloudflare": ("requests_total", "requests_cached"),
+    "worker": ("requests",),
+}
+COMPOSITE_REPORTS_WITHOUT_WORKER_TREND = {"executive-overview", "traffic-overview"}
+AI_TRAFFIC_PRESENTATION_SCENARIOS = {
+    "executive-overview", "traffic-overview", "ga4-overview", "ga4-referrals",
+    "cloudflare-overview", "cloudflare-bots", "ai-overview", "ai-bots",
+}
+GA4_AI_PRESENTATION_SCENARIOS = {
+    "executive-overview", "traffic-overview", "ga4-overview", "ga4-referrals",
+}
+CLOUDFLARE_AI_PRESENTATION_SCENARIOS = {
+    "executive-overview", "traffic-overview", "cloudflare-overview",
+    "cloudflare-bots", "ai-overview", "ai-bots",
+}
+HIDDEN_PRESENTATION_KEY_PARTS = ("revenue", "transaction")
 
 REPORT_DATA_SCENARIOS = {
     "executive-overview": ("executive_overview", "executive-overview"),
@@ -425,6 +448,18 @@ def _try_report_data(client, scenario, args, start, end, analytics_params):
             "used": False,
             "warning": t(args.locale, "warning_schema_unsupported"),
         }
+    payloads = _native_payloads(scenario, data)
+    errors = {}
+    if scenario.name in ("executive-overview", "traffic-overview"):
+        path = f"/api/projects/{client.project_id}/ai-agent/overview-kpi"
+        try:
+            payloads["cloudflare_ai"] = client.get(
+                path, _traffic_params(args, start, end, accepts_platform=True),
+            ) or {}
+        except ApiError as exc:
+            if exc.status_code in (401, 403, 409, 422):
+                raise
+            errors["cloudflare_ai"] = str(exc)
     entity_key = "topic" if scenario.name in ("topic-detail", "topic-lifecycle") else (
         "prompt" if scenario.name in ("prompt-performance", "prompt-executions") else None
     )
@@ -433,7 +468,8 @@ def _try_report_data(client, scenario, args, start, end, analytics_params):
         entity = resolved_entity
     return {
         "used": True,
-        "payloads": _native_payloads(scenario, data),
+        "payloads": payloads,
+        "errors": errors,
         "metadata": data,
         "entity": entity,
         "resolution": resolution,
@@ -476,6 +512,169 @@ def _numeric(value):
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _is_hidden_presentation_key(key):
+    normalized = str(key or "").lower()
+    return any(part in normalized for part in HIDDEN_PRESENTATION_KEY_PARTS)
+
+
+def _drop_hidden_presentation_fields(value):
+    if isinstance(value, dict):
+        return {
+            key: _drop_hidden_presentation_fields(item)
+            for key, item in value.items()
+            if not _is_hidden_presentation_key(key)
+        }
+    if isinstance(value, list):
+        return [_drop_hidden_presentation_fields(item) for item in value]
+    return value
+
+
+def _report_data_traffic(payloads, scenario):
+    report_data = payloads.get("report_data")
+    if not isinstance(report_data, dict):
+        return {}
+    if scenario.name == "executive-overview":
+        return report_data.get("traffic") or {}
+    if scenario.name == "traffic-overview":
+        return report_data
+    return {}
+
+
+def _find_ga4_ai_payload(payloads, scenario):
+    for alias in ("ga4_ai", "referrals"):
+        value = payloads.get(alias)
+        if isinstance(value, dict):
+            return value
+    traffic = _report_data_traffic(payloads, scenario)
+    ga4 = traffic.get("ga4") if isinstance(traffic, dict) else None
+    return (ga4 or {}).get("ai_referrals") if isinstance(ga4, dict) else None
+
+
+def _normalize_ga4_ai(payload):
+    if not isinstance(payload, dict):
+        return None
+    rate = _numeric(payload.get("ai_referral_rate"))
+    rate_percent = rate * 100 if rate is not None and abs(rate) <= 1 else rate
+    return {
+        "metrics": {
+            "ai_referral_sessions": payload.get("total_sessions"),
+            "ai_referral_users": payload.get("total_active_users"),
+            "ai_referral_rate": rate_percent,
+        },
+        "daily": [
+            {
+                "date": item.get("date"),
+                "sessions": item.get("sessions"),
+                "active_users": item.get("active_users"),
+            }
+            for item in payload.get("daily") or []
+            if isinstance(item, dict)
+        ],
+    }
+
+
+def _find_cloudflare_ai_payload(payloads, scenario):
+    direct = payloads.get("cloudflare_ai")
+    if isinstance(direct, dict):
+        return direct
+    traffic = _report_data_traffic(payloads, scenario)
+    ai_agent = traffic.get("ai_agent") if isinstance(traffic, dict) else None
+    if not isinstance(ai_agent, dict):
+        return None
+    metrics = ai_agent.get("metrics") or {}
+    return {
+        "ai_citations": metrics.get("ai_citations"),
+        "ai_index": metrics.get("ai_index"),
+        "ai_training": metrics.get("ai_training"),
+        "platform_leaderboards": {},
+    }
+
+
+def _normalize_cf_period_metric(value):
+    if not isinstance(value, dict):
+        return value
+    return {
+        "current": value.get("current"),
+        "previous": value.get("prev"),
+        "change": value.get("delta"),
+        "unit": "http_requests",
+        "daily": value.get("daily") or [],
+        "prev_daily": value.get("prev_daily") or [],
+    }
+
+
+def _normalize_cloudflare_ai(payload):
+    if not isinstance(payload, dict):
+        return None
+    metric_sources = {
+        "ai_assistant": "ai_citations",
+        "ai_search": "ai_index",
+        "ai_training": "ai_training",
+    }
+    metrics = {
+        key: _normalize_cf_period_metric(payload.get(source_key))
+        for key, source_key in metric_sources.items()
+        if payload.get(source_key) is not None
+    }
+    leaderboards = payload.get("platform_leaderboards") or {}
+    platforms = {}
+    for metric_key, source_key in metric_sources.items():
+        for item in leaderboards.get(source_key) or []:
+            if not isinstance(item, dict):
+                continue
+            platform_key = str(
+                item.get("platform_id") or item.get("display_name") or "unknown"
+            )
+            row = platforms.setdefault(platform_key, {
+                "platform": item.get("display_name") or platform_key,
+                "ai_assistant": 0,
+                "ai_search": 0,
+                "ai_training": 0,
+            })
+            row[metric_key] = item.get("requests") or 0
+    platform_rows = sorted(
+        platforms.values(),
+        key=lambda row: max(
+            _numeric(row.get(key)) or 0
+            for key in ("ai_assistant", "ai_search", "ai_training")
+        ),
+        reverse=True,
+    )
+    return {"metrics": metrics, "platform_distribution": platform_rows}
+
+
+def _presentation_payloads(payloads, scenario):
+    cleaned = _drop_hidden_presentation_fields(copy.deepcopy(payloads))
+    if scenario.name not in AI_TRAFFIC_PRESENTATION_SCENARIOS:
+        return cleaned
+
+    output = {}
+    if scenario.name == "executive-overview":
+        report_data = cleaned.get("report_data")
+        if isinstance(report_data, dict):
+            report_data = copy.deepcopy(report_data)
+            report_data.pop("traffic", None)
+            output["report_data"] = report_data
+        for alias, value in cleaned.items():
+            if alias not in {
+                "report_data", "traffic", "ga4", "ga4_ai", "referrals",
+                "cloudflare", "cloudflare_ai", "worker", "ai_agent",
+            }:
+                output[alias] = value
+
+    if scenario.name in GA4_AI_PRESENTATION_SCENARIOS:
+        ga4 = _normalize_ga4_ai(_find_ga4_ai_payload(cleaned, scenario))
+        if ga4:
+            output["ga4_ai"] = ga4
+    if scenario.name in CLOUDFLARE_AI_PRESENTATION_SCENARIOS:
+        cloudflare = _normalize_cloudflare_ai(
+            _find_cloudflare_ai_payload(cleaned, scenario)
+        )
+        if cloudflare:
+            output["cloudflare_ai"] = cloudflare
+    return output
 
 
 def _comparison_metric(key, value, locale="en-US"):
@@ -530,14 +729,17 @@ def _collect_metrics(payloads, limit=8, locale="en-US"):
     return metrics
 
 
-def _series_from_list(name, points, color=None, locale="en-US"):
+def _series_from_list(name, points, color=None, locale="en-US", preferred_keys=None):
     if not isinstance(points, list) or not points:
         return []
     numeric_keys = []
     for point in points:
         if isinstance(point, dict):
             numeric_keys.extend(key for key, value in point.items() if key not in DATE_KEYS and _numeric(value) is not None)
-    numeric_keys = list(dict.fromkeys(numeric_keys))[:4]
+    numeric_keys = list(dict.fromkeys(numeric_keys))
+    if preferred_keys:
+        numeric_keys = [key for key in preferred_keys if key in numeric_keys]
+    numeric_keys = numeric_keys[:4]
     output = []
     for key in numeric_keys:
         data = []
@@ -546,8 +748,35 @@ def _series_from_list(name, points, color=None, locale="en-US"):
                 continue
             x = next((point.get(date_key) for date_key in DATE_KEYS if point.get(date_key) is not None), index + 1)
             data.append({"x": x, "y": point.get(key)})
-        output.append({"name": f"{name} · {_label(key, locale)}", "points": data, "color": color})
+        series_name = name if key == "value" and len(numeric_keys) == 1 else f"{name} · {_label(key, locale)}"
+        output.append({"name": series_name, "points": data, "color": color})
     return output
+
+
+def _trend_series(name, current, previous=None, locale="en-US", preferred_keys=None):
+    series = _series_from_list(
+        name, current, locale=locale, preferred_keys=preferred_keys,
+    )
+    if not series:
+        return []
+    previous_series = _series_from_list(
+        name, previous, locale=locale, preferred_keys=preferred_keys,
+    )
+    for item in previous_series:
+        item["name"] = f"{item['name']} · {t(locale, 'previous_period_label')}"
+        item["dash"] = True
+    return series + previous_series
+
+
+def _preferred_trend_metrics(key):
+    return PREFERRED_TREND_METRICS.get(str(key).lower())
+
+
+def _hide_worker_trend(scenario, alias, path=()):
+    if scenario.name not in COMPOSITE_REPORTS_WITHOUT_WORKER_TREND:
+        return False
+    names = {str(alias).lower(), *(str(item).lower() for item in path)}
+    return "worker" in names
 
 
 def _category_number(value):
@@ -784,6 +1013,30 @@ def _collect_charts(payloads, scenario, locale="en-US"):
                 ],
                 "format": "percent",
             })
+    cloudflare_ai = payloads.get("cloudflare_ai")
+    platform_distribution = (
+        cloudflare_ai.get("platform_distribution")
+        if isinstance(cloudflare_ai, dict) else None
+    )
+    if platform_distribution:
+        metric_keys = ("ai_assistant", "ai_search", "ai_training")
+        charts.append({
+            "type": "heatmap_table",
+            "title": t(locale, "cloudflare_platform_distribution"),
+            "description": t(locale, "cloudflare_platform_distribution_desc"),
+            "columns": [_label(key, locale) for key in metric_keys],
+            "rows": [
+                {
+                    "label": item.get("platform"),
+                    "values": {
+                        _label(key, locale): item.get(key)
+                        for key in metric_keys
+                    },
+                }
+                for item in platform_distribution[:12]
+            ],
+            "format": "integer",
+        })
     for alias, payload in payloads.items():
         if not isinstance(payload, dict) or len(charts) >= max_charts:
             continue
@@ -791,29 +1044,28 @@ def _collect_charts(payloads, scenario, locale="en-US"):
             if len(charts) >= max_charts:
                 break
             key = path[-1]
+            if _hide_worker_trend(scenario, alias, path):
+                continue
             metric_trend = value.get("trend") or value.get("daily")
             if isinstance(metric_trend, list) and metric_trend:
-                points = [
-                    {"x": item.get("date"), "y": item.get("value")}
-                    for item in metric_trend if isinstance(item, dict)
-                ]
-                series = [{"name": _label(key, locale), "points": points}]
-                previous = value.get("prev_trend") or value.get("previous_trend")
-                if isinstance(previous, list) and previous:
-                    series.append({
-                        "name": f"{_label(key, locale)} · {t(locale, 'previous_period_label')}",
-                        "points": [
-                            {"x": item.get("date"), "y": item.get("value")}
-                            for item in previous if isinstance(item, dict)
-                        ],
-                        "dash": True,
-                    })
+                previous = (
+                    value.get("prev_trend") or value.get("previous_trend")
+                    or value.get("prev_daily")
+                )
+                preferred = _preferred_trend_metrics(key)
+                series = _trend_series(
+                    _label(key, locale), metric_trend, previous,
+                    locale=locale, preferred_keys=preferred,
+                )
+                if not series:
+                    continue
+                format_key = next((item for item in preferred or () if _format_for(item)), key)
                 charts.append({
                     "type": "line_chart",
                     "title": t(locale, "trend", name=_label(key, locale)),
                     "description": t(locale, "chart_desc_line"),
                     "series": series,
-                    "format": _format_for(key),
+                    "format": _format_for(format_key),
                 })
         for chart in _bounded_charts(payload, alias, locale):
             if len(charts) >= max_charts:
@@ -834,15 +1086,24 @@ def _collect_charts(payloads, scenario, locale="en-US"):
                 "description": t(locale, "chart_desc_line"),
                 "series": kpi_series[:4],
             })
-        for key in ("daily", "trend", "prev_daily"):
+        for key in ("daily", "trend"):
+            if _hide_worker_trend(scenario, alias):
+                continue
             points = payload.get(key)
-            series = _series_from_list(_label(alias, locale), points, locale=locale)
+            preferred = _preferred_trend_metrics(alias)
+            previous = payload.get("prev_daily") if key == "daily" else payload.get("previous_trend")
+            series = _trend_series(
+                _label(alias, locale), points, previous,
+                locale=locale, preferred_keys=preferred,
+            )
             if series and len(charts) < max_charts:
+                format_key = next((item for item in preferred or () if _format_for(item)), alias)
                 charts.append({
                     "type": "line_chart",
-                    "title": f"{_label(alias, locale)} · {_label(key, locale)}",
+                    "title": t(locale, "trend", name=_label(alias, locale)),
                     "description": t(locale, "chart_desc_line"),
                     "series": series,
+                    "format": _format_for(format_key),
                 })
         links = payload.get("links")
         if isinstance(links, list) and links and len(charts) < max_charts:
@@ -1220,6 +1481,7 @@ def _sanitize(value, show_ids=False):
             for key, item in value.items()
             if (show_ids or (key not in INTERNAL_KEYS and not key.endswith("_id")))
             and not any(part in key.lower() for part in SENSITIVE_KEY_PARTS)
+            and not _is_hidden_presentation_key(key)
         }
     if isinstance(value, list):
         return [_sanitize(item, show_ids) for item in value]
@@ -1336,9 +1598,15 @@ def build_report(
             "label": t(locale, "entity"),
             "value": entity_name,
         })
-    metrics = _collect_metrics(payloads, locale=locale)
-    charts = _collect_charts(payloads, scenario, locale)
-    tables = _collect_tables(payloads, scenario, args.show_ids, locale)
+    presentation_payloads = _presentation_payloads(payloads, scenario)
+    metric_limit = 12 if scenario.name in AI_TRAFFIC_PRESENTATION_SCENARIOS else 8
+    metrics = _collect_metrics(
+        presentation_payloads, limit=metric_limit, locale=locale,
+    )
+    charts = _collect_charts(presentation_payloads, scenario, locale)
+    tables = _collect_tables(
+        presentation_payloads, scenario, args.show_ids, locale,
+    )
     extra_insights = []
     if scenario.name == "page-opportunities":
         rows, extra_insights = _page_opportunity_rules(payloads, locale)
@@ -1478,7 +1746,7 @@ def run_report(args, client=None):
             args,
             client,
             native["payloads"],
-            {},
+            native.get("errors") or {},
             start,
             end,
             native.get("entity"),

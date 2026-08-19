@@ -18,6 +18,7 @@ from _i18n import label, normalize_locale  # noqa: E402
 from report import (  # noqa: E402
     SUPPORTED_CHART_TYPES,
     _collect_charts,
+    _presentation_payloads,
     _sanitize,
     _table,
     build_report,
@@ -218,6 +219,148 @@ class RenderingTests(unittest.TestCase):
         self.assertEqual(charts[0]["format"], "percent")
         self.assertEqual(len(charts[0]["series"]), 2)
         self.assertTrue(charts[0]["series"][1]["dash"])
+
+    def test_executive_traffic_trends_use_backend_metric_fields_and_hide_worker(self):
+        payloads = {
+            "report_data": {
+                "traffic": {
+                    "ga4": {
+                        "daily": [
+                            {"date": "2026-08-18", "sessions": 12, "active_users": 9, "page_views": 20},
+                            {"date": "2026-08-19", "sessions": 15, "active_users": 11, "page_views": 27},
+                        ],
+                        "ai_referrals": {
+                            "daily": [
+                                {"date": "2026-08-18", "sessions": 2, "active_users": 2},
+                                {"date": "2026-08-19", "sessions": 4, "active_users": 3},
+                            ],
+                        },
+                    },
+                    "cloudflare": {
+                        "daily": [
+                            {"date": "2026-08-18", "requests_total": 120, "requests_cached": 72, "page_views": 18},
+                            {"date": "2026-08-19", "requests_total": 160, "requests_cached": 96, "page_views": 24},
+                        ],
+                    },
+                    "worker": {
+                        "daily": [
+                            {"date": "2026-08-18", "traffic_type": "ai_search", "requests": 7},
+                        ],
+                    },
+                },
+            },
+        }
+        charts = _collect_charts(payloads, get_scenario("executive-overview"), "zh-CN")
+        by_title = {chart["title"]: chart for chart in charts}
+
+        self.assertEqual(
+            [point["y"] for point in by_title["GA4趋势"]["series"][0]["points"]],
+            [12, 15],
+        )
+        self.assertEqual(len(by_title["GA4趋势"]["series"]), 3)
+        self.assertEqual(
+            [point["y"] for point in by_title["AI 引荐趋势"]["series"][0]["points"]],
+            [2, 4],
+        )
+        self.assertEqual(
+            [point["y"] for point in by_title["Cloudflare趋势"]["series"][0]["points"]],
+            [120, 160],
+        )
+        self.assertNotIn("Worker趋势", by_title)
+        self.assertNotIn("Worker趋势", render_html({**sample_report(), "locale": "zh-CN", "charts": charts}))
+
+    def test_dedicated_worker_report_keeps_its_requested_trend(self):
+        charts = _collect_charts({
+            "worker": {
+                "daily": [
+                    {"date": "2026-08-18", "traffic_type": "ai_search", "requests": 7},
+                    {"date": "2026-08-19", "traffic_type": "ai_search", "requests": 9},
+                ],
+            },
+        }, get_scenario("worker-traffic"), "zh-CN")
+        worker = next(chart for chart in charts if chart["title"] == "Worker趋势")
+        self.assertEqual([point["y"] for point in worker["series"][0]["points"]], [7, 9])
+
+    def test_customer_traffic_projection_keeps_only_supported_ai_metrics(self):
+        payloads = {
+            "report_data": {
+                "traffic": {
+                    "ga4": {
+                        "total_sessions": {"current": 1000},
+                        "ai_referrals": {
+                            "total_sessions": 30,
+                            "total_active_users": 22,
+                            "ai_referral_rate": 0.03,
+                            "daily": [{"date": "2026-08-19", "sessions": 5, "active_users": 4}],
+                            "items": [{"source": "chatgpt.com", "sessions": 20, "page_views": 40}],
+                        },
+                    },
+                    "cloudflare": {"total_requests": {"current": 5000}},
+                    "worker": {"daily": [{"date": "2026-08-19", "requests": 12}]},
+                },
+                "revenue": 999,
+                "transactions": 8,
+            },
+            "cloudflare_ai": {
+                "ai_citations": {
+                    "current": 12, "prev": 8, "delta": 4,
+                    "daily": [{"date": "2026-08-19", "value": 12}],
+                    "prev_daily": [{"date": "2026-08-19", "value": 8}],
+                },
+                "ai_index": {"current": 20, "prev": 15, "delta": 5, "daily": []},
+                "ai_training": {"current": 9, "prev": 10, "delta": -1, "daily": []},
+                "human_referrals": {"current": 7},
+                "platform_leaderboards": {
+                    "ai_citations": [{"platform_id": "openai", "display_name": "OpenAI", "requests": 8}],
+                    "ai_index": [{"platform_id": "openai", "display_name": "OpenAI", "requests": 6}],
+                    "ai_training": [{"platform_id": "anthropic", "display_name": "Anthropic", "requests": 4}],
+                },
+            },
+        }
+        projected = _presentation_payloads(
+            payloads, get_scenario("executive-overview"),
+        )
+
+        self.assertEqual(set(projected["ga4_ai"]["metrics"]), {
+            "ai_referral_sessions", "ai_referral_users", "ai_referral_rate",
+        })
+        self.assertEqual(projected["ga4_ai"]["metrics"]["ai_referral_rate"], 3)
+        self.assertEqual(set(projected["cloudflare_ai"]["metrics"]), {
+            "ai_assistant", "ai_search", "ai_training",
+        })
+        rendered = json.dumps(projected, ensure_ascii=False)
+        for hidden in (
+            "revenue", "transactions", "total_requests", "page_views",
+            "human_referrals", "worker",
+        ):
+            self.assertNotIn(hidden, rendered)
+        charts = _collect_charts(projected, get_scenario("executive-overview"), "zh-CN")
+        platform = next(
+            chart for chart in charts
+            if chart["title"] == "Cloudflare AI 平台分布"
+        )
+        self.assertEqual(platform["type"], "heatmap_table")
+        self.assertEqual(
+            platform["columns"],
+            ["AI 助手访问", "AI 搜索抓取", "AI 训练抓取"],
+        )
+        assistant = next(
+            chart for chart in charts if chart["title"] == "AI 助手访问趋势"
+        )
+        self.assertEqual(len(assistant["series"]), 2)
+        self.assertTrue(assistant["series"][1]["dash"])
+
+    def test_revenue_and_transactions_are_always_removed_from_reports(self):
+        sanitized = _sanitize({
+            "name": "Example",
+            "revenue": 100,
+            "purchase_revenue": 80,
+            "transactions": 3,
+            "nested": {"transaction_count": 3, "sessions": 9},
+        }, True)
+        self.assertEqual(sanitized, {
+            "name": "Example", "nested": {"sessions": 9},
+        })
 
     def test_distribution_becomes_donut_chart(self):
         payloads = {

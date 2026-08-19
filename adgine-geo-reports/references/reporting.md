@@ -127,6 +127,7 @@ Use four stable densities:
 Map data deterministically:
 
 - Date series → `line_chart`; show the previous period as a dashed comparison series when available.
+- Map each source's real daily fields. Customer-facing GA4 sections use only AI referral sessions, AI referral users, and AI referral rate from `/integrations/ga4/ai-referrals`. Customer-facing Cloudflare sections use only `ai_assistant`, `ai_search`, `ai_training`, and their platform leaderboards from `/ai-agent/overview-kpi`. Never assume a generic `value` field.
 - Brand/platform comparisons → `bar_chart` or `heatmap_table`.
 - True parts-of-whole distributions → `pie_chart`; never use it for arbitrary rankings.
 - Bounded quality scores → `gauge`; bounded shares/rates/progress → `progress_bar`.
@@ -137,6 +138,10 @@ Map data deterministically:
 - Flow links → `bar_chart` plus a link table.
 - KPIs → cards; do not turn arbitrary categorical rows into decorative charts.
 
+Omit the Worker trend from composite customer reports (`executive-overview` and `traffic-overview`). Keep it only in a dedicated Worker report requested by the user.
+
+Never render revenue or transaction fields. The reporting facade does not calculate them, and it does not add GA4 sessions to Cloudflare HTTP requests. Render Cloudflare platform distribution as a three-column comparison (`ai_assistant`, `ai_search`, `ai_training`) without adding the categories into a synthetic total.
+
 Place charts in a responsive two-column grid, with trend lines and heatmaps spanning the full width. Keep exact records in tables below the visuals.
 
 Keep long labels intact in tables. SVG bar labels may visually shorten at the right edge but must preserve the full label in a tooltip.
@@ -145,7 +150,7 @@ Keep long labels intact in tables. SVG bar labels may visually shorten at the ri
 
 Always distinguish these units:
 
-- GA4: sessions, active users, page views, transactions, revenue.
+- GA4 customer reports: AI referral sessions, AI referral active users, and AI referral rate.
 - Cloudflare Analytics: HTTP requests, cached requests, bytes, threats, page views, unique visitors.
 - Cloudflare Worker: captured events/requests by AI traffic type.
 - AI Agent: derived bot/human event aggregates, with endpoint-specific source metadata.
@@ -193,7 +198,8 @@ Exact matching wins. If text has zero or multiple matches, stop and request/use 
 
 Change visuals in `assets/report-template.html` and `_reporting.py`, not in `SKILL.md`. Do not render schema labels, generic summary tables, source/coverage tables, or query-audit sections in HTML. Keep those fields only in the complete JSON contract for diagnostics.
 
-Keep the template fully offline:
+Use the light Adgine brand palette: white surfaces, pale-blue backgrounds, dark navy text,
+and blue-to-indigo accents. Keep the template fully offline:
 
 - Inline CSS and SVG only.
 - No remote fonts, scripts, images, analytics, or CDN assets.

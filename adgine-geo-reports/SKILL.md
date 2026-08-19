@@ -88,6 +88,8 @@ Run `python3 <skill-dir>/scripts/report.py --list-scenarios` for the machine-rea
 - Hide internal IDs by default. Use `--show-ids` only for debugging or an explicit user request. Never expose passwords, tokens, API keys, or secrets.
 - Preserve zero values. Render missing values as `—`; do not infer a zero from missing data.
 - Report partial data honestly through coverage, warnings, and source status.
+- In customer-facing GA4 sections, show only AI referral sessions, AI referral users, and AI referral rate from the existing `/integrations/ga4/ai-referrals` response. Do not show revenue or transactions.
+- In customer-facing Cloudflare sections, show only `ai_assistant`, `ai_search`, `ai_training`, and their platform distribution from the existing `/ai-agent/overview-kpi` response. Present the API's `ai_citations` field as AI assistant requests and `ai_index` as AI search requests; do not call either one an answer citation.
 - Cache only `/report-data/capabilities` for two hours on disk without credentials; never cache report business data. Fall back only for a missing/disabled/incompatible report-data route; never hide 401/403/409/422 or business 5xx failures behind legacy calls.
 - Treat answer citations, AI-assistant HTTP requests, Worker events, and GA4 AI landing sessions as distinct facts even when they refer to the same page.
 - Do not infer page-to-opportunity matches. Until the backend persists `target_path/path_key`, show `PAGE_OPPORTUNITY_MAPPING_UNAVAILABLE` and use only deterministic KPI/health recommendations.

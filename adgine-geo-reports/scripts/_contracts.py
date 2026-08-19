@@ -50,11 +50,12 @@ SCENARIOS = {
         "executive-overview", "P1", "GEO Executive Overview", "GEO 管理层总览", "analysis",
         (
             _r("visibility", "/api/projects/{project_id}/analytics/visibility", "analytics", platform=True),
-            _r("traffic", "/api/projects/{project_id}/geo-metrics/overview", "traffic", required=False),
+            _r("ga4_ai", "/api/projects/{project_id}/integrations/ga4/ai-referrals", "traffic", required=False),
+            _r("cloudflare_ai", "/api/projects/{project_id}/ai-agent/overview-kpi", "traffic", platform=True, required=False),
             _r("opportunities", "/api/projects/{project_id}/opportunities", required=False),
             _r("integrations", "/api/projects/{project_id}/integrations", required=False),
         ),
-        description="Visibility, source-separated traffic, opportunities, and integration coverage.",
+        description="Visibility, GA4 AI referrals, Cloudflare AI activity, opportunities, and integration coverage.",
     ),
     "catalog": Scenario(
         "catalog", "P1", "Topic and Prompt Catalog", "Topic / Prompt 目录", "inventory",
@@ -109,24 +110,24 @@ SCENARIOS = {
 
     # P2: acquisition, crawlers, humans, pages, and flows.
     "ga4-overview": Scenario(
-        "ga4-overview", "P2", "GA4 Traffic Overview", "GA4 流量总览", "analysis",
-        (_r("ga4", "/api/projects/{project_id}/integrations/ga4/overview", "traffic"),),
+        "ga4-overview", "P2", "GA4 AI Referral Overview", "GA4 AI 引荐总览", "analysis",
+        (_r("ga4_ai", "/api/projects/{project_id}/integrations/ga4/ai-referrals", "traffic"),),
     ),
     "ga4-referrals": Scenario(
         "ga4-referrals", "P2", "GA4 AI Referrals", "GA4 AI 引荐分析", "analysis",
-        (_r("referrals", "/api/projects/{project_id}/integrations/ga4/ai-referrals", "traffic"),),
+        (_r("ga4_ai", "/api/projects/{project_id}/integrations/ga4/ai-referrals", "traffic"),),
     ),
     "ga4-pages": Scenario(
         "ga4-pages", "P2", "GA4 Page Performance", "GA4 页面表现", "inventory",
         (_r("pages", "/api/projects/{project_id}/integrations/ga4/pages", "traffic", paging="offset"),),
     ),
     "cloudflare-overview": Scenario(
-        "cloudflare-overview", "P2", "Cloudflare Traffic Overview", "Cloudflare 流量总览", "analysis",
-        (_r("cloudflare", "/api/projects/{project_id}/integrations/cloudflare/overview", "traffic"),),
+        "cloudflare-overview", "P2", "Cloudflare AI Activity", "Cloudflare AI 活动分析", "analysis",
+        (_r("cloudflare_ai", "/api/projects/{project_id}/ai-agent/overview-kpi", "traffic", platform=True),),
     ),
     "cloudflare-bots": Scenario(
-        "cloudflare-bots", "P2", "Cloudflare Bot Traffic", "Cloudflare 爬虫流量", "analysis",
-        (_r("bots", "/api/projects/{project_id}/integrations/cloudflare/bot-traffic", "traffic"),),
+        "cloudflare-bots", "P2", "Cloudflare AI Bot Activity", "Cloudflare AI 爬虫分析", "analysis",
+        (_r("cloudflare_ai", "/api/projects/{project_id}/ai-agent/overview-kpi", "traffic", platform=True),),
     ),
     "cloudflare-pages": Scenario(
         "cloudflare-pages", "P2", "Cloudflare Bot Pages", "Cloudflare 爬虫页面", "inventory",
@@ -151,15 +152,11 @@ SCENARIOS = {
     ),
     "ai-overview": Scenario(
         "ai-overview", "P2", "AI Traffic Overview", "AI 流量总览", "analysis",
-        (_r("overview", "/api/projects/{project_id}/ai-agent/overview-kpi", "traffic", platform=True),),
+        (_r("cloudflare_ai", "/api/projects/{project_id}/ai-agent/overview-kpi", "traffic", platform=True),),
     ),
     "ai-bots": Scenario(
         "ai-bots", "P2", "AI Bot Analysis", "AI Bot 分析", "analysis",
-        (
-            _r("overview", "/api/projects/{project_id}/ai-agent/bot-traffic-overview", "traffic", platform=True),
-            _r("platforms", "/api/projects/{project_id}/ai-agent/bot-platforms", "traffic", platform=True, required=False),
-            _r("useragents", "/api/projects/{project_id}/ai-agent/bot-useragents", "traffic", platform=True, required=False),
-        ),
+        (_r("cloudflare_ai", "/api/projects/{project_id}/ai-agent/overview-kpi", "traffic", platform=True),),
     ),
     "ai-humans": Scenario(
         "ai-humans", "P2", "AI-Driven Human Traffic", "AI 真人引流分析", "analysis",
@@ -232,12 +229,10 @@ SCENARIOS = {
     "traffic-overview": Scenario(
         "traffic-overview", "P2", "Traffic Overview", "流量综合总览", "analysis",
         (
-            _r("ga4", "/api/projects/{project_id}/integrations/ga4/overview", "traffic", required=False),
-            _r("cloudflare", "/api/projects/{project_id}/integrations/cloudflare/overview", "traffic", required=False),
-            _r("worker", "/api/projects/{project_id}/integrations/cloudflare/worker/overview", "traffic", required=False),
-            _r("ai_agent", "/api/projects/{project_id}/ai-agent/overview-kpi", "traffic", platform=True, required=False),
+            _r("ga4_ai", "/api/projects/{project_id}/integrations/ga4/ai-referrals", "traffic", required=False),
+            _r("cloudflare_ai", "/api/projects/{project_id}/ai-agent/overview-kpi", "traffic", platform=True, required=False),
         ),
-        description="Source-separated GA4, Cloudflare, Worker, and AI Agent traffic coverage.",
+        description="GA4 AI referrals and Cloudflare AI assistant, search, training, and platform activity.",
     ),
     "data-freshness": Scenario(
         "data-freshness", "P3", "Data Freshness", "数据新鲜度", "status",

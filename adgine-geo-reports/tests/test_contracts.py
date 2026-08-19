@@ -36,6 +36,17 @@ class ContractRegistryTests(unittest.TestCase):
         self.assertEqual(ai_pages.paging, "offset")
         self.assertEqual(ai_human_pages.paging, "offset")
 
+    def test_customer_traffic_reports_use_existing_ai_specific_endpoints(self):
+        for scenario_name in ("ga4-overview", "ga4-referrals"):
+            request = SCENARIOS[scenario_name].requests[0]
+            self.assertTrue(request.path.endswith("/integrations/ga4/ai-referrals"))
+        for scenario_name in (
+            "cloudflare-overview", "cloudflare-bots", "ai-overview", "ai-bots",
+        ):
+            requests = SCENARIOS[scenario_name].requests
+            self.assertEqual(len(requests), 1)
+            self.assertTrue(requests[0].path.endswith("/ai-agent/overview-kpi"))
+
     def test_page_health_is_get_only_and_cached(self):
         request = SCENARIOS["page-health"].requests[0]
         self.assertEqual(request.path.rsplit("/", 1)[-1], "health")

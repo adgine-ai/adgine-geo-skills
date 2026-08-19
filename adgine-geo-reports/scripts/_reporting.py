@@ -97,7 +97,7 @@ def _render_bar(chart, locale="en-US"):
     for index, (item, value) in enumerate(zip(items, values)):
         y = top + index * row_h
         bar_width = max(1, abs(value) / maximum * plot_width)
-        color = "#2563eb" if item.get("highlight") else item.get("color") or "#60a5fa"
+        color = "#2f6bf3" if item.get("highlight") else item.get("color") or "#79a7ff"
         label = str(item.get("label") or "")
         rows.append(
             f'<text x="0" y="{y + 17}" class="svg-label"><title>{_escape(label)}</title>{_escape(label[:38])}</text>'
@@ -122,7 +122,7 @@ def _render_line(chart, locale="en-US"):
     count = max(len(item.get("points") or []) for item in series)
     x_span, y_span = width - left - right, height - top - bottom
     paths = []
-    colors = ["#2563eb", "#06b6d4", "#8b5cf6", "#f59e0b", "#10b981"]
+    colors = ["#2f6bf3", "#6558f5", "#38a9f5", "#14b8a6", "#f59e0b"]
     for series_index, item in enumerate(series):
         coords = []
         for index, point in enumerate(item.get("points") or []):
@@ -172,7 +172,7 @@ def _render_donut(chart, locale="en-US"):
     total = sum(value for _, value in items)
     if total <= 0:
         return f'<div class="empty">{_escape(t(locale, "no_data_section"))}</div>'
-    colors = ["#2563eb", "#06b6d4", "#8b5cf6", "#f59e0b", "#10b981", "#ec4899", "#64748b", "#ef4444"]
+    colors = ["#2f6bf3", "#6558f5", "#38a9f5", "#14b8a6", "#f59e0b", "#ec6aa7", "#7b8ba6", "#ef6464"]
     segments, legend = [], []
     offset = 0.0
     for index, (item, value) in enumerate(items):
@@ -191,7 +191,7 @@ def _render_donut(chart, locale="en-US"):
         offset += portion
     return (
         '<div class="donut-layout"><svg class="donut" viewBox="0 0 120 120" role="img">'
-        '<circle cx="60" cy="60" r="44" fill="none" stroke="#e2e8f0" stroke-width="22" />'
+        '<circle cx="60" cy="60" r="44" fill="none" stroke="#e6edf8" stroke-width="22" />'
         f'{"".join(segments)}<text x="60" y="57" text-anchor="middle" class="donut-total">'
         f'{_escape(format_value(total, chart.get("format"), locale))}</text>'
         f'<text x="60" y="73" text-anchor="middle" class="donut-caption">{_escape(t(locale, "total"))}</text></svg>'
@@ -212,7 +212,7 @@ def _render_heatmap(chart, locale="en-US"):
         for column in columns:
             value = _number((row.get("values") or {}).get(column))
             alpha = .08 if value is None else .12 + .72 * max(0, value) / maximum
-            cells.append(f'<td><div class="heat" style="background:rgba(37,99,235,{alpha:.2f})">{_escape(format_value(value, chart.get("format"), locale))}</div></td>')
+            cells.append(f'<td><div class="heat" style="background:rgba(47,107,243,{alpha:.2f})">{_escape(format_value(value, chart.get("format"), locale))}</div></td>')
         klass = "highlight" if row.get("highlight") else ""
         body.append(f'<tr class="{klass}"><th>{_escape(row.get("label"))}</th>{"".join(cells)}</tr>')
     return f'<div class="table-wrap"><table><thead><tr><th>{_escape(t(locale, "brand"))}</th>{head}</tr></thead><tbody>{"".join(body)}</tbody></table></div>'
@@ -227,11 +227,11 @@ def _render_gauge(chart, locale="en-US"):
     if value is None or maximum <= minimum:
         return f'<div class="empty">{_escape(t(locale, "no_data_section"))}</div>'
     ratio = max(0, min(1, (value - minimum) / (maximum - minimum)))
-    color = "#dc2626" if ratio < .5 else ("#f59e0b" if ratio < .75 else "#10b981")
+    color = "#2f6bf3"
     return (
         '<svg class="gauge-chart" viewBox="0 0 240 145" role="img">'
         '<path d="M30 120 A90 90 0 0 1 210 120" pathLength="100" fill="none" '
-        'stroke="#e2e8f0" stroke-width="24" stroke-linecap="round" />'
+        'stroke="#e6edf8" stroke-width="24" stroke-linecap="round" />'
         f'<path d="M30 120 A90 90 0 0 1 210 120" pathLength="100" fill="none" stroke="{color}" '
         f'stroke-width="24" stroke-linecap="round" stroke-dasharray="{ratio * 100:.3f} 100" />'
         f'<text x="120" y="101" text-anchor="middle" class="gauge-value">{_escape(format_value(value, chart.get("format"), locale))}</text>'
@@ -247,7 +247,7 @@ def _render_funnel(chart, locale="en-US"):
         return f'<div class="empty">{_escape(t(locale, "no_data_section"))}</div>'
     width, center, top, row_h = 720, 360, 18, 58
     maximum = max([abs(_number(item.get("value")) or 0) for item in items] + [1])
-    colors = ["#2563eb", "#0891b2", "#8b5cf6", "#f59e0b", "#10b981", "#ec4899"]
+    colors = ["#2f6bf3", "#6558f5", "#38a9f5", "#14b8a6", "#f59e0b", "#ec6aa7"]
     shapes = []
     for index, item in enumerate(items):
         value = abs(_number(item.get("value")) or 0)
@@ -297,7 +297,7 @@ def _render_scatter(chart, locale="en-US"):
         grid.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{height-bottom}" class="grid-line" />')
         grid.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" class="grid-line" />')
     dots = []
-    colors = ["#2563eb", "#06b6d4", "#8b5cf6", "#f59e0b", "#10b981"]
+    colors = ["#2f6bf3", "#6558f5", "#38a9f5", "#14b8a6", "#f59e0b"]
     for index, item in enumerate(points):
         x_value, y_value = _number(item.get("x")), _number(item.get("y"))
         x = left + (x_value - x_low) / (x_high - x_low) * x_span
@@ -350,7 +350,7 @@ def _render_treemap(chart, locale="en-US"):
         return f'<div class="empty">{_escape(t(locale, "no_data_section"))}</div>'
     pairs.sort(key=lambda pair: pair[1], reverse=True)
     width, height = 760, 390
-    colors = ["#1d4ed8", "#0891b2", "#7c3aed", "#d97706", "#059669", "#db2777", "#475569", "#dc2626"]
+    colors = ["#2f6bf3", "#6558f5", "#38a9f5", "#14b8a6", "#f59e0b", "#ec6aa7", "#6f84a6", "#ef6464"]
     cells = []
     for index, (item, x, y, cell_width, cell_height) in enumerate(_treemap_layout(pairs, 0, 0, width, height)):
         label = str(item.get("label") or "")

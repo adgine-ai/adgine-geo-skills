@@ -6,51 +6,63 @@
   <title>{{TITLE}}</title>
   <style>
     :root {
-      --ink:#14213d; --muted:#64748b; --line:#dce5ef; --paper:#fff;
-      --blue:#2563eb; --cyan:#0891b2; --good:#047857; --bad:#dc2626;
-      --warn:#b45309; --shadow:0 18px 54px rgba(15,23,42,.09);
+      --ink:#0d1933; --muted:#61708d; --line:#dfe8f6; --paper:#fff;
+      --blue:#2f6bf3; --indigo:#5548e8; --cyan:#38a9f5;
+      --good:#079669; --bad:#e25757; --warn:#c27a16;
+      --shadow:0 18px 48px rgba(58,91,145,.09);
     }
     * { box-sizing:border-box }
     body {
       margin:0; color:var(--ink); line-height:1.5;
       font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI","PingFang SC",sans-serif;
-      background:radial-gradient(circle at 10% 0,rgba(37,99,235,.15),transparent 29%),
-        radial-gradient(circle at 92% 3%,rgba(8,145,178,.13),transparent 25%),#f4f7fb;
+      background:
+        radial-gradient(circle at 76% -10%,rgba(96,165,250,.23),transparent 38%),
+        radial-gradient(circle at 8% 16%,rgba(219,234,254,.72),transparent 31%),
+        linear-gradient(180deg,#f5f8ff 0,#fbfdff 48%,#f4f8ff 100%);
     }
     .shell { width:min(1240px,calc(100% - 32px)); margin:32px auto 64px }
     .hero {
-      padding:30px; overflow:hidden; color:#fff; border-radius:26px;
-      background:radial-gradient(circle at 86% 20%,rgba(34,211,238,.55),transparent 18%),
-        linear-gradient(132deg,#0f172a,#172554 38%,#1d4ed8 74%,#0891b2);
-      box-shadow:0 26px 70px rgba(30,64,175,.23)
+      position:relative; isolation:isolate; padding:32px; overflow:hidden; color:var(--ink);
+      border:1px solid #d7e5fb; border-radius:26px;
+      background:
+        radial-gradient(circle at 84% 17%,rgba(96,165,250,.30),transparent 27%),
+        radial-gradient(circle at 64% 90%,rgba(199,210,254,.34),transparent 32%),
+        linear-gradient(125deg,#f7faff 0,#eef5ff 48%,#e5f2ff 100%);
+      box-shadow:0 24px 64px rgba(54,103,190,.13)
     }
-    .eyebrow { opacity:.76; font-size:12px; letter-spacing:.14em; text-transform:uppercase }
+    .hero:after {
+      content:""; position:absolute; z-index:-1; inset:0 0 0 52%; opacity:.34;
+      background-image:linear-gradient(rgba(74,126,235,.15) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(74,126,235,.15) 1px,transparent 1px);
+      background-size:38px 38px; transform:perspective(500px) rotateY(-9deg) scale(1.12)
+    }
+    .eyebrow { color:var(--blue); font-size:12px; font-weight:750; letter-spacing:.14em; text-transform:uppercase }
     h1 { margin:8px 0 5px; font-size:clamp(28px,4vw,42px); line-height:1.16 }
-    .subtitle { max-width:860px; margin:0; opacity:.86 }
+    .subtitle { max-width:860px; margin:0; color:#52627e }
     .context { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px }
-    .context span { padding:6px 10px; border:1px solid rgba(255,255,255,.28); border-radius:999px; background:rgba(255,255,255,.11); font-size:12px }
+    .context span { padding:6px 11px; border:1px solid #c8daf8; border-radius:999px; background:rgba(255,255,255,.72); color:#315aab; font-size:12px }
     .context b { margin-right:5px }
-    .generated { margin-top:15px; font-size:12px; opacity:.72 }
+    .generated { margin-top:15px; color:#72819b; font-size:12px }
     .metric-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin:20px 0 }
     .chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:18px }
     .chart-grid .panel { margin-top:0 }
     .chart-wide { grid-column:1/-1 }
-    .metric,.panel { background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow) }
+    .metric,.panel { background:rgba(255,255,255,.96); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow) }
     .metric { position:relative; min-height:130px; padding:20px; overflow:hidden }
-    .metric:before { content:""; position:absolute; inset:0 0 auto; height:4px; background:linear-gradient(90deg,var(--blue),#06b6d4,#8b5cf6) }
+    .metric:before { content:""; position:absolute; inset:0 0 auto; height:4px; background:linear-gradient(90deg,var(--blue),#5a8cff,var(--indigo)) }
     .metric-label { color:var(--muted); font-size:13px }
     .metric-value { margin-top:8px; font-size:31px; font-weight:780; letter-spacing:-.04em }
     .metric-delta { margin-top:7px; color:var(--muted); font-size:13px }
     .metric-delta.good { color:var(--good) } .metric-delta.bad { color:var(--bad) }
     .panel { margin-top:18px; padding:22px; overflow:hidden }
-    .chart-panel { background:linear-gradient(145deg,#fff,#f8fbff) }
+    .chart-panel { background:linear-gradient(145deg,#fff,#fbfdff) }
     .panel h2 { margin:0 0 15px; font-size:18px } .panel h3 { color:var(--muted) }
     .chart-description { margin:-8px 0 16px; color:var(--muted); font-size:12px }
     .note { margin:-7px 0 15px; color:var(--muted); font-size:12px }
     .chart,.table-wrap { width:100%; overflow-x:auto }
     svg { display:block; width:100%; min-width:620px; height:auto }
     .svg-label { fill:#334155; font-size:12px } .svg-value { fill:#64748b; font-size:11px }
-    .axis { stroke:#cbd5e1; stroke-width:1 } .grid-line { stroke:#e8eef5; stroke-width:1 }
+    .axis { stroke:#cbd8eb; stroke-width:1 } .grid-line { stroke:#e8eff9; stroke-width:1 }
     .legend { display:flex; flex-wrap:wrap; gap:14px; margin:0 0 4px 54px; color:var(--muted); font-size:12px }
     .legend i { display:inline-block; width:9px; height:9px; margin-right:5px; border-radius:50% }
     .donut-layout { display:grid; grid-template-columns:minmax(180px,260px) 1fr; gap:24px; align-items:center }
@@ -72,14 +84,14 @@
     .progress-row+.progress-row { margin-top:16px }
     .progress-meta { display:flex; justify-content:space-between; gap:14px; margin-bottom:7px; font-size:13px }
     .progress-meta strong { font-variant-numeric:tabular-nums }
-    .progress-track { height:13px; overflow:hidden; border-radius:999px; background:#e2e8f0 }
-    .progress-track i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#2563eb,#06b6d4) }
+    .progress-track { height:13px; overflow:hidden; border-radius:999px; background:#e6edf8 }
+    .progress-track i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--blue),var(--indigo)) }
     .timeline { position:relative; list-style:none; margin:0; padding:0 0 0 25px }
-    .timeline:before { content:""; position:absolute; left:7px; top:9px; bottom:9px; width:2px; background:#cbd5e1 }
+    .timeline:before { content:""; position:absolute; left:7px; top:9px; bottom:9px; width:2px; background:#cbd8eb }
     .timeline li { position:relative; padding:0 0 18px }
     .timeline li:last-child { padding-bottom:0 }
-    .timeline li>i { position:absolute; left:-24px; top:7px; width:14px; height:14px; border:3px solid #dbeafe; border-radius:50%; background:#2563eb }
-    .timeline-card { padding:13px 15px; border:1px solid var(--line); border-radius:13px; background:#f8fafc }
+    .timeline li>i { position:absolute; left:-24px; top:7px; width:14px; height:14px; border:3px solid #dbe8ff; border-radius:50%; background:var(--blue) }
+    .timeline-card { padding:13px 15px; border:1px solid var(--line); border-radius:13px; background:#f8fbff }
     .timeline-card time { color:var(--muted); font-size:11px }
     .timeline-card h3 { display:flex; align-items:center; gap:9px; margin:4px 0 0; color:var(--ink); font-size:14px }
     .timeline-card p { margin:6px 0 0; color:var(--muted); font-size:12px }
@@ -87,20 +99,20 @@
     .timeline-status.failed,.timeline-status.error { color:#991b1b; background:#fee2e2 }
     .timeline-status.pending,.timeline-status.running { color:#92400e; background:#fef3c7 }
     table { width:100%; border-collapse:collapse; font-size:13px }
-    th { text-align:left; color:var(--muted); background:#f1f5f9; font-weight:700 }
+    th { text-align:left; color:#52627e; background:#f2f6fd; font-weight:700 }
     th,td { padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top }
     tbody tr:last-child td,tbody tr:last-child th { border-bottom:0 }
-    tbody tr:hover td { background:#f8fbff } tbody tr.highlight td,tbody tr.highlight th { background:#eaf3ff; font-weight:650 }
+    tbody tr:hover td { background:#f7faff } tbody tr.highlight td,tbody tr.highlight th { background:#eaf2ff; font-weight:650 }
     .num { text-align:right; font-variant-numeric:tabular-nums }
     .heat { min-width:70px; padding:7px 8px; border-radius:7px; text-align:right; font-variant-numeric:tabular-nums }
-    .insights-panel { border-color:#bfdbfe; background:linear-gradient(135deg,#eff6ff,#f0fdfa) }
+    .insights-panel { border-color:#c9dcfb; background:linear-gradient(135deg,#edf5ff,#f5f3ff) }
     .insights { margin:0; padding-left:22px } .insights li+li { margin-top:8px }
     .status { display:inline-block; padding:3px 8px; border-radius:999px; background:#dcfce7; color:var(--good); font-size:11px; font-weight:700 }
     .status.partial { background:#fef3c7; color:var(--warn) } .status.error { background:#fee2e2; color:var(--bad) }
     details { color:var(--muted); font-size:12px } details summary { cursor:pointer; color:var(--ink); font-weight:700 }
     .audit-grid { display:grid; grid-template-columns:190px 1fr; gap:6px 14px; margin:14px 0 }
     .audit-key { color:var(--muted) } .warnings { color:var(--warn) }
-    .empty { padding:22px; color:var(--muted); text-align:center; border-radius:12px; background:#f8fafc }
+    .empty { padding:22px; color:var(--muted); text-align:center; border:1px dashed #d7e3f4; border-radius:12px; background:#f8fbff }
     .footer { margin-top:18px; color:var(--muted); text-align:center; font-size:12px }
     @media(max-width:640px) {
       .shell { width:calc(100% - 18px); margin-top:10px } .hero,.panel { padding:17px; border-radius:14px }
