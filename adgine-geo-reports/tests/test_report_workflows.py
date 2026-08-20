@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -11,6 +12,11 @@ if SCRIPTS not in sys.path:
 from report import _resolve_output_format, parse_args, run_report  # noqa: E402
 from _client import ApiError  # noqa: E402
 from _reporting import render_html  # noqa: E402
+
+
+def visible_html(rendered):
+    """Return only markup that can contribute visible report content."""
+    return re.sub(r"<script\b[^>]*>.*?</script>", "", rendered, flags=re.IGNORECASE | re.DOTALL)
 
 
 class FakeClient:
@@ -230,11 +236,12 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(report["metrics"][0]["label"], "AI 可见性得分")
         self.assertIn("对比", report["next_actions"][0])
         html = render_html(report)
+        visible = visible_html(html)
         for expected in ("核心发现", "生成时间"):
-            self.assertIn(expected, html)
+            self.assertIn(expected, visible)
         for hidden in ("数据覆盖情况", "查询审计与数据质量", "Schema", "数据源"):
-            self.assertNotIn(hidden, html)
-        self.assertNotIn("Key findings", html)
+            self.assertNotIn(hidden, visible)
+        self.assertNotIn("Key findings", visible)
 
     def test_explicit_english_overrides_chinese_entity_text(self):
         client = FakeClient()

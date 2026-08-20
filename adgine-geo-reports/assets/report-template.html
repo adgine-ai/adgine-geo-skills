@@ -60,6 +60,8 @@
     .chart-description { margin:-8px 0 16px; color:var(--muted); font-size:12px }
     .note { margin:-7px 0 15px; color:var(--muted); font-size:12px }
     .chart,.table-wrap { width:100%; overflow-x:auto }
+    .chart.echart-live { min-width:0; overflow:visible }
+    .chart.echart-live canvas { border-radius:10px }
     svg { display:block; width:100%; min-width:620px; height:auto }
     .svg-label { fill:#334155; font-size:12px } .svg-value { fill:#64748b; font-size:11px }
     .axis { stroke:#cbd8eb; stroke-width:1 } .grid-line { stroke:#e8eff9; stroke-width:1 }
@@ -140,6 +142,8 @@
     {{INSIGHTS}}
     <div class="footer">{{FOOTER}}</div>
   </main>
+  <script>{{ECHARTS_JS}}</script>
   <script type="application/json" id="adgine-report-data">{{EMBEDDED_JSON}}</script>
+  <script>{{REPORT_INTERACTIONS_JS}}</script>
 </body>
 </html>

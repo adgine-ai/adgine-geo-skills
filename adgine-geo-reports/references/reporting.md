@@ -98,7 +98,7 @@ HTML reports are customer-facing and may be used in prospect conversations. Use 
 titles; one-sentence plain-language descriptions; visible units; readable legends; and raw entity
 names. Never show container labels such as `report_data`, `metrics`, `summary`, or backend field paths.
 
-Support these chart `type` values without external libraries:
+Support these chart `type` values with the vendored offline ECharts runtime and a static HTML/SVG fallback:
 
 | Type | Use only when the data has this shape |
 |---|---|
@@ -145,6 +145,9 @@ Omit the Worker trend from composite customer reports (`executive-overview` and 
 Never render revenue or transaction fields. The reporting facade does not calculate them, and it does not add GA4 sessions to Cloudflare HTTP requests. Render Cloudflare platform distribution as a three-column comparison (`ai_assistant`, `ai_search`, `ai_training`) without adding the categories into a synthetic total.
 
 Place charts in a responsive two-column grid, with trend lines and heatmaps spanning the full width. Keep exact records in tables below the visuals.
+
+The report generator must inline `assets/vendor/echarts-6.1.0.min.js` and
+`assets/report-interactions.js` into every HTML artifact. Never reference a CDN or a relative runtime asset from the generated file. ECharts progressively replaces supported static charts after the embedded public JSON is available; if initialization fails or JavaScript is blocked, retain the original static SVG/HTML chart. Keep line and distribution legends clickable, tooltips confined to the chart, long-series zoom available, resize handling responsive, and print output usable. Timeline keeps its semantic HTML presentation.
 
 Keep long labels intact in tables. SVG bar labels may visually shorten at the right edge but must preserve the full label in a tooltip.
 
@@ -205,6 +208,7 @@ and blue-to-indigo accents. Keep the template fully offline:
 
 - Inline CSS and SVG only.
 - No remote fonts, scripts, images, analytics, or CDN assets.
+- Vendor Apache ECharts at the fixed documented version under `assets/vendor/`, with its LICENSE and NOTICE files. Updating the version requires updating the asset filenames, integrity test, renderer placeholders, and documentation together.
 - Escape all table/context text.
 - Escape `</` in embedded JSON.
 - Preserve responsive and print styles.

@@ -1,6 +1,8 @@
 import io
+import hashlib
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -46,6 +48,11 @@ def sample_report():
     }
 
 
+def visible_html(rendered):
+    """Return only markup that can contribute visible report content."""
+    return re.sub(r"<script\b[^>]*>.*?</script>", "", rendered, flags=re.IGNORECASE | re.DOTALL)
+
+
 class RenderingTests(unittest.TestCase):
     def test_competitor_audit_masks_ids_but_keeps_static_ranking_route(self):
         self.assertEqual(
@@ -59,9 +66,16 @@ class RenderingTests(unittest.TestCase):
 
     def test_html_is_offline_escaped_and_embeds_public_json(self):
         rendered = render_html(sample_report())
+        visible = visible_html(rendered)
         self.assertIn("Visibility &lt;Report&gt;", rendered)
         self.assertIn("A&amp;B", rendered)
         self.assertNotIn("https://cdn", rendered)
+        self.assertNotIn("<script src=", rendered)
+        self.assertIn("window.echarts", rendered)
+        self.assertIn("selectedMode: true", rendered)
+        self.assertIn('data-echart-index="0"', rendered)
+        self.assertIn("<svg", rendered)
+        self.assertGreater(len(rendered), 1_000_000)
         self.assertIn('id="adgine-report-data"', rendered)
         embedded = rendered.split('id="adgine-report-data">', 1)[1].split("</script>", 1)[0]
         data = json.loads(embedded)
@@ -69,9 +83,18 @@ class RenderingTests(unittest.TestCase):
         self.assertNotIn("schema_version", data)
         self.assertNotIn("coverage", data)
         self.assertNotIn("audit", data)
-        self.assertNotIn("schema", rendered.lower())
-        self.assertNotIn("Data coverage", rendered)
-        self.assertNotIn("Query audit", rendered)
+        self.assertNotIn("schema", visible.lower())
+        self.assertNotIn("Data coverage", visible)
+        self.assertNotIn("Query audit", visible)
+
+    def test_vendored_echarts_version_and_license_are_pinned(self):
+        assets = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets"))
+        runtime = os.path.join(assets, "vendor", "echarts-6.1.0.min.js")
+        with open(runtime, "rb") as handle:
+            digest = hashlib.sha256(handle.read()).hexdigest()
+        self.assertEqual(digest, "b66b25aeb4df84e33199dc21694014d336d222cbd9deb0e5a7c14bd6aa0d0fd0")
+        for filename in ("ECHARTS-LICENSE-6.1.0.txt", "ECHARTS-NOTICE-6.1.0.txt"):
+            self.assertTrue(os.path.isfile(os.path.join(assets, "vendor", filename)))
 
     def test_write_html_uses_requested_directory(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -134,15 +157,16 @@ class RenderingTests(unittest.TestCase):
             "insights": ["AI 可见性得分有所提升。"],
         })
         rendered = render_html(report)
+        visible = visible_html(rendered)
         self.assertIn('<html lang="zh-CN">', rendered)
         self.assertIn("Adgine GEO · 国际版报告", rendered)
         self.assertIn("较上一周期 +3.2%", rendered)
         self.assertIn("核心发现", rendered)
-        self.assertNotIn("数据覆盖情况", rendered)
-        self.assertNotIn("查询审计与数据质量", rendered)
-        self.assertNotIn("Schema", rendered)
-        self.assertNotIn("数据源", rendered)
-        self.assertNotIn("Key findings", rendered)
+        self.assertNotIn("数据覆盖情况", visible)
+        self.assertNotIn("查询审计与数据质量", visible)
+        self.assertNotIn("Schema", visible)
+        self.assertNotIn("数据源", visible)
+        self.assertNotIn("Key findings", visible)
 
     def test_locale_auto_and_field_labels_support_chinese_and_english(self):
         self.assertEqual(normalize_locale("auto", "主题最近一周表现"), "zh-CN")

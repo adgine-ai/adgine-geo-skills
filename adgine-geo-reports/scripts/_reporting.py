@@ -7,6 +7,7 @@ import math
 import os
 import re
 from datetime import datetime, timezone
+from functools import lru_cache
 
 from _i18n import normalize_locale, status_label, t
 
@@ -428,7 +429,7 @@ def _render_timeline(chart, locale="en-US"):
 
 def _render_charts(charts, locale="en-US"):
     output = []
-    for chart in charts or []:
+    for chart_index, chart in enumerate(charts or []):
         chart_type = chart.get("type") or "bar_chart"
         aliases = {"bar": "bar_chart", "line": "line_chart", "donut": "pie_chart", "heatmap": "heatmap_table"}
         chart_type = aliases.get(chart_type, chart_type)
@@ -456,7 +457,8 @@ def _render_charts(charts, locale="en-US"):
         description = f'<p class="chart-description">{_escape(chart.get("description"))}</p>' if chart.get("description") else ""
         output.append(
             f'<section class="panel chart-panel{wide}" data-chart-type="{_escape(chart_type)}">'
-            f'<h2>{_escape(chart.get("title"))}</h2>{description}<div class="chart">{body}</div></section>'
+            f'<h2>{_escape(chart.get("title"))}</h2>{description}'
+            f'<div class="chart" data-echart-index="{chart_index}">{body}</div></section>'
         )
     return f'<section class="chart-grid">{"".join(output)}</section>' if output else ""
 
@@ -553,6 +555,17 @@ def _render_audit(audit, locale="en-US"):
     )
 
 
+@lru_cache(maxsize=None)
+def _asset_text(relative_path):
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", relative_path)
+    with open(path, encoding="utf-8") as handle:
+        return handle.read()
+
+
+def _inline_script(relative_path):
+    return _asset_text(relative_path).replace("</script", "<\\/script")
+
+
 def render_html(report, template_path=None):
     if template_path is None:
         template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "report-template.html")
@@ -581,6 +594,8 @@ def render_html(report, template_path=None):
         "INSIGHTS": _render_insights(report.get("insights"), locale),
         "FOOTER": _escape(t(locale, "footer", schema=report.get("schema_version"))),
         "EMBEDDED_JSON": embedded,
+        "ECHARTS_JS": _inline_script("vendor/echarts-6.1.0.min.js"),
+        "REPORT_INTERACTIONS_JS": _inline_script("report-interactions.js"),
     }
     for key, value in values.items():
         template = template.replace("{{" + key + "}}", value)

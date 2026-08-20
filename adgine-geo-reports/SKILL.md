@@ -129,5 +129,5 @@ python3 <skill-dir>/scripts/report.py visibility --project-id <id> --locale zh-C
 
 Support deterministic `en-US` and `zh-CN` presentation. Keep raw Topic/Prompt names, URLs, API values, and user content unchanged; localize only report UI labels and deterministic narrative text. Unsupported locales fall back to `en-US`.
 
-Keep `assets/report-template.html` standalone: no CDN, remote font, remote script, or network dependency.
+Keep `assets/report-template.html` standalone: no CDN, remote font, remote script, or network dependency. Inline the vendored Apache ECharts runtime and report interaction controller into each generated HTML so legends, tooltips, and long-trend zoom work offline; retain the static SVG/HTML fallback when JavaScript is unavailable.
 Treat every HTML artifact as customer-facing material that may be shared with a prospect. Keep the page title, browser title, subtitle, chart titles, descriptions, legends, and findings concise and self-explanatory; never expose backend container names or implementation terminology.
