@@ -40,7 +40,17 @@ All accept `date_from`, `date_to`, and repeatable `platform`. Topic/Prompt route
 
 ## Interpretation rules
 
-- The ranking endpoint response is the complete “all competitors” result. Do not join or merge configured competitors into it and do not claim omitted configured competitors have zero visibility.
+- The ranking endpoint sorts the computed brands by visibility and returns at
+  most 100 records. Its response has no separate business `total`, so describe
+  only the returned brand count; do not infer how many additional brands may
+  exist.
+- Do not join or merge configured project competitors into the ranking result,
+  and do not claim omitted configured competitors have zero visibility. Records
+  with the same display name but different domains are distinct returned brand
+  entities and must not be silently deduplicated.
+- Keep the report-side defensive cap of 100 records. A conversational claim of
+  hundreds or thousands of competitors is invalid unless a future endpoint
+  explicitly adds that contract and the skill is updated to match it.
 - Visibility score is the percentage of analyses mentioning the competitor. Share of voice is the competitor's mentions divided by all brand mentions. Average position is the average best mention position per analysis.
 - Positive visibility-rank or average-position change means performance worsened; lower rank/position values are better.
 - Sentiment percentages exclude unclassified items from their denominator; keep classified and unclassified counts separate when displayed.

@@ -29,6 +29,8 @@ After writing HTML, emit these WorkBuddy-compatible lines:
 REPORT_TITLE: <title>
 REPORT_FILE: <absolute path>
 REPORT_PREVIEW: <absolute path>
+REPORT_INDEX: shown=<numbered rows emitted to chat> total=<source-reported or returned rows> hint=<localized follow-up hint>
+REPORT_ITEM: #<number> | <group> | <entity label> | <up to three compact details>
 REPORT_FINDING: <deterministic finding, at most 3>
 REPORT_NEXT: <contextual next question, at most 3>
 REPORT_LINK: <localized Markdown link to the absolute path; always the final marker>
@@ -45,6 +47,14 @@ Consume these markers directly. Do not perform another API query merely to resta
   findings and next actions, as the final line of the reply, so the analysis
   reads naturally while retaining a visible entry point independent of native
   UI rendering.
+- Treat `REPORT_INDEX` and `REPORT_ITEM` as the deterministic cross-turn
+  interaction surface. Copy all emitted items into the reply in their original
+  order and retain the exact `#N` values, even though the same records also
+  appear in the HTML report. The script emits at most 40 items.
+- Resolve a later `#N` only against the most recent numbered list written by the
+  assistant. It is neither a database ID nor a metric rank. Use the selected
+  item's label/domain/path/content in the next scenario and never invent an
+  item that was not emitted.
 - Keep the artifact under the current task workspace. When the report command
   is invoked from an installed Skill directory, pass an explicit
   `--output-dir <task-workspace>/adgine-reports`.
@@ -72,12 +82,13 @@ Every representation derives from one dictionary with `schema_version=1.0`:
 | `metrics` | KPI cards with raw value, change, format, direction, and optional unit. |
 | `charts` | Declarative customer-facing charts using the ten standard types below. |
 | `tables` | Explicit columns and rows. |
+| `chat_index` | At most 40 deterministic entity selectors for the chat companion list, with returned/source total. Excluded from embedded HTML because the full tables are already present there. |
 | `insights` | At most three deterministic observations. |
 | `next_actions` | At most three follow-up prompts; excluded from the embedded HTML JSON. |
 | `coverage` | Requested/effective range, partial state, source-level status, as-of time, metric-level units, date basis, and freshness fields. |
 | `audit` | Resolution rule, API paths/timings, warnings, and quality caveats. |
 
-The HTML embeds a presentation-safe subset of the public report JSON in `#adgine-report-data`. Omit `schema_version`, `coverage`, `audit`, and `next_actions` from the HTML payload; JSON output keeps the complete stable contract. Never embed raw API responses, credentials, or hidden identifiers.
+The HTML embeds a presentation-safe subset of the public report JSON in `#adgine-report-data`. Omit `schema_version`, `coverage`, `audit`, `next_actions`, and `chat_index` from the HTML payload; JSON output keeps the complete stable contract. Never embed raw API responses, credentials, or hidden identifiers.
 
 ## Locale selection and bilingual output
 
@@ -141,6 +152,19 @@ Map data deterministically:
 - KPIs → cards; do not turn arbitrary categorical rows into decorative charts.
 
 Omit the Worker trend from composite customer reports (`executive-overview` and `traffic-overview`). Keep it only in a dedicated Worker report requested by the user.
+
+For customer-facing traffic reports, keep three scopes explicit:
+
+- `website-traffic` is the full-site GA4 baseline: sessions, active users,
+  average daily UV, page views, bounce rate, average session duration, daily
+  trends, and channel distribution from `/integrations/ga4/overview`.
+- `ga4-overview` and `ga4-referrals` are AI-only and expose only AI referral
+  sessions, AI referral users, and AI referral rate.
+- `traffic-overview` places the full-site GA4 baseline, GA4 AI referrals, and
+  Cloudflare AI activity in separate sections. Never add their values together.
+
+Revenue, purchase, and transaction fields are never customer-facing, even if a
+future GA4 response includes them.
 
 Never render revenue or transaction fields. The reporting facade does not calculate them, and it does not add GA4 sessions to Cloudflare HTTP requests. Render Cloudflare platform distribution as a three-column comparison (`ai_assistant`, `ai_search`, `ai_training`) without adding the categories into a synthetic total.
 

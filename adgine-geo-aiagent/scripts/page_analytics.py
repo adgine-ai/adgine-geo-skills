@@ -11,7 +11,8 @@ Subcommands:
   platform-flow                    — Sankey: AI platform → page path
   logs [--page 1] [--limit 40]     — raw AI event logs (bot + human, paginated)
 
-Common opts: --start --end [--platform]
+All commands accept ``--start`` and ``--end``. Platform filtering is available
+only for ``overview-kpi``, ``pages-detail``, and ``platform-flow``.
 
 Usage:
   python3 scripts/page_analytics.py overview-kpi
@@ -29,6 +30,7 @@ from _client import (
     extract_data, print_json, truncate,
     pad,
 )
+from _traffic_types import normalize_traffic_types
 
 
 def _fmt_num(n):
@@ -54,20 +56,20 @@ def _fmt_change(c):
         return str(c)
 
 
-def _date_params(args):
+def _date_params(args, include_platform=False):
     p = {}
     if args.start:
         p["start_date"] = args.start
     if args.end:
         p["end_date"] = args.end
-    if getattr(args, "platform", None):
+    if include_platform and getattr(args, "platform", None):
         p["platform"] = args.platform
     return p or None
 
 
 def cmd_overview_kpi(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/overview-kpi",
-                     key, base, params=_date_params(args))
+                     key, base, params=_date_params(args, include_platform=True))
     data = extract_data(result) or {}
     if args.json:
         print_json(data)
@@ -147,7 +149,7 @@ def cmd_pages(args, key, base, pid):
 
 
 def cmd_pages_detail(args, key, base, pid):
-    params = _date_params(args) or {}
+    params = _date_params(args, include_platform=True) or {}
     params["offset"] = (args.page - 1) * args.limit
     params["limit"] = args.limit
     result = api_get(f"/api/projects/{pid}/ai-agent/pages-detail",
@@ -202,7 +204,7 @@ def cmd_pages_export(args, key, base, pid):
 
 def cmd_platform_flow(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/pages-platform-flow",
-                     key, base, params=_date_params(args))
+                     key, base, params=_date_params(args, include_platform=True))
     data = extract_data(result) or {}
     if args.json:
         print_json(data)
@@ -224,7 +226,7 @@ def cmd_logs(args, key, base, pid):
     params["page"] = args.page
     params["limit"] = args.limit
     if args.traffic_type:
-        params["traffic_type"] = args.traffic_type
+        params["traffic_type"] = normalize_traffic_types(args.traffic_type)
     result = api_get(f"/api/projects/{pid}/ai-agent/logs",
                      key, base, params=params)
     data = extract_data(result)
@@ -276,29 +278,43 @@ def main():
         p.add_argument("--end")
         p.add_argument("--platform")
 
-    for name in ("pages", "pages-detail"):
-        p = sub.add_parser(name)
-        p.add_argument("--start")
-        p.add_argument("--end")
-        p.add_argument("--platform")
-        p.add_argument("--page", type=int, default=1)
-        p.add_argument("--limit", type=int, default=40)
+    p_pages = sub.add_parser("pages")
+    p_pages.add_argument("--start")
+    p_pages.add_argument("--end")
+    p_pages.add_argument("--page", type=int, default=1)
+    p_pages.add_argument("--limit", type=int, default=40)
+
+    p_detail = sub.add_parser("pages-detail")
+    p_detail.add_argument("--start")
+    p_detail.add_argument("--end")
+    p_detail.add_argument("--platform")
+    p_detail.add_argument("--page", type=int, default=1)
+    p_detail.add_argument("--limit", type=int, default=40)
 
     p_ex = sub.add_parser("pages-export")
     p_ex.add_argument("--start")
     p_ex.add_argument("--end")
-    p_ex.add_argument("--platform")
     p_ex.add_argument("--format", choices=["csv", "json"], default="csv")
 
     p_lg = sub.add_parser("logs")
     p_lg.add_argument("--start")
     p_lg.add_argument("--end")
-    p_lg.add_argument("--platform")
     p_lg.add_argument("--page", type=int, default=1)
     p_lg.add_argument("--limit", type=int, default=40)
-    p_lg.add_argument("--traffic-type", choices=["bot", "human"])
+    p_lg.add_argument(
+        "--traffic-type",
+        help="bot, human, all, or comma-separated GEO-Api traffic types",
+    )
 
     args = parser.parse_args()
+    max_limits = {"pages": 200, "pages-detail": 500, "logs": 200}
+    if args.command in max_limits and (
+        args.page < 1 or not 1 <= args.limit <= max_limits[args.command]
+    ):
+        parser.error(
+            f"{args.command} requires --page >= 1 and --limit between 1 "
+            f"and {max_limits[args.command]}"
+        )
     key, base = get_api_config()
     pid = get_project_id(args.project_id)
 
@@ -310,7 +326,10 @@ def main():
         "platform-flow": cmd_platform_flow,
         "logs": cmd_logs,
     }
-    handlers[args.command](args, key, base, pid)
+    try:
+        handlers[args.command](args, key, base, pid)
+    except ValueError as exc:
+        parser.error(str(exc))
 
 
 if __name__ == "__main__":

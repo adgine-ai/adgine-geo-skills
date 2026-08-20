@@ -27,9 +27,10 @@ The call counts below describe business data calls. A project-scoped report also
 | One competitor vs our brand | `competitor-overview` | 1 (+ name/domain resolution when no ID) |
 | One competitor by Topic | `competitor-topics` | 1 (+ name/domain resolution when no ID) |
 | One competitor by Prompt | `competitor-prompts` | 1 (+ optional competitor/Topic resolution) |
-| GA4 / Cloudflare | matching P2 scenario | 1 |
+| Full website traffic / PV / UV / users / duration | `website-traffic` | 1 |
+| GA4 AI referrals / Cloudflare AI | matching AI-specific P2 scenario | 1 |
 | Bot/human multiview | `ai-bots` / `ai-humans` | 1 / 3 concurrent |
-| Cross-source traffic | `traffic-overview` | 1 aggregate + 1 existing Cloudflare AI endpoint (+ capability on cold cache) |
+| Overall + AI traffic | `traffic-overview` | 1 aggregate + 1 existing Cloudflare AI endpoint (+ capability on cold cache) |
 | One page | `page-detail` | 1 aggregate (+ capability on cold cache) |
 | Page recommendations | `page-opportunities` | 1 aggregate (+ capability on cold cache) |
 | Content operations | `content-pipeline` | 1 aggregate (+ capability on cold cache) |
@@ -59,12 +60,18 @@ The call counts below describe business data calls. A project-scoped report also
 
 `topic-lifecycle` divides Prompts into deterministic halves ordered by `created_at ASC`; it is descriptive, not causal.
 
-The competitor ranking response is treated as GEO-Api's complete competitor set. Skills do not merge configured competitors into it. Competitor reports use period aggregates, so they use ranking bars, comparison charts, sentiment donuts, tables, and scatter plots instead of fabricated time-series lines. See `competitors.md`.
+The competitor ranking response is treated as GEO-Api's returned ranking set,
+capped at 100 brands with no separate total. Skills do not infer a larger count
+or merge configured competitors into it. Competitor reports use period
+aggregates, so they use ranking bars, comparison charts, sentiment donuts,
+tables, and scatter plots instead of fabricated time-series lines. See
+`competitors.md`.
 
 ## P2 acquisition, bots, pages, and flows
 
 | Scenario | Scope | Notes |
 |---|---|---|
+| `website-traffic` | Full-site GA4 sessions, active users, daily UV, PV, bounce rate, duration, trend, and channel mix | One existing GA4 overview endpoint; excludes revenue and transactions. |
 | `ga4-overview` | GA4 AI referral sessions, users, and rate | Uses the existing AI-referrals endpoint only. |
 | `ga4-referrals` | GA4 AI referral sessions, users, and rate | Do not equate sessions with Cloudflare requests. |
 | `ga4-pages` | Top GA4 pages | Uses `offset` + `limit`. |
@@ -76,7 +83,7 @@ The competitor ranking response is treated as GEO-Api's complete competitor set.
 | `worker-events` | Read-only raw Worker event inventory | Uses `page` + `limit`. |
 | `worker-deployment` | Worker deployment and routes | Status only; never deploys or removes a Worker. |
 | `ai-overview` | Cloudflare-backed AI assistant/search/training overview | Includes the existing per-metric platform leaderboards. |
-| `traffic-overview` | GA4 AI referrals + Cloudflare AI activity | Sections remain source-separated; no grand total. |
+| `traffic-overview` | Overall GA4 traffic + GA4 AI referrals + Cloudflare AI activity | Sections remain source-separated; no grand total. |
 | `ai-bots` | AI assistant/search/training KPI + platform distribution | One existing KPI endpoint. |
 | `ai-humans` | KPI + platform + page | Three concurrent reads. |
 | `ai-pages` | Five-dimension page table | One aggregate call. |

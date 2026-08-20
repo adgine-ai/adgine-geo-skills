@@ -17,6 +17,7 @@ class ExistingSkillContractTests(unittest.TestCase):
 
     def test_visibility_analytics_uses_date_from_to(self):
         for relative in (
+            "adgine-geo-visibility/scripts/get_visibility.py",
             "adgine-geo-visibility/scripts/get_topic_metrics.py",
             "adgine-geo-visibility/scripts/get_prompt_metrics.py",
             "adgine-geo-visibility/scripts/get_matrix.py",
@@ -110,13 +111,17 @@ class ExistingSkillContractTests(unittest.TestCase):
         topics = read("adgine-geo-topics/scripts/manage_topics.py")
         self.assertIn('body["types"] = None', prompts)
         self.assertIn('body["tag_ids"] = []', prompts)
-        self.assertIn('body["platforms"] = _csv(args.platforms)', prompts)
+        self.assertIn('body["platforms"] = platforms', prompts)
         self.assertNotIn('default="English"', prompts)
         self.assertNotIn('default="US"', prompts)
         self.assertIn('body["additional_instructions"]', generation)
         self.assertIn('/prompts/tags', tags)
         self.assertIn('"DELETE"', tags)
-        self.assertIn('body["language"] = args.language', topics)
+        self.assertIn('body["language"] = language', topics)
+        self.assertIn('body["language"] = language', prompts)
+        self.assertIn('body["language"] = language', generation)
+        for source in (topics, prompts, generation):
+            self.assertIn('from _language import normalize_language', source)
         self.assertIn('body["region"] = args.region', topics)
 
     def test_project_and_saas_mutations_match_current_schemas(self):
@@ -141,7 +146,8 @@ class ExistingSkillContractTests(unittest.TestCase):
         media = read("adgine-geo-content/scripts/manage_media.py")
         self.assertIn('body["article_type"]', outline)
         self.assertIn('body["article_strategy"]', outline)
-        self.assertIn('body["language"] = args.language', article)
+        self.assertIn('body["language"] = language', article)
+        self.assertIn('from _language import normalize_language', article)
         self.assertIn('body["full_content"]', content)
         self.assertIn('/publish-status', content)
         self.assertIn('/versions/{version_id}', content)
@@ -154,6 +160,40 @@ class ExistingSkillContractTests(unittest.TestCase):
         self.assertIn('/generate-cover', cover)
         self.assertIn('/api/uploads/images', media)
         self.assertIn('/media', media)
+
+    def test_visibility_and_ai_agent_query_parameters_match_current_api(self):
+        visibility = read("adgine-geo-visibility/scripts/get_visibility.py")
+        execution = read("adgine-geo-visibility/scripts/get_execution.py")
+        bot = read("adgine-geo-aiagent/scripts/bot_traffic.py")
+        pages = read("adgine-geo-aiagent/scripts/page_analytics.py")
+        page_detail = read("adgine-geo-aiagent/scripts/page_detail.py")
+        human = read("adgine-geo-aiagent/scripts/human_traffic.py")
+        jobs = read("adgine-geo-brand/scripts/list_jobs.py")
+        self.assertNotIn('p["start_date"] = args.start', visibility)
+        self.assertNotIn('p["end_date"] = args.end', visibility)
+        self.assertGreaterEqual(visibility.count('p["include_trend"] = True'), 1)
+        self.assertIn('from _platforms import normalize_platforms', execution)
+        self.assertIn('params["top_pages_per_bot"] = args.limit', bot)
+        self.assertNotIn('params["limit"] = args.limit', bot)
+        self.assertIn('p["tab"] = args.tab', bot)
+        self.assertIn('from _traffic_types import normalize_traffic_types', pages)
+        self.assertIn('from _traffic_types import normalize_traffic_types', page_detail)
+        self.assertIn('def _date_params(args, include_platform=False)', pages)
+        self.assertIn('def _date_params(args, include_platform=False)', human)
+        self.assertNotIn('params={"page": args.page, "limit": args.limit}', jobs)
+
+    def test_language_normalizers_are_packaged_with_each_mutation_skill(self):
+        canonical = read("adgine-geo-topics/scripts/_language.py")
+        for relative in (
+            "adgine-geo-brand/scripts/_language.py",
+            "adgine-geo-content/scripts/_language.py",
+        ):
+            self.assertEqual(read(relative), canonical, relative)
+        brand_generate = read("adgine-geo-brand/scripts/generate_brand.py")
+        brand_update = read("adgine-geo-brand/scripts/update_brand.py")
+        article = read("adgine-geo-content/scripts/generate_article.py")
+        for source in (brand_generate, brand_update, article):
+            self.assertIn('from _language import normalize_language', source)
 
 
 if __name__ == "__main__":

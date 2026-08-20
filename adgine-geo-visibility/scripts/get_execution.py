@@ -25,12 +25,13 @@ from _client import (
     extract_data, print_json, truncate,
     pad,
 )
+from _platforms import normalize_platforms
 
 
 def cmd_list(args, key, base, pid):
     params = {"page": args.page, "page_size": args.limit}
     if args.platform:
-        params["platform"] = args.platform
+        params["platform"] = normalize_platforms(args.platform)
     if args.start:
         params["date_from"] = args.start
     if args.end:
@@ -128,7 +129,7 @@ def main():
 
     p_l = sub.add_parser("list", help="List recent executions")
     p_l.add_argument("--prompt-id", required=True)
-    p_l.add_argument("--platform", choices=["openai", "google_aio", "perplexity", "gemini"])
+    p_l.add_argument("--platform", help="Comma-separated GEO-Api platform IDs or display names")
     p_l.add_argument("--start", help="Start date YYYY-MM-DD")
     p_l.add_argument("--end", help="End date YYYY-MM-DD")
     p_l.add_argument("--page", type=int, default=1)
@@ -139,11 +140,16 @@ def main():
     p_g.add_argument("--execution-id", required=True)
 
     args = parser.parse_args()
+    if args.command == "list" and (args.page < 1 or not 1 <= args.limit <= 100):
+        parser.error("list requires --page >= 1 and --limit between 1 and 100")
     key, base = get_api_config()
     pid = get_project_id(args.project_id)
 
     handlers = {"list": cmd_list, "get": cmd_get}
-    handlers[args.command](args, key, base, pid)
+    try:
+        handlers[args.command](args, key, base, pid)
+    except ValueError as exc:
+        parser.error(str(exc))
 
 
 if __name__ == "__main__":

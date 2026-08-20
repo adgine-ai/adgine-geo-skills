@@ -21,6 +21,8 @@ from _client import (
     api_get, api_post,
     extract_data, print_json,
 )
+from _language import normalize_language
+from _platforms import normalize_platforms
 
 parser = argparse.ArgumentParser(description="AI-generate prompts for a GEO topic")
 parser.add_argument("--topic-id", required=True, help="Topic ID to generate prompts for")
@@ -38,10 +40,14 @@ parser.add_argument("--instructions",
 parser.add_argument("--json", action="store_true", help="Output raw JSON task result")
 args = parser.parse_args()
 
+try:
+    language = normalize_language(args.language)
+    platforms = normalize_platforms(args.platforms)
+except ValueError as exc:
+    parser.error(str(exc))
+
 key, base = get_api_config()
 pid = get_project_id(args.project_id)
-
-platforms = [p.strip() for p in (args.platforms or "").split(",") if p.strip()]
 
 if not (1 <= args.count <= 50):
     print("ERROR: --count must be between 1 and 50")
@@ -49,15 +55,15 @@ if not (1 <= args.count <= 50):
 
 print(f"Starting AI prompt generation for topic: {args.topic_id}")
 print(f"  Count     : {args.count}")
-print(f"  Language  : {args.language or 'Topic default'}  |  Region: {args.region or 'Topic default'}")
+print(f"  Language  : {language or 'Topic default'}  |  Region: {args.region or 'Topic default'}")
 print(f"  Platforms : {', '.join(platforms) if platforms else 'GEO-Api default'}")
 print()
 
 body = {
     "count":    args.count,
 }
-if args.language:
-    body["language"] = args.language
+if language:
+    body["language"] = language
 if args.region:
     body["region"] = args.region
 if platforms:

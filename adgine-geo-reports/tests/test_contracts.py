@@ -10,7 +10,7 @@ if SCRIPTS not in sys.path:
 
 import _client  # noqa: E402
 from _contracts import SCENARIOS  # noqa: E402
-from report import REPORT_DATA_SCENARIOS  # noqa: E402
+from report import REPORT_DATA_SCENARIOS, _request_params, parse_args  # noqa: E402
 
 
 class ContractRegistryTests(unittest.TestCase):
@@ -70,6 +70,46 @@ class ContractRegistryTests(unittest.TestCase):
             requests = SCENARIOS[scenario_name].requests
             self.assertEqual(len(requests), 1)
             self.assertTrue(requests[0].path.endswith("/ai-agent/overview-kpi"))
+
+    def test_optional_query_flags_are_endpoint_specific(self):
+        citations = SCENARIOS["citations"].requests[0]
+        self.assertFalse(citations.accepts_granularity)
+        human_requests = SCENARIOS["ai-humans"].requests
+        self.assertTrue(human_requests[0].accepts_platform)
+        self.assertFalse(human_requests[1].accepts_platform)
+        self.assertFalse(human_requests[2].accepts_platform)
+        self.assertFalse(SCENARIOS["human-flow"].requests[0].accepts_platform)
+        self.assertFalse(SCENARIOS["ga4-flow"].requests[0].accepts_platform)
+
+    def test_legacy_report_requests_do_not_send_unsupported_query_keys(self):
+        citation_args = parse_args(["citations", "--platform", "openai"])
+        citation_params = _request_params(
+            SCENARIOS["citations"].requests[0], citation_args,
+            "2026-08-01", "2026-08-07", {},
+        )
+        self.assertNotIn("granularity", citation_params)
+        self.assertEqual(citation_params["platform"], ["openai"])
+
+        human_args = parse_args(["ai-humans", "--platform", "openai"])
+        requests = SCENARIOS["ai-humans"].requests
+        params = [
+            _request_params(spec, human_args, "2026-08-01", "2026-08-07", {})
+            for spec in requests
+        ]
+        self.assertEqual(params[0]["platform"], "openai")
+        self.assertNotIn("platform", params[1])
+        self.assertNotIn("platform", params[2])
+
+    def test_website_traffic_uses_existing_full_ga4_overview(self):
+        request = SCENARIOS["website-traffic"].requests[0]
+        self.assertTrue(request.path.endswith("/integrations/ga4/overview"))
+        self.assertEqual(request.date_style, "traffic")
+        traffic_paths = {
+            request.alias: request.path
+            for request in SCENARIOS["traffic-overview"].requests
+        }
+        self.assertTrue(traffic_paths["ga4_traffic"].endswith("/integrations/ga4/overview"))
+        self.assertTrue(traffic_paths["ga4_ai"].endswith("/integrations/ga4/ai-referrals"))
 
     def test_page_health_is_get_only_and_cached(self):
         request = SCENARIOS["page-health"].requests[0]

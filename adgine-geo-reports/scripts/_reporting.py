@@ -577,7 +577,7 @@ def render_html(report, template_path=None):
         for item in report.get("context") or []
     )
     public_report = copy.deepcopy(report)
-    for key in ("schema_version", "coverage", "audit", "next_actions"):
+    for key in ("schema_version", "coverage", "audit", "next_actions", "chat_index"):
         public_report.pop(key, None)
     embedded = json.dumps(public_report, ensure_ascii=False).replace("</", "<\\/")
     values = {
@@ -636,6 +636,16 @@ def render_markdown(report):
         for metric in report["metrics"]:
             lines.append(f"| {metric.get('label')} | {format_value(metric.get('value'), metric.get('format'), locale)} | {_delta(metric, locale) or '—'} |")
         lines.append("")
+    chat_index = report.get("chat_index") or {}
+    if chat_index.get("items"):
+        lines.extend([f"## {chat_index.get('title')}", ""])
+        for item in chat_index["items"]:
+            details = "; ".join(item.get("details") or [])
+            suffix = f" — {details}" if details else ""
+            lines.append(
+                f"- **#{item.get('number')}** {item.get('label')}{suffix}"
+            )
+        lines.extend(["", chat_index.get("hint") or "", ""])
     for table in report.get("tables") or []:
         columns = table.get("columns") or []
         lines.extend([f"## {table.get('title')}", ""])

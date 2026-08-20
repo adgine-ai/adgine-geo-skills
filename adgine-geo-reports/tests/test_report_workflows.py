@@ -139,6 +139,21 @@ class FakeClient:
             return {"visibility_score": {"current": 50, "change": 2, "trend": [{"date": "2026-08-18", "value": 50}]}, "share_of_voice": {"current": 20, "change": 1}}
         if path.endswith("/integrations/ga4/pages"):
             return {"items": [{"path": "/coffee", "page_views": 12}], "total": 1}
+        if path.endswith("/integrations/ga4/overview"):
+            return {
+                "total_sessions": {"current": 3918, "prev": 3473, "delta_pct": 12.8},
+                "total_active_users": {"current": 2888, "prev": 2450, "delta_pct": 17.9},
+                "avg_daily_uv": {"current": 412.6, "prev": 350.0, "delta_pct": 17.9},
+                "total_page_views": {"current": 5709, "prev": 5726, "delta_pct": -0.3},
+                "avg_bounce_rate": {"current": 47.1, "prev": 31.5, "delta_pct": 49.6},
+                "avg_session_duration": {"current": 2512, "prev": 884, "delta_pct": 184.0},
+                "daily": [{"date": "2026-08-18", "sessions": 500, "active_users": 380, "page_views": 800}],
+                "prev_daily": [{"date": "2026-08-18", "sessions": 450, "active_users": 330, "page_views": 740}],
+                "sources": {"items": [{
+                    "channel": "Organic Search", "sessions": 1700,
+                    "active_users": 1250, "page_views": 2400, "is_ai": False,
+                }]},
+            }
         raise AssertionError(f"Unexpected path: {path}")
 
     def fetch_all(self, path, params=None, paging="page", limit=40, max_items=1000):
@@ -312,7 +327,22 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(client.calls[1]["params"]["limit"], 40)
         self.assertIn({"label": "Page size", "value": 40}, report["context"])
 
-    def test_competitor_rankings_treats_api_response_as_complete_set(self):
+    def test_website_traffic_uses_one_existing_ga4_overview_call(self):
+        client = FakeClient()
+        report = run_report(parse_args([
+            "website-traffic", "--project-name", "Coffee Lab",
+            "--period", "7d", "--locale", "zh-CN",
+        ]), client=client)
+        self.assertEqual(len(client.calls), 1)
+        call = client.calls[0]
+        self.assertTrue(call["path"].endswith("/integrations/ga4/overview"))
+        self.assertEqual(set(call["params"]), {"start_date", "end_date"})
+        self.assertEqual(report["title"], "Coffee Lab项目：网站流量分析")
+        labels = {metric["label"] for metric in report["metrics"]}
+        self.assertIn("页面浏览量（PV）", labels)
+        self.assertIn("平均会话时长", labels)
+
+    def test_competitor_rankings_uses_only_the_returned_ranking_set(self):
         client = FakeClient()
         report = run_report(parse_args([
             "competitor-rankings", "--project-name", "Coffee Lab", "--period", "7d",
@@ -354,12 +384,12 @@ class WorkflowTests(unittest.TestCase):
         report = run_report(parse_args([
             "competitor-prompts", "--project-name", "Coffee Lab",
             "--competitor-id", "competitor-secret-id", "--topic-id", "topic-secret-id",
-            "--platform", "openai,gemini", "--tag-id", "tag-1", "--locale", "zh-CN",
+            "--platform", "ChatGPT,Google AI Overviews", "--tag-id", "tag-1", "--locale", "zh-CN",
         ]), client=client)
         self.assertEqual(len(client.calls), 1)
         call = client.calls[0]
         self.assertTrue(call["path"].endswith("/competitors/competitor-secret-id/topics/topic-secret-id/prompts"))
-        self.assertEqual(call["params"]["platform"], ["openai", "gemini"])
+        self.assertEqual(call["params"]["platform"], ["openai", "google_aio"])
         self.assertEqual(call["params"]["types"], ["visibility"])
         self.assertEqual(call["params"]["tags"], ["tag-1"])
         self.assertEqual(report["title"], "竞争对手 Prompt 分析：Acme")

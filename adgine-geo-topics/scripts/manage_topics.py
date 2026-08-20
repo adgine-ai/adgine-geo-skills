@@ -18,6 +18,7 @@ from _client import (
     api_get, api_post, api_put, api_delete,
     extract_data, print_json,
 )
+from _language import normalize_language
 
 parser = argparse.ArgumentParser(description="Manage GEO topics")
 parser.add_argument("action", choices=["list", "get", "create", "batch", "update", "delete"])
@@ -32,6 +33,14 @@ parser.add_argument("--page",  type=int, default=1,  help="Page number (list onl
 parser.add_argument("--limit", type=int, default=40, help="Results per page (list only; default: 40)")
 parser.add_argument("--json", action="store_true", help="Output raw JSON")
 args = parser.parse_args()
+
+if args.action == "list" and (args.page < 1 or not 1 <= args.limit <= 100):
+    parser.error("list requires --page >= 1 and --limit between 1 and 100")
+
+try:
+    language = normalize_language(args.language)
+except ValueError as exc:
+    parser.error(str(exc))
 
 key, base = get_api_config()
 pid = get_project_id(args.project_id)
@@ -108,8 +117,8 @@ elif args.action == "batch":
         print("ERROR: --names must contain at least one topic name")
         sys.exit(1)
     body = {"topics": [{"name": n} for n in name_list]}
-    if args.language:
-        body["language"] = args.language
+    if language:
+        body["language"] = language
     if args.region:
         body["region"] = args.region
     result = api_post(f"/api/projects/{pid}/topics/batch", key, base, body)

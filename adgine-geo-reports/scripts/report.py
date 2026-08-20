@@ -17,8 +17,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 from _client import ApiError, api_get, get_api_config, get_project_id, print_json  # noqa: E402
 from _capabilities import discover_capabilities, supports  # noqa: E402
 from _contracts import SCENARIOS, get_scenario, scenario_rows  # noqa: E402
-from _i18n import label as display_label, localize_unit, normalize_locale, t  # noqa: E402
-from _reporting import now_iso, render_markdown, write_html  # noqa: E402
+from _i18n import label as display_label, localize_unit, normalize_locale, status_label, t  # noqa: E402
+from _platforms import normalize_platforms as normalize_geo_platforms  # noqa: E402
+from _reporting import format_value, now_iso, render_markdown, write_html  # noqa: E402
 
 
 INTERNAL_KEYS = {
@@ -50,6 +51,7 @@ SOURCE_UNITS = {
     "citations": "citations / percent",
     "sentiment": "responses / percent",
     "ga4": "sessions / users / page views",
+    "ga4_traffic": "sessions / users / page views / percent / seconds",
     "ga4_ai": "AI referral sessions / users / percent",
     "referrals": "sessions / users / page views",
     "cloudflare": "HTTP requests / bytes",
@@ -75,12 +77,38 @@ SOURCE_UNITS = {
 }
 
 DEFAULT_PAGE_SIZE = 40
+MAX_CHAT_INDEX_ITEMS = 40
+MAX_COMPETITOR_RANKING_ITEMS = 100
+
+# These reports contain records that users commonly reference in the next turn
+# as “#2” or “item #2”. Charts and aggregate-only tables are intentionally not
+# indexed because their row number is not a stable entity selector.
+CHAT_INDEX_SCENARIOS = {
+    "catalog", "topics", "topic-detail", "topic-lifecycle",
+    "prompt-executions", "competitor-rankings", "competitor-overview",
+    "competitor-topics", "competitor-prompts", "ga4-pages",
+    "cloudflare-pages", "worker-pages", "worker-events", "ai-humans",
+    "ai-pages", "opportunities", "content-pipeline", "operations-overview",
+    "brand-jobs", "wordpress-publications", "wordpress-publishable",
+    "website-traffic", "traffic-overview",
+    "projects", "domains",
+}
+CHAT_INDEX_LIST_KEYS = {
+    # The overview also contains a two-row brand comparison. Only its Topic
+    # records are useful as follow-up selectors.
+    "competitor-overview": {"topic_rankings"},
+}
+CHAT_INDEX_LABEL_KEYS = (
+    "name", "title", "content", "path", "page_path", "landing_page",
+    "domain", "url", "source", "channel", "platform", "bot_name", "type", "status",
+)
 SUPPORTED_CHART_TYPES = (
     "bar_chart", "line_chart", "pie_chart", "gauge", "funnel",
     "scatter_plot", "treemap", "heatmap_table", "progress_bar", "timeline",
 )
 PREFERRED_TREND_METRICS = {
     "ga4": ("sessions", "active_users", "page_views"),
+    "ga4_traffic": ("sessions", "active_users", "page_views"),
     "ga4_ai": ("sessions", "active_users"),
     "ai_referrals": ("sessions", "active_users"),
     "referrals": ("sessions", "active_users"),
@@ -95,6 +123,7 @@ AI_TRAFFIC_PRESENTATION_SCENARIOS = {
 GA4_AI_PRESENTATION_SCENARIOS = {
     "executive-overview", "traffic-overview", "ga4-overview", "ga4-referrals",
 }
+GA4_TRAFFIC_PRESENTATION_SCENARIOS = {"traffic-overview", "website-traffic"}
 CLOUDFLARE_AI_PRESENTATION_SCENARIOS = {
     "executive-overview", "traffic-overview", "cloudflare-overview",
     "cloudflare-bots", "ai-overview", "ai-bots",
@@ -217,7 +246,7 @@ def _window(args):
 
 def _analytics_params(args, start, end):
     params = {"date_from": start, "date_to": end, "granularity": args.granularity}
-    platforms = _platforms(args.platform)
+    platforms = normalize_geo_platforms(args.platform)
     if platforms:
         params["platform"] = platforms
     return params
@@ -354,9 +383,11 @@ def _request_params(spec, args, start, end, values):
         params = _analytics_params(args, start, end)
         if not spec.accepts_platform:
             params.pop("platform", None)
+        if not spec.accepts_granularity:
+            params.pop("granularity", None)
     elif spec.date_style == "competitor":
         params = {"date_from": start, "date_to": end}
-        platforms = _platforms(args.platform)
+        platforms = normalize_geo_platforms(args.platform)
         if spec.accepts_platform and platforms:
             params["platform"] = platforms
     elif spec.date_style == "traffic":
@@ -423,7 +454,15 @@ def _native_params(scenario, args, start, end, client, analytics_params):
     params = {}
     if scenario.name not in ("data-freshness", "content-pipeline", "operations-overview"):
         params.update({"date_from": start, "date_to": end})
-    platforms = _platforms(args.platform)
+    geo_scenarios = {
+        "executive-overview", "topic-detail", "topic-lifecycle",
+        "prompt-performance", "prompt-executions",
+    }
+    platforms = (
+        normalize_geo_platforms(args.platform)
+        if scenario.name in geo_scenarios
+        else _platforms(args.platform)
+    )
     if platforms:
         params["platform"] = platforms if scenario.name in (
             "executive-overview", "topic-detail", "topic-lifecycle",
@@ -545,14 +584,16 @@ def _label(key, locale="en-US"):
 
 def _format_for(key, value=None):
     key = str(key).lower()
+    # Check duration before ratio: the English word "duration" itself contains
+    # the substring "ratio", but its value is measured in seconds.
+    if "duration" in key:
+        return "seconds"
     if any(token in key for token in ("rate", "ratio", "share", "score", "percent", "pct")):
         return "percent"
     if "rank" in key:
         return "rank"
     if "byte" in key or "bandwidth" in key:
         return "bytes"
-    if "duration" in key:
-        return "seconds"
     if isinstance(value, int) or any(token in key for token in ("count", "requests", "sessions", "users", "views", "visits", "total")):
         return "integer"
     return None
@@ -637,6 +678,50 @@ def _normalize_ga4_ai(payload):
     }
 
 
+def _find_ga4_traffic_payload(payloads, scenario):
+    direct = payloads.get("ga4_traffic")
+    if isinstance(direct, dict):
+        return direct
+    traffic = _report_data_traffic(payloads, scenario)
+    ga4 = traffic.get("ga4") if isinstance(traffic, dict) else None
+    return ga4 if isinstance(ga4, dict) else None
+
+
+def _normalize_ga4_traffic(payload):
+    if not isinstance(payload, dict):
+        return None
+    metric_keys = (
+        "total_sessions", "total_active_users", "avg_daily_uv",
+        "total_page_views", "avg_bounce_rate", "avg_session_duration",
+    )
+    metrics = {
+        key: payload.get(key)
+        for key in metric_keys
+        if payload.get(key) is not None
+    }
+    channels = payload.get("channels") or payload.get("sources") or {}
+    if isinstance(channels, dict):
+        channel_items = channels.get("items") or []
+    else:
+        channel_items = channels if isinstance(channels, list) else []
+    return {
+        "metrics": metrics,
+        "daily": payload.get("daily") or [],
+        "prev_daily": payload.get("prev_daily") or [],
+        "channels": [
+            {
+                "channel": item.get("channel"),
+                "sessions": item.get("sessions"),
+                "active_users": item.get("active_users"),
+                "page_views": item.get("page_views"),
+                "is_ai": item.get("is_ai"),
+            }
+            for item in channel_items
+            if isinstance(item, dict)
+        ],
+    }
+
+
 def _find_cloudflare_ai_payload(payloads, scenario):
     direct = payloads.get("cloudflare_ai")
     if isinstance(direct, dict):
@@ -709,6 +794,11 @@ def _normalize_cloudflare_ai(payload):
 
 def _presentation_payloads(payloads, scenario):
     cleaned = _drop_hidden_presentation_fields(copy.deepcopy(payloads))
+    if scenario.name == "website-traffic":
+        traffic = _normalize_ga4_traffic(
+            _find_ga4_traffic_payload(cleaned, scenario)
+        )
+        return {"ga4_traffic": traffic} if traffic else {}
     if scenario.name == "competitor-rankings":
         payload = cleaned.get("competitor_rankings") or {}
         rows = [
@@ -719,7 +809,7 @@ def _presentation_payloads(payloads, scenario):
                 "visibility_score": item.get("current"),
                 "is_our_brand": item.get("is_our_brand"),
             }
-            for item in payload.get("competitors") or []
+            for item in (payload.get("competitors") or [])[:MAX_COMPETITOR_RANKING_ITEMS]
             if isinstance(item, dict)
         ]
         own = next((item for item in rows if item.get("is_our_brand")), None)
@@ -813,6 +903,12 @@ def _presentation_payloads(payloads, scenario):
             }:
                 output[alias] = value
 
+    if scenario.name in GA4_TRAFFIC_PRESENTATION_SCENARIOS:
+        traffic = _normalize_ga4_traffic(
+            _find_ga4_traffic_payload(cleaned, scenario)
+        )
+        if traffic:
+            output["ga4_traffic"] = traffic
     if scenario.name in GA4_AI_PRESENTATION_SCENARIOS:
         ga4 = _normalize_ga4_ai(_find_ga4_ai_payload(cleaned, scenario))
         if ga4:
@@ -829,13 +925,21 @@ def _presentation_payloads(payloads, scenario):
 def _comparison_metric(key, value, locale="en-US"):
     current = value.get("current")
     change = value.get("change")
+    change_format = None
     if change is None:
-        change = value.get("delta_pct") if value.get("delta_pct") is not None else value.get("delta")
-    return {
+        if value.get("delta_pct") is not None:
+            change = value.get("delta_pct")
+            change_format = "percent"
+        else:
+            change = value.get("delta")
+    metric = {
         "label": _label(key, locale), "value": current, "change": change,
         "format": _format_for(key, current), "direction": _direction(key, change),
         "note": localize_unit(value.get("unit"), locale),
     }
+    if change_format:
+        metric["change_format"] = change_format
+    return metric
 
 
 def _collect_metrics(payloads, limit=8, locale="en-US"):
@@ -967,7 +1071,7 @@ def _named_dicts(value, path=(), depth=0):
 def _ranked_chart(rows, title, list_key=None, locale="en-US"):
     if not isinstance(rows, list) or not rows:
         return None
-    label_keys = ("name", "title", "content", "path", "page_path", "landing_page", "domain", "source", "platform", "bot_name", "status")
+    label_keys = ("name", "title", "content", "path", "page_path", "landing_page", "domain", "source", "channel", "platform", "bot_name", "status")
     value_keys = ("visibility_score", "share_of_voice", "requests", "sessions", "page_views", "visits", "score", "count", "total", "value")
     label_key = next((key for key in label_keys if any(isinstance(row, dict) and row.get(key) not in (None, "") for row in rows)), None)
     value_key = next((key for key in value_keys if any(isinstance(row, dict) and _numeric(row.get(key)) is not None for row in rows)), None)
@@ -999,7 +1103,7 @@ def _ranked_chart(rows, title, list_key=None, locale="en-US"):
 def _scatter_chart(rows, title, locale="en-US"):
     if not isinstance(rows, list) or len(rows) < 3:
         return None
-    label_keys = ("name", "title", "content", "path", "page_path", "domain", "source", "platform")
+    label_keys = ("name", "title", "content", "path", "page_path", "domain", "source", "channel", "platform")
     numeric_keys = (
         "visibility_score", "average_position", "share_of_voice", "citation_rate",
         "requests", "sessions", "page_views", "visits", "score", "rank",
@@ -1318,7 +1422,7 @@ def _collect_charts(payloads, scenario, locale="en-US"):
                 })
         ranked_keys = {
             "items", "rows", "topics", "prompts", "pages", "results",
-            "citation_sources", "platforms", "executions", "jobs", "publications", "events",
+            "citation_sources", "channels", "platforms", "executions", "jobs", "publications", "events",
             "comparison", "topic_rankings",
             "funnel", "stages", "pipeline_stages", "conversion_funnel",
         }
@@ -1371,7 +1475,10 @@ def _public_keys(rows, show_ids=False):
     return keys[:10]
 
 
-def _table(title, rows, show_ids=False, note=None, locale="en-US"):
+def _table(
+    title, rows, show_ids=False, note=None, locale="en-US", *,
+    source_alias=None, list_key=None, source_total=None,
+):
     rows = [_sanitize(item, show_ids) for item in rows if isinstance(item, dict)]
     keys = _public_keys(rows, show_ids)
     columns = [
@@ -1392,7 +1499,31 @@ def _table(title, rows, show_ids=False, note=None, locale="en-US"):
         if row.get("is_our_brand") or row.get("is_self"):
             clean["_highlight"] = True
         public_rows.append(clean)
-    return {"title": title, "columns": columns, "rows": public_rows, "note": note}
+    table = {"title": title, "columns": columns, "rows": public_rows, "note": note}
+    if source_alias:
+        table["_source_alias"] = source_alias
+    if list_key:
+        table["_list_key"] = list_key
+    if source_total is not None:
+        table["_source_total"] = source_total
+    return table
+
+
+def _list_total(payload, list_key, rows):
+    """Return the API-declared total when available, never below visible rows."""
+    visible = len(rows)
+    if not isinstance(payload, dict):
+        return visible
+    candidates = (
+        payload.get(f"{list_key}_total"),
+        payload.get("total"),
+        payload.get("total_count"),
+    )
+    for value in candidates:
+        number = _numeric(value)
+        if number is not None and number >= 0:
+            return max(visible, int(number))
+    return visible
 
 
 def _payload_lists(payload):
@@ -1417,8 +1548,10 @@ def _payload_lists(payload):
 
 
 def _catalog_tables(payloads, show_ids, locale="en-US"):
-    topics = _first_list(payloads.get("topics") or {}, ("items", "topics"))
-    prompts = _first_list(payloads.get("prompts") or {}, ("items", "prompts"))
+    topic_payload = payloads.get("topics") or {}
+    prompt_payload = payloads.get("prompts") or {}
+    topics = _first_list(topic_payload, ("items", "topics"))
+    prompts = _first_list(prompt_payload, ("items", "prompts"))
     topic_map = {str(item.get("id") or item.get("topic_id")): item.get("name") for item in topics}
     for index, item in enumerate(sorted(topics, key=lambda row: (str(row.get("created_at") or ""), str(row.get("id") or ""))), 1):
         item["ordinal"] = index
@@ -1429,8 +1562,16 @@ def _catalog_tables(payloads, show_ids, locale="en-US"):
         item["ordinal"] = counters[topic_id]
         item["topic"] = topic_map.get(topic_id) or t(locale, "unknown_topic")
     return [
-        _table(t(locale, "topics"), topics, show_ids, locale=locale),
-        _table(t(locale, "prompts"), prompts, show_ids, locale=locale),
+        _table(
+            t(locale, "topics"), topics, show_ids, locale=locale,
+            source_alias="topics", list_key="topics",
+            source_total=_list_total(topic_payload, "topics", topics),
+        ),
+        _table(
+            t(locale, "prompts"), prompts, show_ids, locale=locale,
+            source_alias="prompts", list_key="prompts",
+            source_total=_list_total(prompt_payload, "prompts", prompts),
+        ),
     ]
 
 
@@ -1454,6 +1595,9 @@ def _lifecycle_table(payloads, show_ids, locale="en-US"):
         show_ids,
         t(locale, "lifecycle_note"),
         locale,
+        source_alias="report_data",
+        list_key="prompts",
+        source_total=len(rows),
     )
 
 
@@ -1486,6 +1630,9 @@ def _collect_tables(payloads, scenario, show_ids=False, locale="en-US"):
                 rows[:100],
                 show_ids,
                 locale=locale,
+                source_alias=alias,
+                list_key=key,
+                source_total=_list_total(payload, key, rows),
             ))
             if len(tables) >= 10:
                 return tables
@@ -1507,6 +1654,110 @@ def _collect_tables(payloads, scenario, show_ids=False, locale="en-US"):
                     show_ids,
                     locale=locale,
                 ))
+    return tables
+
+
+def _compact_chat_text(value):
+    """Keep one WorkBuddy marker on one unambiguous, copy-safe line."""
+    return " ".join(str(value or "").split()).replace("|", "／")
+
+
+def _chat_index_table_allowed(scenario_name, table):
+    if scenario_name not in CHAT_INDEX_SCENARIOS:
+        return False
+    if not table.get("_list_key"):
+        return False
+    allowed_keys = CHAT_INDEX_LIST_KEYS.get(scenario_name)
+    return not allowed_keys or table.get("_list_key") in allowed_keys
+
+
+def _chat_index_item(row, table, number, locale):
+    columns = table.get("columns") or []
+    column_map = {column.get("key"): column for column in columns}
+    label_key = next(
+        (key for key in CHAT_INDEX_LABEL_KEYS if row.get(key) not in (None, "")),
+        None,
+    )
+    if label_key is None:
+        label_key = next(
+            (
+                column.get("key") for column in columns
+                if row.get(column.get("key")) not in (None, "")
+            ),
+            None,
+        )
+    if label_key is None:
+        return None
+    label_column = column_map.get(label_key) or {}
+    raw_label = row.get(label_key)
+    label = (
+        status_label(raw_label, locale)
+        if label_key == "status"
+        else format_value(raw_label, label_column.get("format"), locale)
+    )
+    details = []
+    for column in columns:
+        key = column.get("key")
+        value = row.get(key)
+        if key == label_key or value in (None, ""):
+            continue
+        rendered = (
+            status_label(value, locale)
+            if key == "status"
+            else format_value(value, column.get("format"), locale)
+        )
+        details.append(
+            f"{_compact_chat_text(column.get('label') or key)}: "
+            f"{_compact_chat_text(rendered)}"
+        )
+        if len(details) >= 3:
+            break
+    return {
+        "number": number,
+        "group": _compact_chat_text(table.get("title")),
+        "label": _compact_chat_text(label),
+        "details": details,
+    }
+
+
+def _build_chat_index(tables, scenario, locale="en-US"):
+    """Build a bounded companion list for cross-turn #N references."""
+    selected = [
+        table for table in tables
+        if _chat_index_table_allowed(scenario.name, table)
+    ]
+    if not selected:
+        return None
+    total = sum(
+        max(len(table.get("rows") or []), int(table.get("_source_total") or 0))
+        for table in selected
+    )
+    items = []
+    for table in selected:
+        for row in table.get("rows") or []:
+            item = _chat_index_item(row, table, len(items) + 1, locale)
+            if item:
+                items.append(item)
+            if len(items) >= MAX_CHAT_INDEX_ITEMS:
+                break
+        if len(items) >= MAX_CHAT_INDEX_ITEMS:
+            break
+    if not items:
+        return None
+    return {
+        "title": t(locale, "chat_index_title"),
+        "hint": t(locale, "chat_index_hint"),
+        "shown": len(items),
+        "total": max(total, len(items)),
+        "items": items,
+    }
+
+
+def _strip_table_metadata(tables):
+    for table in tables:
+        for key in tuple(table):
+            if key.startswith("_source_") or key == "_list_key":
+                table.pop(key, None)
     return tables
 
 
@@ -1810,6 +2061,8 @@ def build_report(
             args.show_ids,
             locale=locale,
         ))
+    chat_index = _build_chat_index(tables, scenario, locale)
+    _strip_table_metadata(tables)
     warnings = [f"{alias}: {message}" for alias, message in errors.items()]
     if workflow_warning:
         warnings.append(workflow_warning)
@@ -1878,6 +2131,7 @@ def build_report(
         "metrics": metrics,
         "charts": charts,
         "tables": tables,
+        "chat_index": chat_index,
         "insights": (extra_insights + _insights(metrics, tables, errors, scenario, locale))[:3],
         "next_actions": _next_actions(scenario, args, locale),
         "coverage": {
@@ -1925,8 +2179,8 @@ def run_report(args, client=None):
     args.locale = normalize_locale(args.locale, args.topic, args.prompt, args.competitor)
     scenario = get_scenario(args.scenario)
     _validate_requirements(scenario, args)
-    if args.page < 1 or args.limit < 1:
-        raise ValueError("--page and --limit must be positive integers")
+    if args.page < 1 or not 1 <= args.limit <= 100:
+        raise ValueError("--page must be positive and --limit must be between 1 and 100")
     start, end = _window(args)
     project_required = any("{project_id}" in spec.path for spec in scenario.requests)
     if client is None:
@@ -2021,6 +2275,21 @@ def emit_report(report, args):
         print(f"\nREPORT_TITLE: {report.get('title')}")
         print(f"REPORT_FILE: {path}")
         print(f"REPORT_PREVIEW: {path}")
+        chat_index = report.get("chat_index") or {}
+        if chat_index.get("items"):
+            print(
+                "REPORT_INDEX: "
+                f"shown={chat_index.get('shown')} total={chat_index.get('total')} "
+                f"hint={_compact_chat_text(chat_index.get('hint'))}"
+            )
+            for item in chat_index["items"]:
+                details = "; ".join(item.get("details") or [])
+                suffix = f" | {details}" if details else ""
+                print(
+                    f"REPORT_ITEM: #{item.get('number')} | "
+                    f"{_compact_chat_text(item.get('group'))} | "
+                    f"{_compact_chat_text(item.get('label'))}{suffix}"
+                )
         for finding in (report.get("insights") or [])[:3]:
             text = finding.get("body") if isinstance(finding, dict) else finding
             print(f"REPORT_FINDING: {' '.join(str(text).split())}")

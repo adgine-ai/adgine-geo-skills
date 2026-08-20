@@ -7,7 +7,7 @@ Subcommands:
   kpi --path <p>          — 5 KPI cards for this page (citation/index/training/
                             agent/total bots) with delta + daily trend
   logs --path <p>         — recent AI access events on this exact path
-        [--page 1] [--limit 40] [--traffic-type bot|human]
+        [--page 1] [--limit 40] [--traffic-type bot|human|<API type>]
   platforms --path <p>    — per-platform 4-AI + human-referral + share table
   related --path <p>      — sibling pages under the same parent path, with
                             5-metric comparison
@@ -34,6 +34,7 @@ from _client import (
     extract_data, print_json, truncate,
     pad,
 )
+from _traffic_types import normalize_traffic_types
 
 
 def _fmt_num(n):
@@ -104,7 +105,7 @@ def cmd_logs(args, key, base, pid):
     params["page"] = args.page
     params["limit"] = args.limit
     if args.traffic_type:
-        params["traffic_type"] = args.traffic_type
+        params["traffic_type"] = normalize_traffic_types(args.traffic_type)
     result = api_get(f"/api/projects/{pid}/ai-agent/pages/by-path/logs",
                      key, base, params=params)
     data = extract_data(result)
@@ -253,7 +254,10 @@ def main():
     p_lg.add_argument("--end")
     p_lg.add_argument("--page", type=int, default=1)
     p_lg.add_argument("--limit", type=int, default=40)
-    p_lg.add_argument("--traffic-type", choices=["bot", "human"])
+    p_lg.add_argument(
+        "--traffic-type",
+        help="bot, human, all, or comma-separated GEO-Api traffic types",
+    )
 
     p_h = sub.add_parser("health")
     p_h.add_argument("--path", required=True)
@@ -262,6 +266,8 @@ def main():
     p_hr.add_argument("--path", required=True)
 
     args = parser.parse_args()
+    if args.command == "logs" and (args.page < 1 or not 1 <= args.limit <= 200):
+        parser.error("logs requires --page >= 1 and --limit between 1 and 200")
     key, base = get_api_config()
     pid = get_project_id(args.project_id)
 
@@ -273,7 +279,10 @@ def main():
         "health": cmd_health,
         "health-refresh": cmd_health_refresh,
     }
-    handlers[args.command](args, key, base, pid)
+    try:
+        handlers[args.command](args, key, base, pid)
+    except ValueError as exc:
+        parser.error(str(exc))
 
 
 if __name__ == "__main__":

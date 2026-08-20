@@ -24,7 +24,7 @@ Use `scripts/report.py` as the default entry point for all platform data reads. 
 4. Prefer an explicit Prompt/Topic ID when supplied. Otherwise pass the exact text; supported GEO-Api versions resolve it inside the single report-data business request.
    For competitor reports, prefer `--competitor-id`; otherwise pass an exact competitor name or domain with `--competitor` and let the script resolve it from the existing project competitor list.
 5. Run exactly one report command. If the scenario's default format is HTML, generating and delivering that HTML in the same turn is mandatory: do not answer from a specialist read script, do not stop at a prose summary, do not ask whether the user also wants a report, and do not wait for a second request. Do not repeat the same query with a specialist script to create a summary.
-6. For HTML output, follow **WorkBuddy HTML artifact delivery** below. Summarize up to three `REPORT_FINDING` lines, offer up to three `REPORT_NEXT` prompts, and put the clickable `REPORT_LINK` on the final line of the reply.
+6. For HTML output, follow **WorkBuddy HTML artifact delivery** below. Copy any `REPORT_ITEM` lines into a numbered companion list, summarize up to three `REPORT_FINDING` lines, offer up to three `REPORT_NEXT` prompts, and put the clickable `REPORT_LINK` on the final line of the reply.
 7. Use 40 rows per page by default. For “next page / 下一页”, increment `--page` and keep `--limit 40`.
 
 Use the scenario's default output policy. Analysis, trend, inventory, and multi-source reports default to offline HTML. Project lists and small single-record results (`projects`, `account-info`, `worker-deployment`, `saas-task`, and `opportunity-detail`) default to inline Markdown. An explicit user request for HTML, inline output, or raw JSON always overrides the scenario default.
@@ -36,8 +36,8 @@ Apply this protocol whenever the resolved output format is `html` or `both`:
 1. Run the report from the user's current task workspace. Pass
    `--output-dir "<task-workspace>/adgine-reports"` when the current directory
    is the installed Skill directory or any directory outside that workspace.
-2. Read `REPORT_FILE`, `REPORT_PREVIEW`, and `REPORT_LINK` from the same command
-   output. Verify that `REPORT_FILE` exists and is inside the task workspace. If
+2. Read `REPORT_FILE`, `REPORT_PREVIEW`, `REPORT_INDEX`, `REPORT_ITEM`, and
+   `REPORT_LINK` from the same command output. Verify that `REPORT_FILE` exists and is inside the task workspace. If
    not, rerun once with the explicit workspace output directory.
 3. If WorkBuddy exposes an artifact/preview presentation facility, present
    `REPORT_PREVIEW` with it. Treat this as an optional UI enhancement.
@@ -54,6 +54,17 @@ Apply this protocol whenever the resolved output format is `html` or `both`:
 7. If the file does not exist or cannot be delivered, report the failure
    instead of claiming that an HTML report was generated.
 
+When `REPORT_ITEM` lines are present, copy them into the chat before findings as
+Markdown bullets in their emitted order, keeping the exact `#N` values. Include
+the `REPORT_INDEX` hint so the user can continue with “query #2 …”. Do this even
+when the full list is already visible in the HTML report; the companion list is
+the cross-turn interaction surface. Show no more than the emitted 40 items.
+
+For later turns, resolve `#N` only against the most recent assistant-provided
+numbered list. It is not a database ID or a metric rank. Reuse the selected
+item's emitted name, domain, path, or content in the appropriate scenario. Do
+not guess when the number is absent or stale.
+
 Before the final link, summarize at most three `REPORT_FINDING` lines and offer
 at most three `REPORT_NEXT` prompts. Do not add any text after the report link,
 and do not rerun the data query for the summary.
@@ -64,6 +75,7 @@ python3 <skill-dir>/scripts/report.py topic-detail --project-id <id> --topic "�
 python3 <skill-dir>/scripts/report.py prompt-performance --project-id <id> --prompt "exact prompt text" --period 7d --locale en-US
 python3 <skill-dir>/scripts/report.py page-opportunities --project-id <id> --path /blog/example --period 30d --locale en-US
 python3 <skill-dir>/scripts/report.py ga4-overview --project-id <id> --period 30d --locale en-US
+python3 <skill-dir>/scripts/report.py website-traffic --project-id <id> --period 30d --locale zh-CN
 python3 <skill-dir>/scripts/report.py traffic-overview --project-id <id> --period 14d --locale en-US
 python3 <skill-dir>/scripts/report.py data-freshness --project-id <id> --locale en-US
 python3 <skill-dir>/scripts/report.py operations-overview --project-id <id> --locale en-US
@@ -79,7 +91,7 @@ python3 <skill-dir>/scripts/report.py competitor-prompts --project-id <id> --com
 Use these report names:
 
 - Core GEO: `executive-overview`, `catalog`, `visibility`, `matrix`, `topics`, `topic-detail`, `topic-lifecycle`, `prompt-performance`, `prompt-executions`, `citations`, `sentiment`, `competitor-rankings`, `competitor-overview`, `competitor-topics`, `competitor-prompts`.
-- Acquisition and bots: `traffic-overview`, `ga4-overview`, `ga4-referrals`, `ga4-pages`, `cloudflare-overview`, `cloudflare-bots`, `cloudflare-pages`, `worker-traffic`, `worker-pages`, `worker-events`, `worker-deployment`, `ai-overview`, `ai-bots`, `ai-humans`.
+- Acquisition and bots: `website-traffic`, `traffic-overview`, `ga4-overview`, `ga4-referrals`, `ga4-pages`, `cloudflare-overview`, `cloudflare-bots`, `cloudflare-pages`, `worker-traffic`, `worker-pages`, `worker-events`, `worker-deployment`, `ai-overview`, `ai-bots`, `ai-humans`.
 - Pages and flows: `ai-pages`, `ai-flow`, `human-flow`, `ga4-flow`, `page-detail`, `page-health`, `page-opportunities`.
 - Operations: `account-info`, `data-freshness`, `operations-overview`, `opportunities`, `opportunity-detail`, `content-pipeline`, `content-detail`, `brand-profile`, `brand-jobs`, `integration-health`, `wordpress-publications`, `wordpress-publishable`, `projects`, `domains`, `saas-task`.
 
@@ -96,13 +108,22 @@ Read `references/competitors.md` for competitor intent routing, exact parameters
 - Hide internal IDs by default. Use `--show-ids` only for debugging or an explicit user request. Never expose passwords, tokens, API keys, or secrets.
 - Preserve zero values. Render missing values as `—`; do not infer a zero from missing data.
 - Report partial data honestly through coverage, warnings, and source status.
-- In customer-facing GA4 sections, show only AI referral sessions, AI referral users, and AI referral rate from the existing `/integrations/ga4/ai-referrals` response. Do not show revenue or transactions.
+- Route requests for website traffic, users, UV, PV, sessions, bounce rate, duration, or channel distribution to `website-traffic`. It uses the existing `/integrations/ga4/overview` response and shows only those supported traffic fields.
+- Keep `ga4-overview` and `ga4-referrals` AI-specific: show only AI referral sessions, AI referral users, and AI referral rate from the existing `/integrations/ga4/ai-referrals` response.
+- Use `traffic-overview` only when the user wants overall website traffic and AI acquisition together. Keep overall GA4, GA4 AI referrals, and Cloudflare AI activity in visibly separate sections; never calculate a cross-source grand total.
+- Never show GA4 revenue, purchase, or transaction fields in any customer-facing report.
 - In customer-facing Cloudflare sections, show only `ai_assistant`, `ai_search`, `ai_training`, and their platform distribution from the existing `/ai-agent/overview-kpi` response. Present the API's `ai_citations` field as AI assistant requests and `ai_index` as AI search requests; do not call either one an answer citation.
 - Cache only `/report-data/capabilities` for two hours on disk without credentials; never cache report business data. Fall back only for a missing/disabled/incompatible report-data route; never hide 401/403/409/422 or business 5xx failures behind legacy calls.
 - Treat answer citations, AI-assistant HTTP requests, Worker events, and GA4 AI landing sessions as distinct facts even when they refer to the same page.
 - Do not infer page-to-opportunity matches. Until the backend persists `target_path/path_key`, show `PAGE_OPPORTUNITY_MAPPING_UNAVAILABLE` and use only deterministic KPI/health recommendations.
 - Account reports may show only the authenticated user's `created_at`, `name`, `phone`, and `email`. Do not resolve project context, call `/api/projects/*`, include any other `/auth/me` field, or add follow-up prompts.
-- Treat `competitor-rankings` as the complete competitor set returned by GEO-Api. Do not merge it with configured competitors or infer missing competitors. Do not invent time-series charts because these four endpoints return period aggregates, not daily trend points.
+- Treat `competitor-rankings` as the returned ranking page, capped by GEO-Api at 100 brands. Label its size as the returned brand count; do not infer a larger total, merge it with configured competitors, or claim omitted configured competitors have zero visibility. Do not invent time-series charts because these four endpoints return period aggregates, not daily trend points.
+- For GEO visibility, Topic, Prompt, citation, sentiment, matrix, and competitor
+  filters, pass canonical platform IDs: `openai`, `perplexity`, `google_aio`,
+  `deepseek`, `yuanbao`, `qwen`, `doubao`, or `baidu`. The report script accepts
+  display names such as `ChatGPT` and `Google AI Overviews` and normalizes them;
+  it rejects `gemini`. AI traffic scenarios keep their endpoint-native platform
+  values because those come from collected traffic rather than the GEO platform set.
 
 Read `references/reporting.md` before changing output behavior, templates, schema fields, chart mapping, or WorkBuddy markers.
 

@@ -1,6 +1,10 @@
 ---
 name: adgine/geo-brand
-description: Views, generates (async AI job), edits and inspects the GEO brand cognition profile for a website project — brand introduction, ideal customer profile, competitor analysis, brand perspective, author persona, voice and tone, writing guidelines — and lists/starts/inspects brand generation background jobs. Use when the user wants to build or update their AI-facing brand identity, generate brand cognition content (品牌画像 / 品牌认知 / brand profile), review existing brand positioning, refine writing style guidelines, or check the status of running/failed brand generation jobs (任务列表 / job status / 重新生成). Intent synonyms: brand profile, 品牌画像, 品牌认知, brand cognition, brand identity, generate brand, brand job status, retry brand generation.
+description: >
+  Views, generates (async AI job), edits and inspects the GEO brand cognition
+  profile for a website project, and lists, starts, or inspects brand generation
+  jobs. Use for brand profile, 品牌画像, 品牌认知, brand identity, generate brand,
+  brand job status, retry brand generation, and related requests.
 ---
 
 # GEO Brand
@@ -61,6 +65,8 @@ Shows: status (`none` / `generating` / `completed`), all brand fields.
 python3 scripts/generate_brand.py [--project-id <id>] [--language English] [--region US]
 ```
 Starts an AI generation job, polls automatically, then prints the completed profile.
+Friendly language labels such as `中文`, `简体中文`, `zh-CN`, and `英文` are
+normalized locally to GEO-Api's canonical language values before submission.
 
 > ⏳ **Expected duration: 2–5 minutes.** The script polls automatically (interval 8 s, timeout 10 min). Do NOT cancel early.
 
@@ -84,6 +90,10 @@ python3 scripts/update_brand.py [--project-id <id>] --field <field_name> --value
 | `cta_landing_page` | CTA URL |
 | `language` | Brand content language (default: English) |
 | `region` | Target region (default: US) |
+
+When updating `language`, the script applies the same normalization and rejects
+unsupported values before sending the request. Update `region` in a separate
+command because this interface edits one field at a time.
 
 ### Brand generation jobs
 

@@ -17,6 +17,7 @@ from _client import (
     api_get, api_post,
     extract_data, poll_job, print_json,
 )
+from _language import normalize_language
 
 parser = argparse.ArgumentParser(description="Generate GEO brand cognition profile")
 parser.add_argument("--project-id", help="Project ID (or set GEO_PROJECT_ID env var)")
@@ -25,15 +26,20 @@ parser.add_argument("--region",   default="US",      help="Target region code, e
 parser.add_argument("--json", action="store_true",   help="Output final job result as raw JSON")
 args = parser.parse_args()
 
+try:
+    language = normalize_language(args.language)
+except ValueError as exc:
+    parser.error(str(exc))
+
 key, base = get_api_config()
 pid = get_project_id(args.project_id)
 
 print(f"Starting brand cognition generation for project: {pid}")
-print(f"  Language : {args.language}  |  Region : {args.region}")
+print(f"  Language : {language}  |  Region : {args.region}")
 print()
 
 body = {
-    "language":   args.language,
+    "language":   language,
     "region":     args.region,
     "auto_start": True,
 }

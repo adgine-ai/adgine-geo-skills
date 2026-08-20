@@ -1,6 +1,7 @@
 ---
 name: adgine/geo-aiagent
-description: Deep drill-down tracking for AI bot crawls and AI-driven human traffic
+description: >
+  Deep drill-down tracking for AI bot crawls and AI-driven human traffic
   — 27 endpoints covering per-bot/per-platform/per-UA breakdowns, Sankey flows,
   raw event logs, and per-page deep dives (KPI / logs / platforms / PageSpeed).
   Use when the user wants detail-level data: AI 爬虫追踪 / which specific AI bots
@@ -79,7 +80,8 @@ export GEO_PROJECT_ID=<project-id>
 
 ```bash
 python3 scripts/bot_traffic.py overview          # 5 KPI: citation/training/index/agent/total
-python3 scripts/bot_traffic.py platforms         # ranking: which AI platforms crawl most
+python3 scripts/bot_traffic.py platforms [--tab ai_citation|all_bots]
+                                                 # ranking by the selected backend view
 python3 scripts/bot_traffic.py by-platform       # bots grouped by AI platform
 python3 scripts/bot_traffic.py types             # index/training/assistant/agent split
 python3 scripts/bot_traffic.py useragents        # by specific UA (GPTBot, ClaudeBot...)
@@ -111,6 +113,7 @@ python3 scripts/page_analytics.py pages-detail --page 1 --limit 40 # 5-metric ta
 python3 scripts/page_analytics.py pages-export --format csv > pages.csv
 python3 scripts/page_analytics.py platform-flow            # Sankey
 python3 scripts/page_analytics.py logs --page 1 --limit 40 # raw AI event logs
+# --traffic-type accepts bot, human, all, or comma-separated API traffic types
 ```
 
 ### page_detail.py — specific page path
@@ -126,6 +129,10 @@ python3 scripts/page_detail.py health    --path /blog/article
 python3 scripts/page_detail.py health-refresh --path /blog/article   # 15–60s blocking
 ```
 
+For either logs command, `bot` expands to `ai_search,ai_training,ai_assistant,ai_agent`
+and `human` expands to `ai_human_referral,utm_ai`. The scripts reject unknown
+traffic types before making a request.
+
 ## Metric vocabulary
 
 | Code           | Meaning |
@@ -137,10 +144,13 @@ python3 scripts/page_detail.py health-refresh --path /blog/article   # 15–60s 
 | `ai_referral`  | A real human arrived on the site via an AI platform |
 | `total_bots`   | Sum of all AI bot requests |
 
-## Platform codes
+## Platform filters
 
-`openai` · `google_aio` · `perplexity` · `gemini` · `anthropic` · `meta`
-(see `/api/projects/{id}/ai-agent/platforms` for the live list).
+AI Agent platform values come from collected traffic and may differ from the
+GEO visibility platform IDs. Use `/api/projects/{id}/ai-agent/platforms` for
+the live list. Platform filtering is accepted only by `bot_traffic.py overview`,
+`human_traffic.py overview`, and the supported site-wide KPI/detail/flow commands;
+the scripts intentionally do not send it to endpoints that ignore it.
 
 ## Output Format
 

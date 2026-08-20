@@ -18,8 +18,11 @@ from _reporting import _render_scatter, render_html, render_markdown, write_html
 from _contracts import SCENARIOS, get_scenario  # noqa: E402
 from _i18n import label, normalize_locale  # noqa: E402
 from report import (  # noqa: E402
+    MAX_CHAT_INDEX_ITEMS,
+    MAX_COMPETITOR_RANKING_ITEMS,
     SUPPORTED_CHART_TYPES,
     _collect_charts,
+    _collect_metrics,
     _mask_path,
     _presentation_payloads,
     _sanitize,
@@ -65,7 +68,12 @@ class RenderingTests(unittest.TestCase):
         )
 
     def test_html_is_offline_escaped_and_embeds_public_json(self):
-        rendered = render_html(sample_report())
+        report = sample_report()
+        report["chat_index"] = {
+            "shown": 1, "total": 1,
+            "items": [{"number": 1, "label": "Private companion item"}],
+        }
+        rendered = render_html(report)
         visible = visible_html(rendered)
         self.assertIn("Visibility &lt;Report&gt;", rendered)
         self.assertIn("A&amp;B", rendered)
@@ -83,6 +91,7 @@ class RenderingTests(unittest.TestCase):
         self.assertNotIn("schema_version", data)
         self.assertNotIn("coverage", data)
         self.assertNotIn("audit", data)
+        self.assertNotIn("chat_index", data)
         self.assertNotIn("schema", visible.lower())
         self.assertNotIn("Data coverage", visible)
         self.assertNotIn("Query audit", visible)
@@ -142,6 +151,31 @@ class RenderingTests(unittest.TestCase):
             output = stream.getvalue()
             self.assertIn(link, output)
             self.assertTrue(output.rstrip().endswith(link))
+
+    def test_html_emits_numbered_companion_list_before_findings_and_link(self):
+        report = sample_report()
+        report["chat_index"] = {
+            "shown": 2,
+            "total": 5,
+            "hint": "Reply with #2",
+            "items": [
+                {"number": 1, "group": "Projects", "label": "Project One", "details": ["Domain: one.test"]},
+                {"number": 2, "group": "Projects", "label": "Project Two", "details": ["Domain: two.test"]},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            args = SimpleNamespace(
+                json=False, format="html", output=None, output_dir=directory,
+                scenario="visibility",
+            )
+            stream = io.StringIO()
+            with redirect_stdout(stream):
+                emit_report(report, args)
+            output = stream.getvalue()
+        self.assertIn("REPORT_INDEX: shown=2 total=5", output)
+        self.assertIn("REPORT_ITEM: #2 | Projects | Project Two | Domain: two.test", output)
+        self.assertLess(output.index("REPORT_ITEM: #2"), output.index("REPORT_FINDING:"))
+        self.assertTrue(output.rstrip().endswith(")"))
 
     def test_chinese_html_localizes_shared_report_chrome(self):
         report = sample_report()
@@ -207,6 +241,64 @@ class RenderingTests(unittest.TestCase):
         rendered = render_markdown(sample_report())
         self.assertIn("42.5%", rendered)
         self.assertIn("## Rows", rendered)
+
+    def test_project_inventory_keeps_numbered_items_in_inline_markdown(self):
+        scenario = get_scenario("projects")
+        args = SimpleNamespace(
+            locale="zh-CN", topic=None, prompt=None, show_ids=False,
+            platform=[], page=1, limit=40, path=None, period="7d",
+            timezone="Asia/Shanghai",
+        )
+        client = SimpleNamespace(project_id=None, calls=[])
+        report = build_report(
+            scenario, args, client,
+            {"projects": {"items": [
+                {"name": "项目一", "domain": "one.example"},
+                {"name": "项目二", "domain": "two.example"},
+            ], "total": 2}},
+            {}, "2026-08-01", "2026-08-07",
+        )
+        rendered = render_markdown(report)
+        self.assertEqual(report["chat_index"]["shown"], 2)
+        self.assertIn("**#1** 项目一", rendered)
+        self.assertIn("**#2** 项目二", rendered)
+        self.assertIn("查询 #2", rendered)
+
+    def test_competitor_rankings_are_defensively_capped_and_numbered_to_40(self):
+        competitors = [
+            {
+                "rank": index + 1,
+                "name": f"Brand {index + 1}",
+                "domain": f"brand-{index + 1}.example",
+                "current": 100 - index / 2,
+            }
+            for index in range(150)
+        ]
+        scenario = get_scenario("competitor-rankings")
+        projected = _presentation_payloads(
+            {"competitor_rankings": {"competitors": competitors}}, scenario,
+        )
+        self.assertEqual(
+            len(projected["competitor_rankings"]["items"]),
+            MAX_COMPETITOR_RANKING_ITEMS,
+        )
+        self.assertEqual(
+            projected["competitor_rankings"]["metrics"]["brand_count"],
+            MAX_COMPETITOR_RANKING_ITEMS,
+        )
+        args = SimpleNamespace(
+            locale="en-US", topic=None, prompt=None, competitor=None,
+            show_ids=False, platform=[], page=1, limit=40, path=None,
+            period="7d", timezone="UTC",
+        )
+        report = build_report(
+            scenario, args, SimpleNamespace(project_id="project", calls=[]),
+            {"competitor_rankings": {"competitors": competitors}},
+            {}, "2026-08-01", "2026-08-07", project_name="Example",
+        )
+        self.assertEqual(report["chat_index"]["shown"], MAX_CHAT_INDEX_ITEMS)
+        self.assertEqual(report["chat_index"]["total"], MAX_COMPETITOR_RANKING_ITEMS)
+        self.assertEqual(len(report["tables"][0]["rows"]), MAX_COMPETITOR_RANKING_ITEMS)
 
     def test_ids_optional_but_secrets_always_removed(self):
         value = {"project_id": "p", "nested": {"wp_password": "secret", "name": "ok"}}
@@ -389,6 +481,73 @@ class RenderingTests(unittest.TestCase):
         )
         self.assertEqual(len(assistant["series"]), 2)
         self.assertTrue(assistant["series"][1]["dash"])
+
+    def test_full_website_traffic_projection_uses_only_existing_ga4_fields(self):
+        payload = {
+            "total_sessions": {"current": 3918, "prev": 3473, "delta_pct": 12.8},
+            "total_active_users": {"current": 2888, "prev": 2450, "delta_pct": 17.9},
+            "avg_daily_uv": {"current": 412.6, "prev": 350.0, "delta_pct": 17.9},
+            "total_page_views": {"current": 5709, "prev": 5726, "delta_pct": -0.3},
+            "avg_bounce_rate": {"current": 47.1, "prev": 31.5, "delta_pct": 49.6},
+            "avg_session_duration": {"current": 2512, "prev": 884, "delta_pct": 184.0},
+            "daily": [
+                {"date": "2026-08-18", "sessions": 500, "active_users": 380, "page_views": 800},
+                {"date": "2026-08-19", "sessions": 620, "active_users": 440, "page_views": 910},
+            ],
+            "prev_daily": [
+                {"date": "2026-08-18", "sessions": 450, "active_users": 330, "page_views": 740},
+                {"date": "2026-08-19", "sessions": 470, "active_users": 350, "page_views": 760},
+            ],
+            "sources": {"items": [
+                {"channel": "Organic Search", "sessions": 1700, "active_users": 1250, "page_views": 2400, "is_ai": False},
+                {"channel": "Direct", "sessions": 1200, "active_users": 930, "page_views": 1700, "is_ai": False},
+                {"channel": "AI", "sessions": 173, "active_users": 85, "page_views": 260, "is_ai": True},
+            ]},
+            "revenue": 999,
+            "transactions": 8,
+        }
+        scenario = get_scenario("website-traffic")
+        projected = _presentation_payloads({"ga4_traffic": payload}, scenario)
+
+        self.assertEqual(set(projected["ga4_traffic"]["metrics"]), {
+            "total_sessions", "total_active_users", "avg_daily_uv",
+            "total_page_views", "avg_bounce_rate", "avg_session_duration",
+        })
+        rendered = json.dumps(projected, ensure_ascii=False)
+        self.assertNotIn("revenue", rendered)
+        self.assertNotIn("transactions", rendered)
+        metrics = _collect_metrics(projected, locale="zh-CN")
+        duration = next(item for item in metrics if item["label"] == "平均会话时长")
+        self.assertEqual(duration["format"], "seconds")
+        self.assertEqual(duration["change_format"], "percent")
+        charts = _collect_charts(projected, scenario, "zh-CN")
+        self.assertIn("line_chart", {chart["type"] for chart in charts})
+        self.assertIn("bar_chart", {chart["type"] for chart in charts})
+
+    def test_combined_traffic_report_keeps_overall_and_ai_sections_separate(self):
+        projected = _presentation_payloads({
+            "ga4_traffic": {
+                "total_sessions": {"current": 1000},
+                "total_active_users": {"current": 700},
+                "avg_daily_uv": {"current": 100},
+                "total_page_views": {"current": 1600},
+                "avg_bounce_rate": {"current": 40},
+                "avg_session_duration": {"current": 90},
+            },
+            "ga4_ai": {
+                "total_sessions": 30,
+                "total_active_users": 22,
+                "ai_referral_rate": 0.03,
+            },
+            "cloudflare_ai": {
+                "ai_citations": {"current": 12},
+                "ai_index": {"current": 20},
+                "ai_training": {"current": 9},
+            },
+        }, get_scenario("traffic-overview"))
+        self.assertEqual(
+            list(projected), ["ga4_traffic", "ga4_ai", "cloudflare_ai"],
+        )
 
     def test_revenue_and_transactions_are_always_removed_from_reports(self):
         sanitized = _sanitize({

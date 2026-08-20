@@ -38,16 +38,13 @@ def _norm_status(s):
 
 
 def cmd_list(args, key, base, pid):
-    result = api_get(f"/api/projects/{pid}/brand/jobs", key, base,
-                     params={"page": args.page, "limit": args.limit})
+    # GEO-Api returns the complete job collection; paginate it locally so the
+    # conversational interface remains consistently 40 rows per page.
+    result = api_get(f"/api/projects/{pid}/brand/jobs", key, base)
     data = extract_data(result)
     items = data if isinstance(data, list) else (data or {}).get("jobs") or (data or {}).get("items", [])
-    server_paginated = isinstance(data, dict) and any(
-        key in data for key in ("page", "limit", "pages", "total_pages")
-    )
-    if not server_paginated:
-        start = (args.page - 1) * args.limit
-        items = items[start:start + args.limit]
+    start = (args.page - 1) * args.limit
+    items = items[start:start + args.limit]
 
     if args.json:
         print_json(items)
@@ -144,6 +141,8 @@ def main():
     p_start.add_argument("--job-id", required=True)
 
     args = parser.parse_args()
+    if args.command == "list" and (args.page < 1 or args.limit < 1):
+        parser.error("list requires positive --page and --limit values")
     key, base = get_api_config()
     pid = get_project_id(args.project_id)
 

@@ -13,6 +13,7 @@ class RequestSpec:
     path: str
     date_style: str = "none"  # none | analytics | competitor | traffic | dashboard-period
     accepts_platform: bool = False
+    accepts_granularity: bool = True
     paging: str = "none"  # none | page | page_size | offset
     required: bool = True
     query: dict = field(default_factory=dict)
@@ -31,13 +32,14 @@ class Scenario:
     default_format: str = "html"  # html | markdown
 
 
-def _r(alias, endpoint_path, date_style="none", *, platform=False, paging="none",
-       required=True, **query):
+def _r(alias, endpoint_path, date_style="none", *, platform=False, granularity=True,
+       paging="none", required=True, **query):
     return RequestSpec(
         alias=alias,
         path=endpoint_path,
         date_style=date_style,
         accepts_platform=platform,
+        accepts_granularity=granularity,
         paging=paging,
         required=required,
         query=query,
@@ -101,7 +103,7 @@ SCENARIOS = {
     ),
     "citations": Scenario(
         "citations", "P1", "Citation Performance", "引用表现分析", "analysis",
-        (_r("citations", "/api/projects/{project_id}/analytics/citation/aggregate", "analytics", platform=True),),
+        (_r("citations", "/api/projects/{project_id}/analytics/citation/aggregate", "analytics", platform=True, granularity=False),),
     ),
     "sentiment": Scenario(
         "sentiment", "P1", "Brand Sentiment", "品牌情感分析", "analysis",
@@ -110,7 +112,7 @@ SCENARIOS = {
     "competitor-rankings": Scenario(
         "competitor-rankings", "P1", "Competitor Visibility Rankings", "竞争对手可见性排名", "analysis",
         (_r("competitor_rankings", "/api/projects/{project_id}/competitors/visibility-rankings", "competitor", platform=True),),
-        description="All competitors returned by GEO-Api, ranked by visibility score for the selected period.",
+        description="Up to 100 brands returned by GEO-Api, ranked by visibility score for the selected period.",
     ),
     "competitor-overview": Scenario(
         "competitor-overview", "P1", "Competitor Comparison", "竞争对手对比", "analysis",
@@ -139,6 +141,11 @@ SCENARIOS = {
     "ga4-referrals": Scenario(
         "ga4-referrals", "P2", "GA4 AI Referrals", "GA4 AI 引荐分析", "analysis",
         (_r("ga4_ai", "/api/projects/{project_id}/integrations/ga4/ai-referrals", "traffic"),),
+    ),
+    "website-traffic": Scenario(
+        "website-traffic", "P2", "Website Traffic", "网站流量分析", "analysis",
+        (_r("ga4_traffic", "/api/projects/{project_id}/integrations/ga4/overview", "traffic"),),
+        description="Full-site GA4 sessions, users, page views, engagement, trends, and channel distribution.",
     ),
     "ga4-pages": Scenario(
         "ga4-pages", "P2", "GA4 Page Performance", "GA4 页面表现", "inventory",
@@ -185,8 +192,8 @@ SCENARIOS = {
         "ai-humans", "P2", "AI-Driven Human Traffic", "AI 真人引流分析", "analysis",
         (
             _r("overview", "/api/projects/{project_id}/ai-agent/human-traffic-overview", "traffic", platform=True),
-            _r("platforms", "/api/projects/{project_id}/ai-agent/human-platforms", "traffic", platform=True, required=False),
-            _r("pages", "/api/projects/{project_id}/ai-agent/human-pages", "traffic", platform=True, paging="offset", required=False),
+            _r("platforms", "/api/projects/{project_id}/ai-agent/human-platforms", "traffic", required=False),
+            _r("pages", "/api/projects/{project_id}/ai-agent/human-pages", "traffic", paging="offset", required=False),
         ),
     ),
     "ai-pages": Scenario(
@@ -199,11 +206,11 @@ SCENARIOS = {
     ),
     "human-flow": Scenario(
         "human-flow", "P2", "AI Human Referral Flow", "AI 真人引荐流向", "analysis",
-        (_r("flow", "/api/projects/{project_id}/ai-agent/human-platform-flow", "traffic", platform=True),),
+        (_r("flow", "/api/projects/{project_id}/ai-agent/human-platform-flow", "traffic"),),
     ),
     "ga4-flow": Scenario(
         "ga4-flow", "P2", "GA4 AI Landing Flow", "GA4 AI 着陆页流向", "analysis",
-        (_r("flow", "/api/projects/{project_id}/ai-agent/ga-platform-landing-flow", "traffic", platform=True),),
+        (_r("flow", "/api/projects/{project_id}/ai-agent/ga-platform-landing-flow", "traffic"),),
     ),
     "page-detail": Scenario(
         "page-detail", "P2", "Page GEO Detail", "页面 GEO 详细分析", "detail",
@@ -252,10 +259,11 @@ SCENARIOS = {
     "traffic-overview": Scenario(
         "traffic-overview", "P2", "Traffic Overview", "流量综合总览", "analysis",
         (
+            _r("ga4_traffic", "/api/projects/{project_id}/integrations/ga4/overview", "traffic", required=False),
             _r("ga4_ai", "/api/projects/{project_id}/integrations/ga4/ai-referrals", "traffic", required=False),
             _r("cloudflare_ai", "/api/projects/{project_id}/ai-agent/overview-kpi", "traffic", platform=True, required=False),
         ),
-        description="GA4 AI referrals and Cloudflare AI assistant, search, training, and platform activity.",
+        description="Full-site GA4 traffic, GA4 AI referrals, and source-separated Cloudflare AI activity.",
     ),
     "data-freshness": Scenario(
         "data-freshness", "P3", "Data Freshness", "数据新鲜度", "status",

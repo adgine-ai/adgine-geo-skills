@@ -13,7 +13,8 @@ Subcommands:
                                           (GPTBot, ClaudeBot, GoogleBot, PerplexityBot...)
   pages-by-bot [--limit 5]               — per-bot top pages
 
-Common opts: --start --end --platform
+Date options: --start --end. Only ``overview`` accepts ``--platform``;
+``platforms`` accepts the backend ``--tab`` view selector.
 
 Usage:
   python3 scripts/bot_traffic.py overview
@@ -56,20 +57,22 @@ def _fmt_change(c):
         return str(c)
 
 
-def _date_params(args):
+def _date_params(args, include_platform=False, include_tab=False):
     p = {}
     if args.start:
         p["start_date"] = args.start
     if args.end:
         p["end_date"] = args.end
-    if getattr(args, "platform", None):
+    if include_platform and getattr(args, "platform", None):
         p["platform"] = args.platform
+    if include_tab and getattr(args, "tab", None):
+        p["tab"] = args.tab
     return p or None
 
 
 def cmd_overview(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/bot-traffic-overview",
-                     key, base, params=_date_params(args))
+                     key, base, params=_date_params(args, include_platform=True))
     data = extract_data(result) or {}
     if args.json:
         print_json(data)
@@ -113,7 +116,7 @@ def cmd_overview(args, key, base, pid):
 
 def cmd_platforms(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/platforms",
-                     key, base, params=_date_params(args))
+                     key, base, params=_date_params(args, include_tab=True))
     data = extract_data(result)
     items = data if isinstance(data, list) else (data or {}).get("items", [])
     if args.json:
@@ -218,7 +221,7 @@ def cmd_useragents(args, key, base, pid):
 
 def cmd_pages_by_bot(args, key, base, pid):
     params = _date_params(args) or {}
-    params["limit"] = args.limit
+    params["top_pages_per_bot"] = args.limit
     result = api_get(f"/api/projects/{pid}/ai-agent/pages-by-bot",
                      key, base, params=params)
     data = extract_data(result)
@@ -247,19 +250,30 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    for name in ("overview", "platforms", "by-platform", "types", "useragents"):
+    p_overview = sub.add_parser("overview")
+    p_overview.add_argument("--start", help="Start date YYYY-MM-DD")
+    p_overview.add_argument("--end", help="End date YYYY-MM-DD")
+    p_overview.add_argument("--platform", help="Filter by platform code")
+
+    p_platforms = sub.add_parser("platforms")
+    p_platforms.add_argument("--start", help="Start date YYYY-MM-DD")
+    p_platforms.add_argument("--end", help="End date YYYY-MM-DD")
+    p_platforms.add_argument("--tab", choices=["ai_citation", "all_bots"],
+                             help="Platform ranking view (default: ai_citation)")
+
+    for name in ("by-platform", "types", "useragents"):
         p = sub.add_parser(name)
         p.add_argument("--start", help="Start date YYYY-MM-DD")
         p.add_argument("--end", help="End date YYYY-MM-DD")
-        p.add_argument("--platform", help="Filter by platform code")
 
     p_pbb = sub.add_parser("pages-by-bot")
     p_pbb.add_argument("--start")
     p_pbb.add_argument("--end")
-    p_pbb.add_argument("--platform")
     p_pbb.add_argument("--limit", type=int, default=5)
 
     args = parser.parse_args()
+    if args.command == "pages-by-bot" and not 1 <= args.limit <= 50:
+        parser.error("pages-by-bot requires --limit between 1 and 50")
     key, base = get_api_config()
     pid = get_project_id(args.project_id)
 

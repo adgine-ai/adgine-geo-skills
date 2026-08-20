@@ -1,6 +1,14 @@
 ---
 name: adgine/geo-topics
-description: Creates and manages GEO content topics and AI answer prompts for SEO and citation strategy. Supports creating topics (主题 / topic), batch creation, listing topics, listing all prompts across the entire project (跨主题 / cross-topic), adding or editing individual prompts, and triggering AI-powered bulk prompt generation (async). Use when the user wants to organize content categories (内容分类 / content categories), create AI search prompts (提示词 / prompts / AI 查询), generate batches of prompts automatically, manage their topic-prompt structure, or build the foundation for citation tests and article generation. Intent synonyms: topics, 主题词, prompts, 提示词, 提示词生成, generate prompts, list all prompts, 全部提示词.
+description: >
+  Creates and manages GEO content topics and AI answer prompts for SEO and citation strategy.
+  Supports creating topics (主题 / topic), batch creation, listing topics, listing all prompts
+  across the entire project (跨主题 / cross-topic), adding or editing individual prompts, and
+  triggering AI-powered bulk prompt generation (async). Use when the user wants to organize
+  content categories (内容分类 / content categories), create AI search prompts (提示词 / prompts /
+  AI 查询), generate batches of prompts automatically, manage their topic-prompt structure, or
+  build the foundation for citation tests and article generation. Intent synonyms: topics, 主题词,
+  prompts, 提示词, 提示词生成, generate prompts, list all prompts, 全部提示词.
 ---
 
 # GEO Topics
@@ -67,7 +75,7 @@ python3 scripts/manage_topics.py create --name "Product Reviews" [--description 
 ### Batch-create topics
 ```bash
 python3 scripts/manage_topics.py batch --names "Topic A,Topic B,Topic C" \
-  [--language English] [--region US]
+  [--language "Chinese (Simplified)"] [--region CN]
 ```
 
 ### Update a topic
@@ -105,7 +113,17 @@ python3 scripts/manage_prompts.py create --topic-id <tid> \
 Omit language, region, or platforms to let GEO-Api inherit the Topic/brand
 settings and current platform defaults. Do not force English/US in the Skill.
 
-**Platform IDs:** `openai` · `google_aio` · `perplexity`
+When the user explicitly chooses a language, normalize the conversational label
+before calling the script. Use `Chinese (Simplified)` for 中文、简体中文、`zh` or
+`zh-CN`; use `Chinese (Traditional)` for 繁体中文 or `zh-TW`; use `English` for
+英文 or `en`. The scripts also normalize these friendly aliases locally and send
+only GEO-Api's canonical language value. Never copy a localized UI label such as
+`中文` directly into the API request body.
+
+**Platform IDs:** `openai` · `perplexity` · `google_aio` · `deepseek` ·
+`yuanbao` · `qwen` · `doubao` · `baidu`. The scripts also accept display names
+such as `ChatGPT`, `Google AI Overviews`, `腾讯元宝`, `通义千问`, and `文心一言`,
+then send only canonical IDs. `gemini` is not a supported GEO-Api platform ID.
 
 ### Update a prompt
 ```bash
@@ -144,12 +162,17 @@ python3 scripts/manage_prompts.py delete --topic-id <tid> --prompt-id <pid>
 
 ```bash
 python3 scripts/generate_prompts.py --topic-id <tid> [--project-id <id>] \
-  [--count 10] [--language "English (en-US)"] [--region US] \
+  [--count 10] [--language "Chinese (Simplified)"] [--region CN] \
   [--platforms "openai,perplexity,google_aio"] \
   [--instructions "Focus on enterprise buyers"]
 ```
 
 Generates AI search prompts relevant to the topic automatically. Polls until done (~1–3 min).
+Omit `--language` to inherit the Topic language. If the user explicitly requests
+Chinese, pass the canonical `Chinese (Simplified)` value; the script accepts
+friendly aliases such as `中文`, `简体中文`, and `zh-CN` and normalizes them first.
+Platform display names are normalized by the script using the same rules as
+manual Prompt creation and updates.
 
 > ⏳ **Expected duration: 1–3 minutes.** The script polls automatically (interval 5 s, timeout 10 min). Do NOT cancel early.
 

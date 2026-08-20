@@ -81,6 +81,9 @@ python3 scripts/generate_article.py --content-id <id> [--language zh] \
 ```
 
 Omit `--language` to inherit the first selected Prompt’s language.
+When supplied, friendly labels such as `中文`, `简体中文`, `zh-CN`, and `英文`
+are normalized to GEO-Api's canonical language value; unsupported values fail
+locally instead of silently generating an English article.
 
 ### Partially edit content
 

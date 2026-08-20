@@ -7,7 +7,7 @@ Usage:
 Examples:
   python3 scripts/update_brand.py --field voice_and_tone --value "Friendly, expert, data-driven"
   python3 scripts/update_brand.py --field competitors --value "Semrush, Ahrefs, Moz"
-  python3 scripts/update_brand.py --field language --value "Chinese (Simplified)" --region CN
+  python3 scripts/update_brand.py --field language --value "中文"
 """
 import sys
 import os
@@ -15,6 +15,7 @@ import argparse
 
 sys.path.insert(0, os.path.dirname(__file__))
 from _client import get_api_config, get_project_id, api_patch, extract_data, print_json
+from _language import normalize_language
 
 UPDATABLE_FIELDS = [
     "brand_introduction",
@@ -46,7 +47,14 @@ args = parser.parse_args()
 key, base = get_api_config()
 pid = get_project_id(args.project_id)
 
-body = {args.field: args.value}
+value = args.value
+if args.field == "language":
+    try:
+        value = normalize_language(value)
+    except ValueError as exc:
+        parser.error(str(exc))
+
+body = {args.field: value}
 result = api_patch(f"/api/projects/{pid}/brand", key, base, body)
 data = extract_data(result)
 
@@ -56,6 +64,6 @@ if args.json:
 
 print(f"✓  Updated [{args.field}] for project {pid}")
 profile = data.get("profile") or data
-updated_value = profile.get(args.field, args.value)
+updated_value = profile.get(args.field, value)
 display = updated_value[:300] + "..." if len(str(updated_value)) > 300 else str(updated_value)
 print(f"   New value: {display}")

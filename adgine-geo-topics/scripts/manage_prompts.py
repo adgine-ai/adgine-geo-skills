@@ -22,6 +22,8 @@ from _client import (
     api_get, api_post, api_put, api_delete,
     extract_data, print_json,
 )
+from _language import normalize_language
+from _platforms import normalize_platforms
 
 parser = argparse.ArgumentParser(description="Manage GEO prompts")
 parser.add_argument("action", choices=["list", "list-all", "get", "create", "update", "delete"])
@@ -40,6 +42,17 @@ parser.add_argument("--page", type=int, default=1, help="Page number for list/li
 parser.add_argument("--limit", type=int, default=40, help="Rows per page for list/list-all (default: 40)")
 parser.add_argument("--json", action="store_true", help="Output raw JSON")
 args = parser.parse_args()
+
+if args.action in ("list", "list-all") and (
+    args.page < 1 or not 1 <= args.limit <= 100
+):
+    parser.error("list queries require --page >= 1 and --limit between 1 and 100")
+
+try:
+    language = normalize_language(args.language)
+    platforms = normalize_platforms(args.platforms)
+except ValueError as exc:
+    parser.error(str(exc))
 
 key, base = get_api_config()
 pid = get_project_id(args.project_id)
@@ -138,12 +151,12 @@ elif args.action == "create":
         print("ERROR: Prompt types and tags are update-only; create the Prompt first, then update it")
         sys.exit(1)
     body = {"content": args.content}
-    if args.language:
-        body["language"] = args.language
+    if language:
+        body["language"] = language
     if args.region:
         body["region"] = args.region
-    if args.platforms:
-        body["platforms"] = _csv(args.platforms)
+    if platforms:
+        body["platforms"] = platforms
     result = api_post(f"/api/projects/{pid}/topics/{args.topic_id}/prompts", key, base, body)
     prompt = extract_data(result)
     if args.json:
@@ -167,12 +180,12 @@ elif args.action == "update":
     body = {}
     if args.content:
         body["content"] = args.content
-    if args.language:
-        body["language"] = args.language
+    if language:
+        body["language"] = language
     if args.region:
         body["region"] = args.region
-    if args.platforms:
-        body["platforms"] = _csv(args.platforms)
+    if platforms:
+        body["platforms"] = platforms
     if args.types:
         prompt_types = _csv(args.types)
         invalid = sorted(set(prompt_types) - {"visibility", "sentiment"})

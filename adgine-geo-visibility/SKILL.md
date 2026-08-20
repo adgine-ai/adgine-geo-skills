@@ -1,6 +1,7 @@
 ---
 name: adgine/geo-visibility
-description: Reads and analyzes already-collected AI visibility data for a GEO
+description: >
+  Reads and analyzes already-collected AI visibility data for a GEO
   project — Visibility Score, Share of Voice, Average Position, competitor matrix,
   historical AI executions, full AI responses, brand mentions, cited URLs.
   Use for low-level debugging of analytics results: AI visibility / 可见性得分 /
@@ -80,7 +81,7 @@ export GEO_PROJECT_ID=<project-id>
 python3 scripts/get_visibility.py score
 python3 scripts/get_visibility.py share-of-voice
 python3 scripts/get_visibility.py average-position
-# common opts: --platform openai|google_aio|perplexity|gemini --start ... --end ...
+# common opts: --platform <GEO-Api ID or display name> --start ... --end ...
 ```
 
 ### Competitor × platform matrix
@@ -131,7 +132,10 @@ decimals depending on metric scale; "%" suffix for percentage metrics;
 
 ## Platform codes
 
-`openai` · `google_aio` · `perplexity` · `gemini`
+`openai` · `perplexity` · `google_aio` · `deepseek` · `yuanbao` · `qwen` ·
+`doubao` · `baidu`. Display names such as `ChatGPT`, `Google AI Overviews`,
+`腾讯元宝`, and `通义千问` are normalized locally. `gemini` is not a supported
+GEO-Api platform ID.
 
 ## Related endpoints
 

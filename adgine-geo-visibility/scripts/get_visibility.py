@@ -2,8 +2,8 @@
 """Single-metric visibility queries (granular, for AI-agent fine-grained Q&A).
 
 Three subcommands map 1:1 to the analytics single-metric endpoints. Each
-returns the metric value plus 30/14/7-day trend points and previous-period
-delta (when supported by the API).
+returns the metric value plus previous-period delta. Score and average position
+also request trend points; Share of Voice currently has no trend series.
 
 Subcommands:
   score              — Visibility Score
@@ -12,7 +12,7 @@ Subcommands:
 
 Common options:
   --start <YYYY-MM-DD>  --end <YYYY-MM-DD>     time window
-  --platform <code>    openai | google_aio | perplexity | gemini
+  --platform <code>    GEO-Api ID or display name (for example ChatGPT)
 
 Usage:
   python3 scripts/get_visibility.py score
@@ -30,6 +30,7 @@ from _client import (
     extract_data, print_json,
     pad,
 )
+from _platforms import normalize_platform
 
 
 def _fmt_metric(v):
@@ -53,14 +54,16 @@ def _fmt_change(c):
         return str(c)
 
 
-def _common_params(args):
+def _common_params(args, include_trend=False):
     p = {}
     if args.start:
-        p["start_date"] = args.start
+        p["date_from"] = args.start
     if args.end:
-        p["end_date"] = args.end
+        p["date_to"] = args.end
     if args.platform:
-        p["platform"] = args.platform
+        p["platform"] = [normalize_platform(args.platform)]
+    if include_trend:
+        p["include_trend"] = True
     return p or None
 
 
@@ -102,7 +105,7 @@ def _show_trend(data, unit):
 def cmd_score(args, key, base, pid):
     result = api_get(
         f"/api/projects/{pid}/analytics/visibility/score",
-        key, base, params=_common_params(args),
+        key, base, params=_common_params(args, include_trend=True),
     )
     data = extract_data(result) or {}
     if args.json:
@@ -122,13 +125,12 @@ def cmd_sov(args, key, base, pid):
         print_json(data)
         return
     _print_metric("Share of Voice", "%", data)
-    _show_trend(data, "%")
 
 
 def cmd_avg(args, key, base, pid):
     result = api_get(
         f"/api/projects/{pid}/analytics/visibility/average-position",
-        key, base, params=_common_params(args),
+        key, base, params=_common_params(args, include_trend=True),
     )
     data = extract_data(result) or {}
     if args.json:
@@ -148,7 +150,7 @@ def main():
         p = sub.add_parser(name)
         p.add_argument("--start", help="Start date YYYY-MM-DD")
         p.add_argument("--end", help="End date YYYY-MM-DD")
-        p.add_argument("--platform", choices=["openai", "google_aio", "perplexity", "gemini"])
+        p.add_argument("--platform", help="GEO-Api platform ID or display name")
 
     args = parser.parse_args()
     key, base = get_api_config()
@@ -159,7 +161,10 @@ def main():
         "share-of-voice": cmd_sov,
         "average-position": cmd_avg,
     }
-    handlers[args.command](args, key, base, pid)
+    try:
+        handlers[args.command](args, key, base, pid)
+    except ValueError as exc:
+        parser.error(str(exc))
 
 
 if __name__ == "__main__":

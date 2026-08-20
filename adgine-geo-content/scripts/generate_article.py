@@ -17,6 +17,7 @@ from _client import (
     api_get, api_post,
     extract_data, poll_job, print_json,
 )
+from _language import normalize_language
 
 parser = argparse.ArgumentParser(description="Generate a full article from outline")
 parser.add_argument("--content-id", required=True,
@@ -27,6 +28,11 @@ parser.add_argument("--json", action="store_true", help="Output raw job result a
 parser.add_argument("--show-article", action="store_true",
                     help="Print the full article text (can be long)")
 args = parser.parse_args()
+
+try:
+    language = normalize_language(args.language)
+except ValueError as exc:
+    parser.error(str(exc))
 
 key, base = get_api_config()
 pid = get_project_id(args.project_id)
@@ -47,8 +53,8 @@ print(f"  Content ID : {args.content_id}")
 print()
 
 body = {"content_id": args.content_id}
-if args.language:
-    body["language"] = args.language
+if language:
+    body["language"] = language
 result = api_post(f"/api/projects/{pid}/content/generate-article", key, base, body)
 job_data = extract_data(result)
 

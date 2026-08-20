@@ -15,7 +15,8 @@ GA4-based (require GA4 connected):
   ga-landing-pages [--page 1] [--limit 40] — GA4 top landing pages from AI traffic
   ga-landing-flow                 — GA4 Sankey: AI platform → landing page
 
-Common opts: --start --end --platform
+All commands accept ``--start`` and ``--end``. Only ``overview`` accepts the
+backend platform filter.
 
 Usage:
   python3 scripts/human_traffic.py overview
@@ -58,20 +59,20 @@ def _fmt_change(c):
         return str(c)
 
 
-def _date_params(args):
+def _date_params(args, include_platform=False):
     p = {}
     if args.start:
         p["start_date"] = args.start
     if args.end:
         p["end_date"] = args.end
-    if getattr(args, "platform", None):
+    if include_platform and getattr(args, "platform", None):
         p["platform"] = args.platform
     return p or None
 
 
 def cmd_overview(args, key, base, pid):
     result = api_get(f"/api/projects/{pid}/ai-agent/human-traffic-overview",
-                     key, base, params=_date_params(args))
+                     key, base, params=_date_params(args, include_platform=True))
     data = extract_data(result) or {}
     if args.json:
         print_json(data)
@@ -316,28 +317,38 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    for name in ("overview", "platforms", "platform-flow", "referral",
+    p_overview = sub.add_parser("overview")
+    p_overview.add_argument("--start")
+    p_overview.add_argument("--end")
+    p_overview.add_argument("--platform")
+
+    for name in ("platforms", "platform-flow", "referral",
                  "ga-overview", "ga-platforms", "ga-landing-flow"):
         p = sub.add_parser(name)
         p.add_argument("--start")
         p.add_argument("--end")
-        p.add_argument("--platform")
 
     p_pages = sub.add_parser("pages")
     p_pages.add_argument("--start")
     p_pages.add_argument("--end")
-    p_pages.add_argument("--platform")
     p_pages.add_argument("--page", type=int, default=1)
     p_pages.add_argument("--limit", type=int, default=40)
 
     p_glp = sub.add_parser("ga-landing-pages")
     p_glp.add_argument("--start")
     p_glp.add_argument("--end")
-    p_glp.add_argument("--platform")
     p_glp.add_argument("--page", type=int, default=1)
     p_glp.add_argument("--limit", type=int, default=40)
 
     args = parser.parse_args()
+    max_limits = {"pages": 200, "ga-landing-pages": 500}
+    if args.command in max_limits and (
+        args.page < 1 or not 1 <= args.limit <= max_limits[args.command]
+    ):
+        parser.error(
+            f"{args.command} requires --page >= 1 and --limit between 1 "
+            f"and {max_limits[args.command]}"
+        )
     key, base = get_api_config()
     pid = get_project_id(args.project_id)
 
