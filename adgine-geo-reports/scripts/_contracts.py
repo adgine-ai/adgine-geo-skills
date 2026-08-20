@@ -297,14 +297,6 @@ SCENARIOS = {
         "wordpress-publishable", "P3", "WordPress Publishable Content", "WordPress 待发布内容", "inventory",
         (_r("content", "/api/projects/{project_id}/integrations/wordpress/publishable-content"),),
     ),
-    "billing": Scenario(
-        "billing", "P3", "Account and Billing", "账户与账单", "status",
-        (
-            _r("subscription", "/api/payments/subscription", required=False),
-            _r("credits", "/api/payments/credits/me", required=False),
-            _r("plans", "/api/payments/plans", required=False),
-        ),
-    ),
     "account-info": Scenario(
         "account-info", "P3", "My Account Information", "我的账号信息", "detail",
         (_r("account", "/api/auth/me"),),

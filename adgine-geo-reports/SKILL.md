@@ -1,6 +1,6 @@
 ---
 name: adgine/geo-reports
-description: Generate stable, auditable Adgine GEO data reports as localized English or Simplified Chinese standalone offline HTML, Markdown, or JSON. Use this facade for every read-only data query, dashboard, analysis, inventory, status review, or report request across account information, AI visibility, competitor rankings and comparisons, Topics, Prompts, citations, sentiment, GA4, Cloudflare, AI bots, AI-driven human traffic, pages, PageSpeed health, opportunities, content, publishing, integrations, projects, domains, SaaS, and billing. Trigger for requests such as “查询我的账号信息 / my account information”, “竞争对手表现 / competitor analysis / compare us with a competitor”, “this prompt/topic in the last week or half month”, “show my GEO data”, “generate a report”, “GA4/Cloudflare/AI bot performance”, and “export HTML”.
+description: Generate stable, auditable Adgine GEO data reports as localized English or Simplified Chinese standalone offline HTML, Markdown, or JSON. Use this facade for every read-only data query, dashboard, analysis, inventory, status review, or report request across account information, AI visibility, competitor rankings and comparisons, Topics, Prompts, citations, sentiment, GA4, Cloudflare, AI bots, AI-driven human traffic, pages, PageSpeed health, opportunities, content, publishing, integrations, projects, domains, and SaaS. Trigger for requests such as “查询我的账号信息 / my account information”, “竞争对手表现 / competitor analysis / compare us with a competitor”, “this prompt/topic in the last week or half month”, “show my GEO data”, “generate a report”, “GA4/Cloudflare/AI bot performance”, and “export HTML”.
 ---
 
 # Adgine GEO Reports
@@ -10,6 +10,7 @@ Use `scripts/report.py` as the default entry point for all platform data reads. 
 ## Required workflow
 
 1. Resolve the active project from `--project-id` or `GEO_PROJECT_ID` when the scenario is project-scoped. Pass `--project-name` when the exact name is already known; otherwise the script loads it from the existing project-detail endpoint for user-facing titles.
+   `account-info` is strictly account-scoped: run it without a project ID, call only `/api/auth/me`, and never read a project list or project detail for this request.
 2. Match the report language to the user's latest request and always pass it explicitly:
    - Primarily Chinese request → `--locale zh-CN`
    - Primarily English request → `--locale en-US`
@@ -80,7 +81,7 @@ Use these report names:
 - Core GEO: `executive-overview`, `catalog`, `visibility`, `matrix`, `topics`, `topic-detail`, `topic-lifecycle`, `prompt-performance`, `prompt-executions`, `citations`, `sentiment`, `competitor-rankings`, `competitor-overview`, `competitor-topics`, `competitor-prompts`.
 - Acquisition and bots: `traffic-overview`, `ga4-overview`, `ga4-referrals`, `ga4-pages`, `cloudflare-overview`, `cloudflare-bots`, `cloudflare-pages`, `worker-traffic`, `worker-pages`, `worker-events`, `worker-deployment`, `ai-overview`, `ai-bots`, `ai-humans`.
 - Pages and flows: `ai-pages`, `ai-flow`, `human-flow`, `ga4-flow`, `page-detail`, `page-health`, `page-opportunities`.
-- Operations: `account-info`, `data-freshness`, `operations-overview`, `opportunities`, `opportunity-detail`, `content-pipeline`, `content-detail`, `brand-profile`, `brand-jobs`, `integration-health`, `wordpress-publications`, `wordpress-publishable`, `billing`, `projects`, `domains`, `saas-task`.
+- Operations: `account-info`, `data-freshness`, `operations-overview`, `opportunities`, `opportunity-detail`, `content-pipeline`, `content-detail`, `brand-profile`, `brand-jobs`, `integration-health`, `wordpress-publications`, `wordpress-publishable`, `projects`, `domains`, `saas-task`.
 
 Run `python3 <skill-dir>/scripts/report.py --list-scenarios` for the machine-readable catalog. Read `references/scenarios.md` when intent overlaps multiple reports or when an entity argument is unclear.
 Read `references/competitors.md` for competitor intent routing, exact parameters, response semantics, and call-count expectations.
@@ -90,7 +91,7 @@ Read `references/competitors.md` for competitor intent routing, exact parameters
 - Treat the script's explicit end date as the source of truth. The default is yesterday to avoid partial same-day traffic.
 - Keep concurrent calls at the script's built-in maximum of four. Preserve request memoization and optional-source partial failure behavior.
 - Never add GA4 sessions/users, Cloudflare HTTP requests, Worker events, or AI Agent event counts. Present each source and unit separately.
-- Never trigger GA4/Cloudflare sync, PageSpeed refresh, citation tests, content generation, publication, deployment, billing, or any other mutation from a report.
+- Never trigger GA4/Cloudflare sync, PageSpeed refresh, citation tests, content generation, publication, deployment, or any other mutation from a report.
 - Use cached PageSpeed data in reports. If absent, state that the report is unavailable and offer an explicit refresh as a separate action.
 - Hide internal IDs by default. Use `--show-ids` only for debugging or an explicit user request. Never expose passwords, tokens, API keys, or secrets.
 - Preserve zero values. Render missing values as `—`; do not infer a zero from missing data.
@@ -100,7 +101,7 @@ Read `references/competitors.md` for competitor intent routing, exact parameters
 - Cache only `/report-data/capabilities` for two hours on disk without credentials; never cache report business data. Fall back only for a missing/disabled/incompatible report-data route; never hide 401/403/409/422 or business 5xx failures behind legacy calls.
 - Treat answer citations, AI-assistant HTTP requests, Worker events, and GA4 AI landing sessions as distinct facts even when they refer to the same page.
 - Do not infer page-to-opportunity matches. Until the backend persists `target_path/path_key`, show `PAGE_OPPORTUNITY_MAPPING_UNAVAILABLE` and use only deterministic KPI/health recommendations.
-- Account reports may show only the authenticated user's `created_at`, `name`, `phone`, and `email`; do not include user ID, rules, tokens, subscription/credits information, subscription-related follow-up prompts, or unrelated `/auth/me` fields.
+- Account reports may show only the authenticated user's `created_at`, `name`, `phone`, and `email`. Do not resolve project context, call `/api/projects/*`, include any other `/auth/me` field, or add follow-up prompts.
 - Treat `competitor-rankings` as the complete competitor set returned by GEO-Api. Do not merge it with configured competitors or infer missing competitors. Do not invent time-series charts because these four endpoints return period aggregates, not daily trend points.
 
 Read `references/reporting.md` before changing output behavior, templates, schema fields, chart mapping, or WorkBuddy markers.

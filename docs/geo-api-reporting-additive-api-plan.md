@@ -294,7 +294,7 @@ src/geo/report_data/
 - `opportunity_state`。
 - `data_freshness[]`。
 
-账户级 `projects/domains/billing` 当前各自一次调用，暂不建议为了合并而新增跨权限域接口；收益小且权限边界更复杂。
+账户级 `projects/domains` 当前各自一次调用，暂不建议为了合并而新增跨权限域接口；收益小且权限边界更复杂。
 
 ## 5. 各接口实现与数据表
 

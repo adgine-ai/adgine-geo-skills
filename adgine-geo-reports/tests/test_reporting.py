@@ -173,6 +173,7 @@ class RenderingTests(unittest.TestCase):
         self.assertEqual(normalize_locale("auto", "Topic performance last week"), "en-US")
         self.assertEqual(normalize_locale("en-US", "中文请求"), "en-US")
         self.assertEqual(label("visibility_score", "zh-CN"), "AI 可见性得分")
+        self.assertEqual(label("first_recommendation_rate", "zh-CN"), "首推率")
         self.assertEqual(label("visibility_score", "en-US"), "Visibility Score")
 
     def test_all_scenarios_build_in_both_supported_languages(self):
@@ -399,6 +400,17 @@ class RenderingTests(unittest.TestCase):
         }, True)
         self.assertEqual(sanitized, {
             "name": "Example", "nested": {"sessions": 9},
+        })
+
+    def test_account_entitlement_fields_are_always_removed_from_reports(self):
+        sanitized = _sanitize({
+            "name": "Example",
+            "subscription": {"status": "active"},
+            "credits_remaining": 100,
+            "nested": {"credit_balance": 20, "email": "owner@example.test"},
+        }, True)
+        self.assertEqual(sanitized, {
+            "name": "Example", "nested": {"email": "owner@example.test"},
         })
 
     def test_distribution_becomes_donut_chart(self):

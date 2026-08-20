@@ -67,9 +67,6 @@ SOURCE_UNITS = {
     "content": "content records",
     "jobs": "job records",
     "integrations": "connection states",
-    "credits": "credits",
-    "subscription": "subscription state",
-    "plans": "plan catalog",
     "account": "account profile fields",
     "competitor_rankings": "percent / rank",
     "competitor_overview": "percent / rank",
@@ -102,7 +99,9 @@ CLOUDFLARE_AI_PRESENTATION_SCENARIOS = {
     "executive-overview", "traffic-overview", "cloudflare-overview",
     "cloudflare-bots", "ai-overview", "ai-bots",
 }
-HIDDEN_PRESENTATION_KEY_PARTS = ("revenue", "transaction")
+HIDDEN_PRESENTATION_KEY_PARTS = (
+    "revenue", "transaction", "subscription", "credit",
+)
 
 REPORT_DATA_SCENARIOS = {
     "executive-overview": ("executive_overview", "executive-overview"),
@@ -1614,7 +1613,7 @@ def _next_actions(scenario, args, locale="en-US"):
         "ai-pages": ["next_leading_page", "next_page_opportunities", "next_bot_human"],
         "page-detail": ["next_generate_page_opportunities", "next_page_logs", "next_related_pages"],
         "content-pipeline": ["next_failed_content", "next_latest_content", "next_publish_readiness"],
-        "account-info": ["next_projects", "next_integration_health"],
+        "account-info": [],
         "competitor-rankings": ["next_competitor_overview", "next_compare_platform", "next_other_window"],
         "competitor-overview": ["next_competitor_topics", "next_compare_platform", "next_other_window"],
         "competitor-topics": ["next_competitor_prompts", "next_compare_platform", "next_other_window"],

@@ -287,14 +287,15 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn(expected, rendered)
         for hidden in ("user-secret-id", "secret-plan", "unrelated-rule"):
             self.assertNotIn(hidden, rendered)
-        self.assertNotIn("subscription", " ".join(report["next_actions"]).lower())
-        self.assertNotIn("积分", " ".join(report["next_actions"]))
+        self.assertEqual(report["next_actions"], [])
+        self.assertNotIn("project-secret-id", rendered)
         self.assertNotIn({"label": "Page size", "value": 40}, report["context"])
         html = render_html(report)
         self.assertIn("Alice Example", html)
         self.assertIn("alice@example.test", html)
         self.assertNotIn("user-secret-id", html)
         self.assertNotIn("secret-plan", html)
+        self.assertNotIn("project-secret-id", html)
 
     def test_explicit_project_name_avoids_project_detail_call(self):
         client = FakeClient()

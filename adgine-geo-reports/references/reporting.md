@@ -124,7 +124,7 @@ Use four stable densities:
 | `analysis` | Trends, comparisons, prioritization | KPI cards, `line_chart`, `bar_chart` / `heatmap_table`, ranked table |
 | `inventory` | Topics, Prompts, pages, content, projects | Counts and dense sortable-style tables |
 | `detail` | One Prompt, Topic, page, opportunity, or content item | Entity context, focused KPIs, related tables |
-| `status` | Jobs, integration health, billing, publication | State cards, timestamps, issue tables |
+| `status` | Jobs, integration health, publication | State cards, timestamps, issue tables |
 
 Map data deterministically:
 
@@ -194,7 +194,7 @@ Exact matching wins. If text has zero or multiple matches, stop and request/use 
 - Remove secrets and keys even when `--show-ids` is enabled.
 - Record entity resolution rule, time window, locale, timezone, concurrency cap, API path, duration, and failure status.
 - Never expose API keys, OAuth tokens, Cloudflare tokens, Worker secrets, WordPress passwords, or generated Worker source containing secrets.
-- For `account-info`, expose only creation time, account name, phone, and email from `/api/auth/me`; omit the user ID, subscription/credits information and follow-up prompts, and all unrelated response fields.
+- For `account-info`, call only `/api/auth/me` and expose only creation time, account name, phone, and email. Never resolve project context, call `/api/projects/*`, expose other response fields, or add follow-up prompts.
 - Show `0` as zero. Show `null`/missing as `—`.
 - If an execution count is zero, state that no completed executions were observed; do not convert this to a performance score of zero.
 - Treat average position/rank, bounce, latency, negative sentiment, and Web Vitals as lower-is-better when assigning direction color.

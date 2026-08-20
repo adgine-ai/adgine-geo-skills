@@ -98,7 +98,7 @@ class ExistingSkillContractTests(unittest.TestCase):
             path = os.path.join(ROOT, name, "scripts", "_client.py")
             if name.startswith("adgine-geo-") and os.path.isfile(path):
                 clients.append(path)
-        self.assertGreaterEqual(len(clients), 19)
+        self.assertGreaterEqual(len(clients), 18)
         for path in clients:
             with open(path, encoding="utf-8") as handle:
                 self.assertEqual(handle.read(), canonical, path)

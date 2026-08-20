@@ -125,7 +125,6 @@ Users can trigger a version check or update with natural language:
 | [`adgine-geo-wordpress`](adgine-geo-wordpress/) | Publish GEO articles to WordPress; manage credentials & categories; track publish history; update existing posts |
 | [`adgine-geo-media-publish`](adgine-geo-media-publish/) | Save content to signed-in social-media drafts through the local Adgine browser bridge |
 | [`adgine-geo-saas`](adgine-geo-saas/) | Check subdomain availability; create and track SaaS-hosted website deployments |
-| [`adgine-geo-billing`](adgine-geo-billing/) | View plan, status, renewal date, remaining credits, and credits pricing |
 | [`adgine-geo-domains`](adgine-geo-domains/) | Search registrable domains and inspect the current account's registered-domain portfolio |
 | [`adgine-geo-docs`](adgine-geo-docs/) | Adgine platform user manual (使用手册) — hosted PDF, no API key required |
 | [`adgine-geo-site-audit`](adgine-geo-site-audit/) | **Standalone** GEO technical audit for any public URL — 5-dimension 30-item checklist, local crawl, PDF report export. No API key required |
@@ -145,6 +144,8 @@ python3 adgine-geo-reports/scripts/report.py data-freshness --project-id <id>
 python3 adgine-geo-reports/scripts/report.py page-opportunities --project-id <id> --path /blog/example --period 30d
 python3 adgine-geo-reports/scripts/report.py account-info
 ```
+
+`account-info` is account-scoped. It calls only `/api/auth/me`, does not resolve or query projects, and returns only account name, email, phone, and registration time.
 
 Paginated reads use 40 rows per page by default. Use `--page 2 --limit 40` for the next page.
 
@@ -240,8 +241,6 @@ python3 adgine-geo-content/scripts/generate_outline.py --topic-id <id> --prompt-
 # Standalone site audit (no API key needed)
 python3 adgine-geo-site-audit/scripts/geo_collect.py https://example.com --max-subpages 20
 
-# Check credits balance
-python3 adgine-geo-billing/scripts/get_credits.py
 ```
 
 ---

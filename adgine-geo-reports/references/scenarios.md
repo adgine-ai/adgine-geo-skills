@@ -103,7 +103,6 @@ The competitor ranking response is treated as GEO-Api's complete competitor set.
 | `integration-health` | Connected services | Project |
 | `wordpress-publications` | Publish history | Project |
 | `wordpress-publishable` | Publish-ready content | Project |
-| `billing` | Subscription, credits, and plans | Account only |
 | `projects` | Project catalog; inline by default, never auto-generates HTML | Account only |
 | `domains` | Registered domain portfolio | Account only |
 | `saas-task` | One deployment task | `--resource-id` |

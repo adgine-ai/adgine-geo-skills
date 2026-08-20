@@ -48,7 +48,7 @@ pip install curl_cffi beautifulsoup4 lxml markdown reportlab
 **路由边界**:
 - 本 skill 面向**任意公开 URL** 的一次性站点技术审计，无需平台账号，依赖 `scripts/geo_collect.py` 本地采集公开网页信号并打分。
 - 本 skill 的「AI 可读性采样」是**结构层面检测**（页面内容是否对 AI 爬虫可读），不等于向 ChatGPT/Perplexity 发送 prompt 测试实际引用结果——后者请用 **adgine-geo-citation**。
-- 平台项目、GA4/Cloudflare 集成、AI traffic、billing、WordPress 发布等 Adgine 产品内数据，应交给对应平台技能处理。
+- 平台项目、GA4/Cloudflare 集成、AI traffic、WordPress 发布等 Adgine 产品内数据，应交给对应平台技能处理。
 
 ## 执行流程
 

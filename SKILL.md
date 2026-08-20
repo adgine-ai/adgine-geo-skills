@@ -1,13 +1,13 @@
 ---
 name: adgine/geo
 description: >
-  Adgine GEO 平台完整技能套件，包含 20 个专项技能，覆盖生成式引擎优化（GEO）全流程：
+  Adgine GEO 平台完整技能套件，包含 19 个专项技能，覆盖生成式引擎优化（GEO）全流程：
   网站技术审计、AI 引用测试、AI 可见性分析、内容生成、品牌画像、主题词管理、
-  WordPress 发布、GA4/Cloudflare 集成、域名管理、项目管理、账单查询、使用手册等。
+  WordPress 发布、GA4/Cloudflare 集成、域名管理、项目管理、使用手册等。
   触发词：GEO / Adgine / AI visibility / AI citation / 生成式引擎优化 / AI 可见性 /
   引用测试 / 内容生成 / 网站审计 / 品牌画像 / WordPress 发布 / 流量分析 /
   AI 爬虫追踪 / 竞争对手分析 / 竞品排名 / 优化机会 / 页面健康度 / HTML 报告 / 我的账号信息 / 姓名 / 手机号 /
-  邮箱 / 域名 / 账单 / 积分 / 项目管理.
+  邮箱 / 域名 / 项目管理.
 ---
 
 ## 版本检测（路由到任何子技能之前的第一步，必须执行）
@@ -68,7 +68,7 @@ _notice: {"update": {"current": "1.1.5", "latest": "1.2.0", "message": "..."}}
 
 # Adgine GEO Skills Suite
 
-本套件包含 20 个专项技能，覆盖 Adgine GEO 平台全流程。根据用户意图路由到对应子技能。
+本套件包含 19 个专项技能，覆盖 Adgine GEO 平台全流程。根据用户意图路由到对应子技能。
 
 ## 数据查询门面（必须优先）
 
@@ -80,7 +80,9 @@ Worker 部署、单个 SaaS 任务和单个机会等小结果默认直接在对�
 接口做二次摘要。
 
 用户询问“我的账号、账号基本信息、创建时间、姓名、手机号、邮箱”时，使用
-`adgine/geo-reports account-info`。所有分页查询默认每页 40 条；下一页继续使用 40 条页长。
+`adgine/geo-reports account-info`。这是账户级查询：只调用 `/api/auth/me`，不得解析当前项目、读取项目列表或
+查询任何 `/api/projects/*` 接口；只输出账号名称、邮箱、手机号和注册时间，忽略接口返回的其他字段。
+所有分页查询默认每页 40 条；下一页继续使用 40 条页长。
 用户询问竞争对手列表、排名、某一竞品概览、按 Topic/Prompt 查看竞品表现时，使用
 `adgine/geo-reports` 的四个 `competitor-*` 只读场景；竞争对手的新增和删除仍使用 `adgine/geo-projects`。
 高频 Topic、Prompt、综合流量、页面、内容与运营报告优先使用 GEO-Api `/report-data` 聚合接口；
@@ -110,7 +112,6 @@ HTML、Markdown、JSON 和 WorkBuddy 摘要标记使用同一种报告语言，T
 | adgine/geo-wordpress | 发布 GEO 文章到 WordPress、管理站点凭证和分类、查看发布历史、更新已发布文章 |
 | adgine/geo-media-publish | 发布文章到本机浏览器已登录的社媒草稿箱（知乎/微信公众号/百家号/头条号/CSDN/小红书…），经 Chrome 扩展桥接，需桌面端 |
 | adgine/geo-saas | 检查子域名可用性、创建并追踪 SaaS 托管网站部署任务 |
-| adgine/geo-billing | 查询订阅套餐、订阅状态、积分余额和充值明细（只读，不执行购买） |
 | adgine/geo-domains | 按关键词搜索可注册域名、列出已注册域名、查看域名详情 |
 | adgine/geo-site-audit | 对任意公开 URL 做独立 GEO 技术审计（5 大维度 / 30 项检测 / 导出 PDF），**无需 API Key** |
 | adgine/geo-docs | Adgine 平台使用手册、帮助文档、操作指南，**无需 API Key** |
@@ -122,7 +123,7 @@ HTML、Markdown、JSON 和 WorkBuddy 摘要标记使用同一种报告语言，T
 - **内容发布（WordPress）**：`geo-content`（生成文章）→ `geo-wordpress`（发布到 WordPress）
 - **内容发布（社媒草稿箱）**：`geo-content`（生成文章）→ `geo-media-publish`（发布到知乎/公众号/头条等本机已登录平台）
 - **引用测试**：`geo-topics`（创建提示词）→ `geo-citation`（运行测试）→ `geo-visibility`（查看结果）
-- **所有平台功能**：先用 `geo-projects` 配置 API Key 并选定项目，再使用其他子技能
+- **项目级平台功能**：先用 `geo-projects` 配置 API Key 并选定项目，再使用其他子技能；`account-info` 不需要也不得选择或查询项目
 
 ## 安装配置
 

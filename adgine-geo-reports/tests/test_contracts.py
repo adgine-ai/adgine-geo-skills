@@ -14,6 +14,18 @@ from report import REPORT_DATA_SCENARIOS  # noqa: E402
 
 
 class ContractRegistryTests(unittest.TestCase):
+    def test_skill_catalog_does_not_advertise_account_entitlement_data(self):
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        forbidden = ("subscription", "credits", "billing", "订阅", "积分", "账单", "套餐")
+        for root, _dirs, files in os.walk(repo_root):
+            if "SKILL.md" not in files:
+                continue
+            path = os.path.join(root, "SKILL.md")
+            with open(path, encoding="utf-8") as handle:
+                content = handle.read().lower()
+            for token in forbidden:
+                self.assertNotIn(token, content, path)
+
     def test_p1_p2_p3_are_all_implemented(self):
         phases = {scenario.phase for scenario in SCENARIOS.values()}
         self.assertEqual(phases, {"P1", "P2", "P3"})
@@ -35,6 +47,18 @@ class ContractRegistryTests(unittest.TestCase):
         self.assertEqual(account.path, "/api/auth/me")
         self.assertEqual(ai_pages.paging, "offset")
         self.assertEqual(ai_human_pages.paging, "offset")
+
+    def test_account_info_is_account_only_and_payment_data_is_not_exposed(self):
+        account = SCENARIOS["account-info"]
+        self.assertEqual(len(account.requests), 1)
+        self.assertEqual(account.requests[0].path, "/api/auth/me")
+        self.assertNotIn("{project_id}", account.requests[0].path)
+        self.assertNotIn("billing", SCENARIOS)
+        self.assertFalse(any(
+            request.path.startswith("/api/payments/")
+            for scenario in SCENARIOS.values()
+            for request in scenario.requests
+        ))
 
     def test_customer_traffic_reports_use_existing_ai_specific_endpoints(self):
         for scenario_name in ("ga4-overview", "ga4-referrals"):
