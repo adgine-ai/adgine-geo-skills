@@ -174,6 +174,11 @@ friendly aliases such as `中文`, `简体中文`, and `zh-CN` and normalizes th
 Platform display names are normalized by the script using the same rules as
 manual Prompt creation and updates.
 
+The shipped command targets the Global API and sends the required `Region: GLOBAL`
+request header automatically. This product-edition header is distinct from
+`--region`, which remains the target market of the generated prompts (for example,
+`CN` for mainland China).
+
 > ⏳ **Expected duration: 1–3 minutes.** The script polls automatically (interval 5 s, timeout 10 min). Do NOT cancel early.
 
 ## Output Format

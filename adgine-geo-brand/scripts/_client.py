@@ -192,19 +192,22 @@ def get_project_id(arg_value=None):
     return pid
 
 
-def _do_request(method, url, key, body=None, timeout=30, exit_on_error=True):
+def _do_request(method, url, key, body=None, timeout=30, exit_on_error=True,
+                headers=None):
     """Execute an HTTP request and return parsed JSON.
 
     Exits with an error message on HTTP errors or network failures.
     """
     data = json.dumps(body).encode("utf-8") if body is not None else None
-    headers = {
+    request_headers = {
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
         "Accept": "application/json",
         "User-Agent": "geo-skills/1.0",
     }
-    request = _req.Request(url, data=data, headers=headers, method=method)
+    if headers:
+        request_headers.update(headers)
+    request = _req.Request(url, data=data, headers=request_headers, method=method)
     try:
         with _req.urlopen(request, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8")
@@ -262,29 +265,48 @@ def _query_pairs(params):
     return pairs
 
 
-def api_get(path, key, base, params=None, timeout=30, exit_on_error=True):
+def api_get(path, key, base, params=None, timeout=30, exit_on_error=True,
+            headers=None):
     url = f"{base}{path}"
     if params:
         clean = _query_pairs(params)
         if clean:
             url += "?" + _up.urlencode(clean, doseq=True)
-    return _do_request("GET", url, key, timeout=timeout, exit_on_error=exit_on_error)
+    return _do_request(
+        "GET", url, key, timeout=timeout, exit_on_error=exit_on_error,
+        headers=headers,
+    )
 
 
-def api_post(path, key, base, body=None, timeout=30, exit_on_error=True):
-    return _do_request("POST", f"{base}{path}", key, body, timeout=timeout, exit_on_error=exit_on_error)
+def api_post(path, key, base, body=None, timeout=30, exit_on_error=True,
+             headers=None):
+    return _do_request(
+        "POST", f"{base}{path}", key, body, timeout=timeout,
+        exit_on_error=exit_on_error, headers=headers,
+    )
 
 
-def api_patch(path, key, base, body=None, timeout=30, exit_on_error=True):
-    return _do_request("PATCH", f"{base}{path}", key, body, timeout=timeout, exit_on_error=exit_on_error)
+def api_patch(path, key, base, body=None, timeout=30, exit_on_error=True,
+              headers=None):
+    return _do_request(
+        "PATCH", f"{base}{path}", key, body, timeout=timeout,
+        exit_on_error=exit_on_error, headers=headers,
+    )
 
 
-def api_put(path, key, base, body=None, timeout=30, exit_on_error=True):
-    return _do_request("PUT", f"{base}{path}", key, body, timeout=timeout, exit_on_error=exit_on_error)
+def api_put(path, key, base, body=None, timeout=30, exit_on_error=True,
+            headers=None):
+    return _do_request(
+        "PUT", f"{base}{path}", key, body, timeout=timeout,
+        exit_on_error=exit_on_error, headers=headers,
+    )
 
 
-def api_delete(path, key, base, timeout=30, exit_on_error=True):
-    return _do_request("DELETE", f"{base}{path}", key, timeout=timeout, exit_on_error=exit_on_error)
+def api_delete(path, key, base, timeout=30, exit_on_error=True, headers=None):
+    return _do_request(
+        "DELETE", f"{base}{path}", key, timeout=timeout,
+        exit_on_error=exit_on_error, headers=headers,
+    )
 
 
 def extract_data(result):

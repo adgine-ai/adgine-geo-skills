@@ -71,9 +71,12 @@ if platforms:
 if args.instructions:
     body["additional_instructions"] = args.instructions
 
+# Global prompt generation is edition-scoped. The Region header selects the
+# GLOBAL implementation; body region remains the target prompt market.
+edition_headers = {"Region": "GLOBAL"}
 result = api_post(
     f"/api/projects/{pid}/topics/{args.topic_id}/generate-prompts",
-    key, base, body
+    key, base, body, headers=edition_headers,
 )
 task_data = extract_data(result)
 task_id = task_data.get("task_id") or task_data.get("id")

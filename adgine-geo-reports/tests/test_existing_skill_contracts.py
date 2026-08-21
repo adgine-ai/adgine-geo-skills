@@ -124,6 +124,14 @@ class ExistingSkillContractTests(unittest.TestCase):
             self.assertIn('from _language import normalize_language', source)
         self.assertIn('body["region"] = args.region', topics)
 
+    def test_global_prompt_generation_preserves_edition_header_contract(self):
+        client = read("adgine-geo-visibility/scripts/_client.py")
+        generation = read("adgine-geo-topics/scripts/generate_prompts.py")
+        self.assertIn("request_headers.update(headers)", client)
+        self.assertIn("headers=None", client)
+        self.assertIn('edition_headers = {"Region": "GLOBAL"}', generation)
+        self.assertIn("headers=edition_headers", generation)
+
     def test_project_and_saas_mutations_match_current_schemas(self):
         project = read("adgine-geo-projects/scripts/manage_project.py")
         saas = read("adgine-geo-saas/scripts/create_website.py")
